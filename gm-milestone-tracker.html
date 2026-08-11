@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Base Milestone Race - GM Dashboard Edition</title>
+<title>Vehicle Base Milestone Race - GM Dashboard</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -28,7 +28,7 @@
     border-bottom: 8px solid #333;
     perspective: 800px;
     perspective-origin: 50% 50%;
-    min-height: 50vh; /* Prevents cut-off */
+    min-height: 50vh; 
   }
 
   /* The Sun */
@@ -47,11 +47,11 @@
   /* 3D Ground and Road */
   .world {
     position: absolute;
-    top: 50%; /* Horizon line */
+    top: 50%; 
     left: -50%;
     width: 200%;
     height: 100%;
-    background: #7bb558; /* Green grass */
+    background: #7bb558; 
     transform: rotateX(80deg);
     transform-origin: top center;
     transform-style: preserve-3d;
@@ -69,7 +69,7 @@
     border-right: 10px solid #fff;
   }
 
-  /* Moving dashed lines */
+  /* Moving dashed lines - now finite and eases to a stop */
   .road::after {
     content: '';
     position: absolute;
@@ -85,12 +85,16 @@
       transparent 80px,
       transparent 160px
     );
-    animation: drive 0.6s linear infinite;
   }
 
-  @keyframes drive {
+  .road.is-driving::after {
+    /* Eases out over 12 seconds to simulate braking to a stop */
+    animation: driveEnd 12s ease-out forwards;
+  }
+
+  @keyframes driveEnd {
     from { background-position: 0 0; }
-    to { background-position: 0 160px; }
+    to { background-position: 0 3000px; }
   }
 
   /* The Party on the Horizon */
@@ -98,16 +102,22 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -100%);
     text-align: center;
-    animation: pulseParty 2s infinite alternate;
     z-index: 10;
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.1);
+  }
+
+  .party-destination.is-driving {
+    /* Appears and grows closer as we drive, then stays fixed (forwards) */
+    animation: approachParty 12s ease-out forwards;
   }
   
   .party-destination .emojis {
     font-size: 32px;
     letter-spacing: -5px;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: bounceParty 1s infinite alternate;
   }
   
   .party-destination .banner {
@@ -123,16 +133,21 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   }
 
-  @keyframes pulseParty {
-    0% { transform: translate(-50%, -100%) scale(1); }
-    100% { transform: translate(-50%, -100%) scale(1.1); }
+  @keyframes approachParty {
+    0% { transform: translate(-50%, -80%) scale(0.1); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate(-50%, -100%) scale(1.6); opacity: 1; }
+  }
+
+  @keyframes bounceParty {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-10px); }
   }
 
   /* Passing Roadsigns */
   .sign {
     position: absolute;
     top: 0;
-    /* Counter-rotate to stand up straight in the 3D world */
     transform: rotateX(-80deg) translate(-50%, -100%);
     transform-origin: bottom center;
     background: #007733;
@@ -160,27 +175,70 @@
   .sign h4 { font-size: 24px; margin-bottom: 5px; }
   .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
 
-  /* Animation delays for sequentially passing signs */
-  .sign-1 { animation: flybyRight 6s linear infinite; animation-delay: 0s; }
-  .sign-2 { animation: flybyLeft 6s linear infinite; animation-delay: 2s; }
-  .sign-3 { animation: flybyRight 6s linear infinite; animation-delay: 4s; }
+  /* Drive animation modifiers */
+  .sign.is-driving {
+    animation-duration: 5s;
+    animation-timing-function: ease-in; /* Accelerates as it gets closer to camera */
+    animation-fill-mode: forwards;
+  }
+
+  .sign-1.is-driving { animation-name: flybyRight; animation-delay: 0.5s; }
+  .sign-2.is-driving { animation-name: flybyLeft; animation-delay: 4s; }
+  .sign-3.is-driving { animation-name: flybyRight; animation-delay: 7.5s; }
 
   @keyframes flybyRight {
     0% { left: 52%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); }
-    5% { opacity: 1; }
-    80% { opacity: 1; }
+    10% { opacity: 1; }
     100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
   }
 
   @keyframes flybyLeft {
     0% { left: 48%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); }
-    5% { opacity: 1; }
-    80% { opacity: 1; }
+    10% { opacity: 1; }
     100% { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
   }
 
   /* 
-    2. THE DASHBOARD CONSOLE (Modern GM Style)
+    2. THE WINDSHIELD WIPER 
+  */
+  .wiper-arm {
+    position: absolute;
+    bottom: -20px;
+    left: 45%;
+    width: 12px;
+    height: 45vh;
+    background: #1a1a1a;
+    transform-origin: bottom center;
+    transform: rotate(-80deg);
+    border-radius: 6px;
+    z-index: 50;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  }
+
+  .wiper-arm::before {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: -6px;
+    width: 24px;
+    height: 90%;
+    background: #2a2a2a;
+    border-radius: 4px;
+    border-right: 2px solid #555;
+  }
+
+  .wiper-arm.is-wiping {
+    animation: wipeAction 1.5s ease-in-out;
+  }
+
+  @keyframes wipeAction {
+    0% { transform: rotate(-80deg); }
+    50% { transform: rotate(80deg); }
+    100% { transform: rotate(-80deg); }
+  }
+
+  /* 
+    3. THE DASHBOARD CONSOLE (Modern GM Style)
   */
   .dashboard {
     height: 45vh;
@@ -192,13 +250,13 @@
     align-items: center;
     gap: 5vw;
     padding: 20px;
-    /* Brushed aluminum trim */
     border-top: 12px solid #b8c0c8;
     box-shadow: inset 0 8px 15px rgba(255,255,255,0.7), 0 -10px 30px rgba(0,0,0,0.2);
+    z-index: 100;
   }
 
   /* 
-    3. THE GAUGES (Bright, white faces with EV-blue accents)
+    4. THE GAUGES 
   */
   .gauge-container {
     position: relative;
@@ -206,14 +264,12 @@
     height: 220px;
     background: #ffffff;
     border-radius: 50%;
-    /* Chrome-like bezel */
     border: 10px solid #dcdcdc;
     box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.15);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 2;
   }
 
   .gauge-label {
@@ -239,7 +295,6 @@
     bottom: 30px;
     font-size: 11px;
     font-weight: bold;
-    color: #0077cc;
     letter-spacing: 1px;
   }
 
@@ -277,7 +332,6 @@
     transition: transform 2s cubic-bezier(.2, 0, 0, 1);
   }
 
-  /* Bright red sports needle */
   .needle {
     position: absolute;
     top: 50%;
@@ -291,7 +345,6 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
 
-  /* Chrome center cap */
   .needle-center {
     position: absolute;
     top: 50%;
@@ -306,16 +359,50 @@
   }
 
   /* 
-    4. STEERING WHEEL HORN (Leather and Aluminum style)
+    5. STEERING WHEEL & CONTROLS
   */
-  .horn-wrapper {
+  .steering-column {
     position: absolute;
     bottom: -80px;
     left: 50%;
     transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  /* Wiper Stalk Button */
+  .wiper-stalk {
+    position: absolute;
+    left: -160px;
+    top: 60px;
+    width: 100px;
+    height: 30px;
+    background: linear-gradient(to bottom, #444, #222);
+    border: 2px solid #111;
+    border-radius: 15px 0 0 15px;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: left;
+    padding-left: 15px;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    transform-origin: right center;
+    transition: transform 0.1s;
+    z-index: 9;
+  }
+
+  .wiper-stalk:active {
+    transform: rotate(-5deg);
+  }
+
+  .horn-wrapper {
+    position: relative;
     width: 450px;
     height: 220px;
-    /* Dark charcoal leather rim */
     background: #2a2c2e;
     border-radius: 225px 225px 0 0;
     border: 18px solid #1a1a1c;
@@ -324,11 +411,10 @@
     justify-content: center;
     align-items: flex-start;
     padding-top: 30px;
-    z-index: 10;
     box-shadow: 0 -15px 40px rgba(0,0,0,0.3);
+    z-index: 10;
   }
 
-  /* The center horn pad */
   .horn-btn {
     width: 130px;
     height: 130px;
@@ -369,30 +455,37 @@
 </head>
 <body>
 
+  <!-- Real Car Horn Audio File (Google UI Sounds Library) -->
+  <audio id="carHornAudio" src="https://actions.google.com/sounds/v1/alarms/car_horn.ogg" preload="auto"></audio>
+
   <!-- WINDSHIELD SCENE -->
   <div class="windshield">
     
-    <div class="party-destination">
+    <div class="party-destination animation-target">
       <div class="emojis">🎪🎉🎈</div>
       <div class="banner">500K Goal</div>
     </div>
 
     <div class="world">
-      <div class="road"></div>
+      <div class="road animation-target"></div>
       <!-- Passing Roadsigns -->
-      <div class="sign sign-1">
+      <div class="sign sign-1 animation-target">
         <h4>2024</h4>
         <p>25,000</p>
       </div>
-      <div class="sign sign-2">
+      <div class="sign sign-2 animation-target">
         <h4>2025</h4>
         <p>198,000</p>
       </div>
-      <div class="sign sign-3">
+      <div class="sign sign-3 animation-target">
         <h4>AUG 2026</h4>
         <p>437,958</p>
       </div>
     </div>
+
+    <!-- The Wiper Blade -->
+    <div class="wiper-arm" id="wiperArm"></div>
+
   </div>
 
   <!-- DASHBOARD UI -->
@@ -403,15 +496,14 @@
       <div class="gauge-label">GM</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <!-- EV blue accent for GM -->
         <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #0077cc;"></circle>
       </svg>
       <div class="needle-container" id="needle-gm">
         <div class="needle"></div>
       </div>
       <div class="needle-center"></div>
-      <div class="gauge-value" id="val-gm">0</div>
-      <div class="gauge-pct">87.59%</div>
+      <div class="gauge-value gauge-val-target" id="val-gm">0</div>
+      <div class="gauge-pct" style="color: #0077cc;">87.59%</div>
     </div>
 
     <!-- KDDI GAUGE -->
@@ -419,14 +511,13 @@
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <!-- Green accent for KDDI -->
         <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #66CC00;"></circle>
       </svg>
       <div class="needle-container" id="needle-kddi">
         <div class="needle"></div>
       </div>
       <div class="needle-center"></div>
-      <div class="gauge-value" id="val-kddi">0</div>
+      <div class="gauge-value gauge-val-target" id="val-kddi">0</div>
       <div class="gauge-pct" style="color: #66CC00;">8.07%</div>
     </div>
 
@@ -435,29 +526,37 @@
       <div class="gauge-label">CHERRY</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <!-- Purple accent for Cherry -->
         <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #48286D;"></circle>
       </svg>
       <div class="needle-container" id="needle-cherry">
         <div class="needle"></div>
       </div>
       <div class="needle-center"></div>
-      <div class="gauge-value" id="val-cherry">0</div>
+      <div class="gauge-value gauge-val-target" id="val-cherry">0</div>
       <div class="gauge-pct" style="color: #48286D;">Loading</div>
     </div>
 
-    <!-- STEERING WHEEL HORN -->
-    <div class="horn-wrapper">
-      <button class="horn-btn" onclick="honkHorn()">
-        <span>GM</span>
-        <div class="subtext">Honk</div>
+    <!-- STEERING COLUMN & CONTROLS -->
+    <div class="steering-column">
+      
+      <!-- Wiper/Reset Stalk -->
+      <button class="wiper-stalk" onclick="triggerWipeAndReset()">
+        Wipe /<br>Reset
       </button>
+
+      <!-- Steering Wheel Horn -->
+      <div class="horn-wrapper">
+        <button class="horn-btn" onclick="honkHorn()">
+          <span>GM</span>
+          <div class="subtext">Honk</div>
+        </button>
+      </div>
+
     </div>
 
   </div>
 
   <script>
-    // --- GAUGE ANIMATION LOGIC ---
     const MAX_DASH = 212; 
     const DASH_OFFSET_START = 283; 
     const MAX_DEG = 270;
@@ -468,6 +567,7 @@
       { id: 'cherry', targetVal: 0, pct: 0.1 } 
     ];
 
+    // Math function to animate the gauge numbers
     function animateValue(obj, start, end, duration) {
       let startTimestamp = null;
       const step = (timestamp) => {
@@ -481,14 +581,34 @@
       window.requestAnimationFrame(step);
     }
 
-    // Trigger animations on load
-    window.onload = () => {
-      setTimeout(() => {
-        data.forEach(item => {
-          const fill = document.getElementById(`fill-${item.id}`);
-          const needle = document.getElementById(`needle-${item.id}`);
-          const valEl = document.getElementById(`val-${item.id}`);
+    // Function to start/restart all animations
+    function startDriveSequence() {
+      // 1. Trigger road and sign animations
+      const targets = document.querySelectorAll('.animation-target');
+      targets.forEach(el => {
+        el.classList.remove('is-driving');
+        void el.offsetWidth; // Force a DOM reflow to reset CSS animations
+        el.classList.add('is-driving');
+      });
 
+      // 2. Trigger Gauges
+      data.forEach(item => {
+        const fill = document.getElementById(`fill-${item.id}`);
+        const needle = document.getElementById(`needle-${item.id}`);
+        const valEl = document.getElementById(`val-${item.id}`);
+
+        // Reset gauges immediately
+        fill.style.transition = 'none';
+        needle.style.transition = 'none';
+        fill.style.strokeDashoffset = DASH_OFFSET_START;
+        needle.style.transform = `rotate(-135deg)`;
+        valEl.innerHTML = '0';
+
+        // Re-apply transitions and animate after a tiny delay
+        setTimeout(() => {
+          fill.style.transition = 'stroke-dashoffset 2s cubic-bezier(.2, 0, 0, 1)';
+          needle.style.transition = 'transform 2s cubic-bezier(.2, 0, 0, 1)';
+          
           const fillAmount = (item.pct / 100) * MAX_DASH; 
           fill.style.strokeDashoffset = DASH_OFFSET_START - fillAmount;
 
@@ -496,49 +616,35 @@
           needle.style.transform = `rotate(${rotDegree}deg)`;
 
           animateValue(valEl, 0, item.targetVal, 2000);
-        });
-      }, 400); 
-    };
-
-    // --- WEB AUDIO API HORN LOGIC ---
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx;
-
-    function honkHorn() {
-      if (!audioCtx) {
-        audioCtx = new AudioContext();
-      }
-
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      // Two slightly detuned oscillators create a realistic, dissonant car horn sound
-      osc1.type = 'sawtooth'; 
-      osc1.frequency.setValueAtTime(350, audioCtx.currentTime); 
-      
-      osc2.type = 'square'; 
-      osc2.frequency.setValueAtTime(400, audioCtx.currentTime); 
-      
-      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      osc1.start();
-      osc2.start();
-      osc1.stop(audioCtx.currentTime + 0.4);
-      osc2.stop(audioCtx.currentTime + 0.4);
-
-      // Flash the windshield slightly to register the honk visually
-      const windshield = document.querySelector('.windshield');
-      windshield.style.filter = 'brightness(1.2)';
-      setTimeout(() => {
-        windshield.style.filter = 'none';
-      }, 150);
+        }, 50);
+      });
     }
+
+    // Wiper and Reset interaction
+    function triggerWipeAndReset() {
+      const wiper = document.getElementById('wiperArm');
+      
+      // Trigger wiper animation
+      wiper.classList.remove('is-wiping');
+      void wiper.offsetWidth; // Reflow
+      wiper.classList.add('is-wiping');
+
+      // Restart the drive sequence halfway through the wipe (when it covers the screen)
+      setTimeout(startDriveSequence, 750);
+    }
+
+    // Play actual horn sound
+    function honkHorn() {
+      const audio = document.getElementById('carHornAudio');
+      // Reset time to 0 so you can spam the horn button
+      audio.currentTime = 0; 
+      audio.play().catch(e => console.log("Audio play blocked by browser policy until user interacts"));
+    }
+
+    // Start everything on initial page load
+    window.onload = () => {
+      setTimeout(startDriveSequence, 400); 
+    };
   </script>
 </body>
 </html>
