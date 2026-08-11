@@ -27,7 +27,7 @@
     position: relative;
     background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 50%, #7bb558 50%, #7bb558 100%);
     overflow: hidden;
-    border-bottom: 8px solid #333;
+    border-bottom: 8px solid #222;
   }
 
   .hud {
@@ -54,7 +54,6 @@
     to { transform: scale(1.05); }
   }
 
-  /* The Sun */
   .windshield::before {
     content: '';
     position: absolute;
@@ -67,23 +66,22 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
-  /* Dirty Windshield Layer */
+  /* Dirty Windshield Layer - Expanded across the screen */
   #windshield-dirt {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 45; /* Sits directly beneath the wiper blade */
+    z-index: 45; 
     pointer-events: none;
     transition: opacity 0.3s ease-out;
   }
 
   .smudge {
     position: absolute;
-    background: rgba(90, 70, 45, 0.4);
-    filter: blur(6px);
+    background: rgba(90, 70, 45, 0.3);
+    filter: blur(8px);
     border-radius: 50%;
   }
 
-  /* Horizon Mountains */
   .mountains {
     position: absolute;
     top: 50%;
@@ -153,13 +151,7 @@
     transform: translateX(-50%);
     width: 12px;
     height: 100%;
-    background: repeating-linear-gradient(
-      to top, 
-      #fbcc04 0,
-      #fbcc04 120px,
-      transparent 120px,
-      transparent 240px
-    );
+    background: repeating-linear-gradient(to top, #fbcc04 0, #fbcc04 120px, transparent 120px, transparent 240px);
   }
 
   .object-3d {
@@ -171,7 +163,6 @@
     backface-visibility: hidden;
   }
 
-  /* MASSIVE ROAD SIGNS */
   .sign {
     background: #007733;
     color: white;
@@ -196,7 +187,6 @@
   .sign h4 { font-size: 48px; margin-bottom: 10px; letter-spacing: 3px; }
   .sign p { font-size: 32px; font-weight: bold; color: #fbcc04; }
 
-  /* Map Locations */
   #sign-2024 { bottom: 1500px; margin-left: -320px; }
   #sign-2025 { bottom: 4000px; margin-left: 320px; }
   
@@ -221,7 +211,47 @@
   #sign-1m { bottom: 10000px; margin-left: 0; background: #111; border-color: #00ff66; }
   #sign-1m p { color: #00ff66; }
 
-  /* The Pop-Up HONK Graphic */
+  /* 
+    3. DUAL WINDSHIELD WIPERS
+  */
+  .wiper-arm {
+    position: absolute;
+    bottom: -30px;
+    width: 14px;
+    height: 55vh;
+    background: #111;
+    transform-origin: bottom center;
+    transform: rotate(-85deg);
+    border-radius: 8px;
+    z-index: 50;
+    box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+  }
+
+  .wiper-arm::before {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: -10px;
+    width: 34px;
+    height: 90%;
+    background: #2a2a2a;
+    border-radius: 4px;
+    border-right: 3px solid #555;
+  }
+
+  .wiper-arm.left { left: 25%; }
+  .wiper-arm.right { left: 65%; }
+
+  .wiper-arm.is-wiping {
+    animation: wipeAction 1.2s ease-in-out;
+  }
+
+  @keyframes wipeAction {
+    0% { transform: rotate(-85deg); }
+    50% { transform: rotate(5deg); }
+    100% { transform: rotate(-85deg); }
+  }
+
   #honkGraphic {
     position: absolute;
     top: 40%;
@@ -231,10 +261,7 @@
     font-style: italic;
     color: #fbcc04;
     text-transform: uppercase;
-    text-shadow: 
-      4px 4px 0 #cc0000, -4px -4px 0 #cc0000,
-      4px -4px 0 #cc0000, -4px 4px 0 #cc0000,
-      0 10px 20px rgba(0,0,0,0.6);
+    text-shadow: 4px 4px 0 #cc0000, -4px -4px 0 #cc0000, 4px -4px 0 #cc0000, -4px 4px 0 #cc0000, 0 10px 20px rgba(0,0,0,0.6);
     opacity: 0;
     pointer-events: none;
     z-index: 1000;
@@ -248,72 +275,122 @@
   }
 
   /* 
-    3. THE DASHBOARD CONSOLE (Lighter, Premium Brushed Aluminum)
+    4. PROPORTIONAL DASHBOARD CONSOLE 
   */
   .dashboard {
-    height: 45vh;
-    min-height: 380px;
+    height: 50vh;
+    min-height: 420px;
     background: linear-gradient(to bottom, #f0f2f5 0%, #dce1e6 100%);
     position: relative;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    gap: 4vw;
-    padding: 20px;
-    border-top: 4px solid #b0b8c0;
+    padding: 0 3vw;
+    border-top: 6px solid #b0b8c0;
     box-shadow: inset 0 8px 15px rgba(255,255,255,1), 0 -15px 40px rgba(0,0,0,0.2);
     z-index: 100;
   }
 
-  /* AC Vents */
+  .dash-zone {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    height: 100%;
+  }
+
+  /* Larger AC Vents */
   .ac-vent {
-    position: absolute;
-    top: 30px;
-    width: 60px;
-    height: 120px;
+    width: 80px;
+    height: 180px;
     background: #111;
-    border: 3px solid #888;
+    border: 4px solid #888;
     border-radius: 8px;
     box-shadow: inset 0 0 10px #000, 0 5px 10px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
-    padding: 10px 5px;
+    padding: 12px 6px;
   }
-  .ac-vent.left { left: 40px; }
-  .ac-vent.right { right: 40px; }
-  .vent-slat { width: 100%; height: 6px; background: #222; border-bottom: 1px solid #444; }
+  .vent-slat { width: 100%; height: 8px; background: #222; border-bottom: 2px solid #444; }
 
-  /* Digital Display Cluster */
-  .digital-dash {
-    position: absolute;
-    top: 25px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #000;
-    border: 2px solid #666;
-    border-radius: 6px;
-    padding: 8px 20px;
+  /* New Infotainment Screen */
+  .infotainment {
+    width: 320px;
+    height: 240px;
+    background: #050505;
+    border-radius: 12px;
+    border: 4px solid #333;
     display: flex;
-    gap: 30px;
+    flex-direction: column;
+    box-shadow: inset 0 0 20px rgba(0,0,0,1), 0 15px 30px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .info-top {
+    background: #111;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
     color: #00bfff;
     font-family: monospace;
-    font-size: 16px;
-    letter-spacing: 2px;
-    box-shadow: inset 0 0 15px rgba(0,191,255,0.2), 0 5px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
+    border-bottom: 2px solid #222;
   }
-  .digital-dash span { display: flex; flex-direction: column; align-items: center; }
-  .digital-dash small { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .info-top span { display: flex; flex-direction: column; align-items: center; }
+  .info-top small { font-size: 9px; color: #888; margin-bottom: 2px; }
   .gear { color: #fff; font-weight: bold; }
   .gear.active { color: #00ff66; text-shadow: 0 0 5px #00ff66; }
 
+  .info-screen {
+    flex: 1;
+    background: radial-gradient(circle, #1a1a2e, #0a0a1a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    padding: 20px;
+  }
+  
+  .radio-widget {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .radio-icon {
+    font-size: 32px;
+    background: linear-gradient(135deg, #00bfff, #b026ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .radio-text { font-size: 12px; color: #aaa; line-height: 1.4; }
+  .radio-text b { font-size: 16px; color: #fff; }
+
+  .info-bottom {
+    display: flex;
+    background: #111;
+    border-top: 2px solid #222;
+  }
+  .info-bottom button {
+    flex: 1; background: transparent; border: none; color: #888; padding: 12px;
+    font-size: 12px; font-weight: bold; border-right: 1px solid #222; cursor: pointer;
+  }
+  .info-bottom button:last-child { border-right: none; }
+  .info-bottom button:hover { color: #fff; background: #222; }
+
   /* 
-    4. LARGER, MODERN GAUGES 
+    5. INSTRUMENT CLUSTER (Overlapping Gauges)
   */
+  .instrument-cluster {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .gauge-container {
     position: relative;
-    width: 270px; 
-    height: 270px;
+    width: 250px; 
+    height: 250px;
     background: radial-gradient(circle, #1a1a1a, #050505);
     border-radius: 50%;
     border: 6px solid #2b2e33;
@@ -324,128 +401,37 @@
     justify-content: center;
   }
 
-  .gauge-center { transform: translateY(-50px); }
+  /* Overlapping layout */
+  .gauge-container.gm { transform: translateX(30px); z-index: 1; }
+  .gauge-container.cherry { transform: translateX(-30px); z-index: 1; }
+  .gauge-container.kddi { width: 280px; height: 280px; transform: translateY(-30px); z-index: 2; }
 
-  /* Increased Font Sizes */
-  .gauge-label {
-    position: absolute;
-    top: 40px;
-    font-size: 20px;
-    font-weight: 800;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-  }
+  .gauge-label { position: absolute; top: 40px; font-size: 20px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 4px; }
+  .gauge-container.kddi .gauge-label { top: 50px; }
 
-  .gauge-value {
-    position: absolute;
-    bottom: 55px;
-    font-size: 34px;
-    font-weight: 900;
-    color: #fff;
-    text-shadow: 0 2px 10px rgba(255,255,255,0.2);
-  }
+  .gauge-value { position: absolute; bottom: 60px; font-size: 34px; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(255,255,255,0.2); }
+  .gauge-container.kddi .gauge-value { bottom: 70px; font-size: 38px; }
 
-  .gauge-pct {
-    position: absolute;
-    bottom: 30px;
-    font-size: 14px;
-    font-weight: bold;
-    letter-spacing: 1.5px;
-  }
+  .gauge-pct { position: absolute; bottom: 35px; font-size: 14px; font-weight: bold; letter-spacing: 1.5px; }
+  .gauge-container.kddi .gauge-pct { bottom: 45px; }
 
-  svg.gauge-svg {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform: rotate(135deg);
-  }
+  svg.gauge-svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: rotate(135deg); }
+  .gauge-ticks { fill: none; stroke: #444; stroke-width: 4; stroke-dasharray: 2 12; }
+  .gauge-track { fill: none; stroke: #222; stroke-width: 4; }
+  .gauge-fill { fill: none; stroke-width: 6; stroke-dasharray: 283; stroke-dashoffset: 283; stroke-linecap: round; filter: drop-shadow(0 0 6px currentColor); }
 
-  .gauge-ticks {
-    fill: none;
-    stroke: #444;
-    stroke-width: 4;
-    stroke-dasharray: 2 12;
-  }
-
-  .gauge-track {
-    fill: none;
-    stroke: #222;
-    stroke-width: 4;
-  }
-
-  .gauge-fill {
-    fill: none;
-    stroke-width: 6;
-    stroke-dasharray: 283; 
-    stroke-dashoffset: 283;
-    stroke-linecap: round;
-    filter: drop-shadow(0 0 6px currentColor);
-  }
-
-  .needle-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    transform: rotate(-135deg);
-  }
-
-  .needle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 46%;
-    background: #fff;
-    transform-origin: bottom center;
-    transform: translate(-50%, -100%);
-    box-shadow: 0 0 8px rgba(255,255,255,0.8);
-  }
-
-  .needle::before {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-bottom: 10px solid currentColor;
-  }
-
-  .needle-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 34px;
-    height: 34px;
-    background: radial-gradient(circle, #333, #0a0a0a);
-    border: 2px solid #555;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.6);
-  }
-  
-  .needle-center::after {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 8px; height: 8px;
-    background: currentColor;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 5px currentColor;
-  }
+  .needle-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-135deg); }
+  .needle { position: absolute; top: 50%; left: 50%; width: 2px; height: 46%; background: #fff; transform-origin: bottom center; transform: translate(-50%, -100%); box-shadow: 0 0 8px rgba(255,255,255,0.8); }
+  .needle::before { content: ''; position: absolute; top: -4px; left: -4px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 10px solid currentColor; }
+  .needle-center { position: absolute; top: 50%; left: 50%; width: 34px; height: 34px; background: radial-gradient(circle, #333, #0a0a0a); border: 2px solid #555; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 5px 10px rgba(0,0,0,0.6); }
+  .needle-center::after { content: ''; position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: currentColor; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 5px currentColor; }
 
   /* 
-    5. STEERING WHEEL, WIPER, AND IGNITION
+    6. STEERING WHEEL, WIPER, AND IGNITION
   */
   .steering-column {
     position: absolute;
-    bottom: -40px;
+    bottom: -80px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -454,54 +440,17 @@
     z-index: 10;
   }
 
-  /* The Wiper Blade */
-  .wiper-arm {
-    position: absolute;
-    bottom: -20px;
-    left: 45%;
-    width: 12px;
-    height: 45vh;
-    background: #1a1a1a;
-    transform-origin: bottom center;
-    transform: rotate(-80deg);
-    border-radius: 6px;
-    z-index: 50;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-  }
-
-  .wiper-arm::before {
-    content: '';
-    position: absolute;
-    top: 5%;
-    left: -6px;
-    width: 24px;
-    height: 90%;
-    background: #2a2a2a;
-    border-radius: 4px;
-    border-right: 2px solid #555;
-  }
-
-  .wiper-arm.is-wiping {
-    animation: wipeAction 1.2s ease-in-out;
-  }
-
-  @keyframes wipeAction {
-    0% { transform: rotate(-80deg); }
-    50% { transform: rotate(80deg); }
-    100% { transform: rotate(-80deg); }
-  }
-
   .wiper-stalk {
     position: absolute;
-    left: -220px; 
-    top: 100px; 
+    left: -240px; 
+    top: 90px; 
     width: 120px;
-    height: 28px;
+    height: 32px;
     background: linear-gradient(to bottom, #333, #111);
     border: 2px solid #000;
-    border-radius: 14px 0 0 14px;
+    border-radius: 16px 0 0 16px;
     color: #aaa;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
     text-transform: uppercase;
     text-align: left;
@@ -518,9 +467,6 @@
 
   /* IGNITION BUTTON */
   .ignition-btn {
-    position: absolute;
-    right: -210px;
-    top: 70px;
     width: 80px;
     height: 80px;
     border-radius: 50%;
@@ -536,60 +482,33 @@
     z-index: 9;
   }
 
-  .ignition-btn.off {
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,0,0,0.3);
-    border-color: #aa2222;
-  }
-  
-  .ignition-btn.on {
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,102,0.4);
-    border-color: #00ff66;
-  }
-
+  .ignition-btn.off { box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,0,0,0.3); border-color: #aa2222; }
+  .ignition-btn.on { box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,102,0.4); border-color: #00ff66; }
   .ignition-btn:active { transform: scale(0.92); }
-
-  .ignition-btn span {
-    font-size: 10px;
-    font-weight: bold;
-    color: #fff;
-    text-align: center;
-    line-height: 1.2;
-  }
-  
-  .ignition-btn .status-light {
-    width: 12px; height: 4px;
-    background: #ff3333;
-    border-radius: 2px;
-    margin-top: 6px;
-    box-shadow: 0 0 5px #ff3333;
-    transition: background 0.3s, box-shadow 0.3s;
-  }
-
-  .ignition-btn.on .status-light {
-    background: #00ff66;
-    box-shadow: 0 0 8px #00ff66;
-  }
+  .ignition-btn span { font-size: 10px; font-weight: bold; color: #fff; text-align: center; line-height: 1.2; }
+  .ignition-btn .status-light { width: 12px; height: 4px; background: #ff3333; border-radius: 2px; margin-top: 6px; box-shadow: 0 0 5px #ff3333; transition: background 0.3s, box-shadow 0.3s; }
+  .ignition-btn.on .status-light { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
 
   /* Horn / Wheel */
   .horn-wrapper {
     position: relative;
-    width: 480px;
-    height: 240px;
+    width: 500px;
+    height: 250px;
     background: #111;
-    border-radius: 240px 240px 0 0;
-    border: 20px solid #050505;
+    border-radius: 250px 250px 0 0;
+    border: 24px solid #050505;
     border-bottom: none;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 35px;
+    padding-top: 40px;
     box-shadow: 0 -15px 50px rgba(0,0,0,0.6);
     z-index: 10;
   }
 
   .horn-btn {
-    width: 140px;
-    height: 140px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     background: radial-gradient(circle at 40% 40%, #333, #111);
     border: 2px solid #000;
@@ -610,8 +529,8 @@
 
   .horn-btn span {
     font-weight: 900;
-    font-size: 28px;
-    letter-spacing: 3px;
+    font-size: 24px;
+    letter-spacing: 4px;
     color: #ddd;
     text-shadow: 0 2px 4px #000;
   }
@@ -620,15 +539,18 @@
 </head>
 <body>
 
+  <!-- WINDSHIELD SCENE -->
   <div class="windshield">
     <div class="hud" id="hud-target">TARGET: 500,000</div>
     <div id="honkGraphic">HONK!!!</div>
     
-    <!-- Functional Dirt Layer -->
+    <!-- Functional Dirt Layer (Covers whole screen) -->
     <div id="windshield-dirt">
-      <div class="smudge" style="top: 25%; left: 35%; width: 120px; height: 80px; transform: rotate(15deg);"></div>
-      <div class="smudge" style="top: 45%; left: 65%; width: 150px; height: 60px; transform: rotate(-10deg);"></div>
-      <div class="smudge" style="top: 30%; left: 80%; width: 90px; height: 50px; transform: rotate(45deg);"></div>
+      <div class="smudge" style="top: 15%; left: 20%; width: 220px; height: 140px; transform: rotate(15deg);"></div>
+      <div class="smudge" style="top: 35%; left: 55%; width: 250px; height: 120px; transform: rotate(-10deg);"></div>
+      <div class="smudge" style="top: 10%; left: 75%; width: 190px; height: 150px; transform: rotate(45deg);"></div>
+      <div class="smudge" style="top: 50%; left: 10%; width: 180px; height: 100px; transform: rotate(-25deg);"></div>
+      <div class="smudge" style="top: 40%; left: 80%; width: 200px; height: 110px; transform: rotate(5deg);"></div>
     </div>
 
     <div class="mountains"></div>
@@ -640,7 +562,6 @@
             <div class="road-lines"></div>
           </div>
           
-          <!-- Bigger 3D Objects -->
           <div class="object-3d sign" id="sign-2024">
             <h4>2024</h4>
             <p>25,000</p>
@@ -664,92 +585,106 @@
       </div>
     </div>
 
-    <div class="wiper-arm" id="wiperArm"></div>
+    <!-- DUAL WIPERS -->
+    <div class="wiper-arm left" id="wiperLeft"></div>
+    <div class="wiper-arm right" id="wiperRight"></div>
   </div>
 
   <!-- DASHBOARD UI -->
   <div class="dashboard">
     
-    <!-- AC VENTS -->
-    <div class="ac-vent left">
-      <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
-    </div>
-    <div class="ac-vent right">
-      <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
-    </div>
-
-    <!-- DIGITAL DASH DISPLAY -->
-    <div class="digital-dash">
-      <span><small>TEMP</small>22°C</span>
-      <span><small>GEAR</small><span class="gear" id="gear-indicator">P</span></span>
-      <span><small>DATE</small>AUG 11 2026</span>
-    </div>
-    
-    <!-- GM GAUGE (EV Blue) -->
-    <div class="gauge-container">
-      <div class="gauge-label">GM</div>
-      <svg class="gauge-svg" viewBox="0 0 100 100">
-        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
-        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #00bfff; color: #00bfff;"></circle>
-      </svg>
-      <div class="needle-container" id="needle-gm">
-        <div class="needle" style="color: #00bfff;"></div>
+    <!-- LEFT ZONE -->
+    <div class="dash-zone">
+      <div class="ac-vent">
+        <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
       </div>
-      <div class="needle-center" style="color: #00bfff;"></div>
-      <div class="gauge-value" id="val-gm">0</div>
-      <div class="gauge-pct" style="color: #00bfff;" id="pct-gm">0.00%</div>
     </div>
 
-    <!-- KDDI GAUGE (Neon Green) -->
-    <div class="gauge-container gauge-center">
-      <div class="gauge-label">KDDI</div>
-      <svg class="gauge-svg" viewBox="0 0 100 100">
-        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
-        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #39ff14; color: #39ff14;"></circle>
-      </svg>
-      <div class="needle-container" id="needle-kddi">
-        <div class="needle" style="color: #39ff14;"></div>
-      </div>
-      <div class="needle-center" style="color: #39ff14;"></div>
-      <div class="gauge-value" id="val-kddi">0</div>
-      <div class="gauge-pct" style="color: #39ff14;" id="pct-kddi">0.00%</div>
-    </div>
-
-    <!-- CHERRY GAUGE (Neon Purple) -->
-    <div class="gauge-container">
-      <div class="gauge-label">CHERRY</div>
-      <svg class="gauge-svg" viewBox="0 0 100 100">
-        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
-        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #b026ff; color: #b026ff;"></circle>
-      </svg>
-      <div class="needle-container" id="needle-cherry">
-        <div class="needle" style="color: #b026ff;"></div>
-      </div>
-      <div class="needle-center" style="color: #b026ff;"></div>
-      <div class="gauge-value" id="val-cherry">0</div>
-      <div class="gauge-pct" style="color: #b026ff;" id="pct-cherry">Loading</div>
-    </div>
-
-    <!-- STEERING COLUMN & CONTROLS -->
-    <div class="steering-column">
+    <!-- CENTER ZONE (INSTRUMENT CLUSTER) -->
+    <div class="instrument-cluster">
       
-      <button class="wiper-stalk" onclick="triggerWipe()">
-        Wipe
-      </button>
+      <!-- GM GAUGE (Left, pushed right) -->
+      <div class="gauge-container gm">
+        <div class="gauge-label">GM</div>
+        <svg class="gauge-svg" viewBox="0 0 100 100">
+          <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
+          <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+          <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #00bfff; color: #00bfff;"></circle>
+        </svg>
+        <div class="needle-container" id="needle-gm"><div class="needle" style="color: #00bfff;"></div></div>
+        <div class="needle-center" style="color: #00bfff;"></div>
+        <div class="gauge-value" id="val-gm">0</div>
+        <div class="gauge-pct" style="color: #00bfff;" id="pct-gm">0.00%</div>
+      </div>
 
-      <!-- NEW IGNITION BUTTON -->
+      <!-- KDDI GAUGE (Center, raised and larger) -->
+      <div class="gauge-container kddi">
+        <div class="gauge-label">KDDI</div>
+        <svg class="gauge-svg" viewBox="0 0 100 100">
+          <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
+          <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+          <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #39ff14; color: #39ff14;"></circle>
+        </svg>
+        <div class="needle-container" id="needle-kddi"><div class="needle" style="color: #39ff14;"></div></div>
+        <div class="needle-center" style="color: #39ff14;"></div>
+        <div class="gauge-value" id="val-kddi">0</div>
+        <div class="gauge-pct" style="color: #39ff14;" id="pct-kddi">0.00%</div>
+      </div>
+
+      <!-- CHERRY GAUGE (Right, pushed left) -->
+      <div class="gauge-container cherry">
+        <div class="gauge-label">CHERRY</div>
+        <svg class="gauge-svg" viewBox="0 0 100 100">
+          <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
+          <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+          <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #b026ff; color: #b026ff;"></circle>
+        </svg>
+        <div class="needle-container" id="needle-cherry"><div class="needle" style="color: #b026ff;"></div></div>
+        <div class="needle-center" style="color: #b026ff;"></div>
+        <div class="gauge-value" id="val-cherry">0</div>
+        <div class="gauge-pct" style="color: #b026ff;" id="pct-cherry">Loading</div>
+      </div>
+
+      <!-- STEERING COLUMN -->
+      <div class="steering-column">
+        <button class="wiper-stalk" onclick="triggerWipe()">Wipe</button>
+        <div class="horn-wrapper">
+          <button class="horn-btn" onclick="honkHorn()">
+            <span>HORN</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT ZONE (CENTER CONSOLE) -->
+    <div class="dash-zone">
+      
+      <!-- INFOTAINMENT SCREEN -->
+      <div class="infotainment">
+        <div class="info-top">
+          <span><small>TEMP</small>22°C</span>
+          <span><small>GEAR</small><span class="gear" id="gear-indicator">P</span></span>
+          <span><small>DATE</small>AUG 11 2026</span>
+        </div>
+        <div class="info-screen">
+          <div class="radio-widget">
+            <div class="radio-icon">🎵</div>
+            <div class="radio-text">Now Playing<br><b>On The Road Again</b></div>
+          </div>
+        </div>
+        <div class="info-bottom">
+          <button>NAV</button><button>MEDIA</button><button>CLIMATE</button>
+        </div>
+      </div>
+
       <div class="ignition-btn off" id="ignitionBtn" onclick="toggleIgnition()">
         <span>ENGINE<br>START<br>STOP</span>
         <div class="status-light"></div>
       </div>
 
-      <div class="horn-wrapper">
-        <button class="horn-btn" onclick="honkHorn()">
-          <span>GM</span>
-        </button>
+      <div class="ac-vent">
+        <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
       </div>
 
     </div>
@@ -840,34 +775,29 @@
       await anim.finished; 
     }
 
-    // IGNITION LOGIC
     function toggleIgnition() {
       const btn = document.getElementById('ignitionBtn');
       const gear = document.getElementById('gear-indicator');
       
       if (!engineRunning) {
-        // Start Engine
         engineRunning = true;
         btn.classList.replace('off', 'on');
         gear.innerHTML = 'D';
         gear.classList.add('active');
         startDriveSequence();
       } else {
-        // Stop Engine
         engineRunning = false;
         driveSequenceActive = false;
         btn.classList.replace('on', 'off');
         gear.innerHTML = 'P';
         gear.classList.remove('active');
         
-        // Reset everything instantly
         document.getElementById('master-track').style.transform = `translateY(0)`;
         updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 500);
         const hud = document.getElementById('hud-target');
         hud.className = 'hud';
         hud.innerHTML = 'TARGET: 500,000';
         
-        // Re-dirty the windshield when parked!
         document.getElementById('windshield-dirt').style.opacity = '1';
       }
     }
@@ -928,12 +858,17 @@
     }
 
     function triggerWipe() {
-      const wiper = document.getElementById('wiperArm');
-      wiper.classList.remove('is-wiping');
-      void wiper.offsetWidth;
-      wiper.classList.add('is-wiping');
+      const leftWiper = document.getElementById('wiperLeft');
+      const rightWiper = document.getElementById('wiperRight');
       
-      // Clean the windshield exactly halfway through the 1.2s animation
+      leftWiper.classList.remove('is-wiping');
+      rightWiper.classList.remove('is-wiping');
+      void leftWiper.offsetWidth; // Trigger Reflow
+      
+      leftWiper.classList.add('is-wiping');
+      rightWiper.classList.add('is-wiping');
+      
+      // Clean the windshield exactly halfway through the sweep
       setTimeout(() => {
         document.getElementById('windshield-dirt').style.opacity = '0';
       }, 600);
@@ -952,7 +887,6 @@
       }, 350);
     }
 
-    // Initialize layout but wait for ignition button press
     window.onload = () => {
       updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 0);
     };
