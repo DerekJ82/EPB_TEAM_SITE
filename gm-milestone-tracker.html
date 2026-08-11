@@ -3,145 +3,212 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Base Milestone Race - Dashboard Edition</title>
+<title>Vehicle Base Milestone Race - GM Dashboard Edition</title>
 <style>
-  /* 
-    BRAND TOKENS (Preserved for cohesion)
-  */
-  :root {
-    --purple: #48286D;
-    --purple-d: #38205A;
-    --green: #66CC00;
-    --green-d: #488500;
-    --ink: #2A1A3E;
-    --dash-surface: #151515;
-    --dash-trim: #222;
-  }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
   body {
-    background: #000;
-    color: #fff;
+    background: #eef2f5;
+    color: #333;
     font-family: "Helvetica Neue", Arial, sans-serif;
-    overflow: hidden; /* Lock to a single viewport like a real dashboard */
+    overflow: hidden;
     height: 100vh;
     display: flex;
     flex-direction: column;
   }
 
   /* 
-    1. THE WINDSHIELD (3D Road Animation)
+    1. THE WINDSHIELD (Daytime 3D Road)
   */
   .windshield {
     flex: 1;
     position: relative;
-    perspective: 800px;
-    background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a3a 100%);
+    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 60%, #e0f4ff 100%);
     overflow: hidden;
-    border-bottom: 12px solid var(--ink);
-    box-shadow: inset 0 -20px 50px rgba(0,0,0,0.8);
+    border-bottom: 8px solid #333;
+    perspective: 800px;
+    perspective-origin: 50% 50%;
+    min-height: 50vh; /* Prevents cut-off */
   }
 
-  /* Sky / Horizon Glow */
-  .windshield::after {
+  /* The Sun */
+  .windshield::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 150px;
-    background: linear-gradient(to top, rgba(102, 204, 0, 0.2), transparent);
-    pointer-events: none;
+    top: 10%;
+    right: 15%;
+    width: 100px;
+    height: 100px;
+    background: #fff9d6;
+    border-radius: 50%;
+    box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
+  }
+
+  /* 3D Ground and Road */
+  .world {
+    position: absolute;
+    top: 50%; /* Horizon line */
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: #7bb558; /* Green grass */
+    transform: rotateX(80deg);
+    transform-origin: top center;
+    transform-style: preserve-3d;
   }
 
   .road {
     position: absolute;
-    bottom: -100px;
-    left: -50%;
-    width: 200%;
-    height: 300px;
-    background-color: #111;
-    transform: rotateX(75deg);
-    transform-origin: bottom center;
-    border-left: 5px solid var(--purple);
-    border-right: 5px solid var(--purple);
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 200%;
+    background: #555;
+    border-left: 10px solid #fff;
+    border-right: 10px solid #fff;
   }
 
-  /* Animated Road Lines */
-  .road::before {
+  /* Moving dashed lines */
+  .road::after {
     content: '';
     position: absolute;
     top: 0;
     left: 50%;
-    width: 8px;
-    height: 200%;
     transform: translateX(-50%);
+    width: 10px;
+    height: 100%;
     background: repeating-linear-gradient(
       to bottom,
-      var(--purple) 0,
-      var(--purple) 40px,
-      transparent 40px,
-      transparent 80px
+      #fbcc04 0,
+      #fbcc04 80px,
+      transparent 80px,
+      transparent 160px
     );
-    animation: drive 0.8s linear infinite;
+    animation: drive 0.6s linear infinite;
   }
 
   @keyframes drive {
-    from { transform: translateX(-50%) translateY(0); }
-    to { transform: translateX(-50%) translateY(80px); }
+    from { background-position: 0 0; }
+    to { background-position: 0 160px; }
   }
 
-  /* Floating Mission Text */
-  .hud-text {
+  /* The Party on the Horizon */
+  .party-destination {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    color: var(--green);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 12px;
-    text-shadow: 0 0 10px var(--green);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    text-align: center;
+    animation: pulseParty 2s infinite alternate;
+    z-index: 10;
+  }
+  
+  .party-destination .emojis {
+    font-size: 32px;
+    letter-spacing: -5px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
+  
+  .party-destination .banner {
+    background: #cc0000;
+    color: white;
+    padding: 4px 8px;
+    font-size: 10px;
     font-weight: bold;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    border: 1px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  }
+
+  @keyframes pulseParty {
+    0% { transform: translate(-50%, -100%) scale(1); }
+    100% { transform: translate(-50%, -100%) scale(1.1); }
+  }
+
+  /* Passing Roadsigns */
+  .sign {
+    position: absolute;
+    top: 0;
+    /* Counter-rotate to stand up straight in the 3D world */
+    transform: rotateX(-80deg) translate(-50%, -100%);
+    transform-origin: bottom center;
+    background: #007733;
+    color: white;
+    border: 3px solid #fff;
+    border-radius: 6px;
+    padding: 10px 15px;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  
+  .sign::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 40px;
+    background: #999;
+  }
+
+  .sign h4 { font-size: 24px; margin-bottom: 5px; }
+  .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
+
+  /* Animation delays for sequentially passing signs */
+  .sign-1 { animation: flybyRight 6s linear infinite; animation-delay: 0s; }
+  .sign-2 { animation: flybyLeft 6s linear infinite; animation-delay: 2s; }
+  .sign-3 { animation: flybyRight 6s linear infinite; animation-delay: 4s; }
+
+  @keyframes flybyRight {
+    0% { left: 52%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); }
+    5% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
+  }
+
+  @keyframes flybyLeft {
+    0% { left: 48%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); }
+    5% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
   }
 
   /* 
-    2. THE DASHBOARD CONSOLE
+    2. THE DASHBOARD CONSOLE (Modern GM Style)
   */
   .dashboard {
     height: 45vh;
-    background: linear-gradient(to bottom, var(--dash-trim) 0%, var(--dash-surface) 100%);
+    min-height: 350px;
+    background: linear-gradient(to bottom, #e4e7eb 0%, #cfd4db 100%);
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 4vw;
+    gap: 5vw;
     padding: 20px;
-    border-top: 2px solid #444;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.9);
-  }
-
-  /* Dashboard Texture */
-  .dashboard::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMTUxNTE1Ij48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxMTEiPjwvcmVjdD4KPC9zdmc+') repeat;
-    opacity: 0.5;
-    pointer-events: none;
+    /* Brushed aluminum trim */
+    border-top: 12px solid #b8c0c8;
+    box-shadow: inset 0 8px 15px rgba(255,255,255,0.7), 0 -10px 30px rgba(0,0,0,0.2);
   }
 
   /* 
-    3. THE GAUGES 
+    3. THE GAUGES (Bright, white faces with EV-blue accents)
   */
   .gauge-container {
     position: relative;
     width: 220px;
     height: 220px;
-    background: #0a0a0a;
+    background: #ffffff;
     border-radius: 50%;
-    border: 8px solid var(--ink);
-    box-shadow: inset 0 0 20px rgba(0,0,0,1), 0 5px 15px rgba(0,0,0,0.5);
+    /* Chrome-like bezel */
+    border: 10px solid #dcdcdc;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.15);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -149,43 +216,30 @@
     z-index: 2;
   }
 
-  /* Highlight on the glass */
-  .gauge-container::after {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 10%;
-    width: 80%;
-    height: 40%;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
-    border-radius: 50% 50% 0 0;
-    pointer-events: none;
-  }
-
   .gauge-label {
     position: absolute;
     top: 35px;
     font-size: 14px;
     font-weight: bold;
-    color: var(--grey);
+    color: #666;
     text-transform: uppercase;
     letter-spacing: 2px;
   }
 
   .gauge-value {
     position: absolute;
-    bottom: 45px;
-    font-size: 20px;
+    bottom: 50px;
+    font-size: 22px;
     font-weight: 900;
-    color: #fff;
-    text-shadow: 0 0 8px rgba(255,255,255,0.4);
+    color: #222;
   }
 
   .gauge-pct {
     position: absolute;
-    bottom: 25px;
-    font-size: 10px;
-    color: var(--green);
+    bottom: 30px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #0077cc;
     letter-spacing: 1px;
   }
 
@@ -195,20 +249,19 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform: rotate(135deg); /* Start point of the arc */
+    transform: rotate(135deg);
   }
 
   .gauge-track {
     fill: none;
-    stroke: #222;
+    stroke: #e0e0e0;
     stroke-width: 8;
   }
 
   .gauge-fill {
     fill: none;
-    stroke: var(--green);
     stroke-width: 8;
-    stroke-dasharray: 283; /* 2 * pi * r (r=45) */
+    stroke-dasharray: 283;
     stroke-dashoffset: 283;
     transition: stroke-dashoffset 2s cubic-bezier(.2, 0, 0, 1);
     stroke-linecap: round;
@@ -220,85 +273,96 @@
     left: 0;
     width: 100%;
     height: 100%;
-    transform: rotate(-135deg); /* Zero position */
+    transform: rotate(-135deg);
     transition: transform 2s cubic-bezier(.2, 0, 0, 1);
   }
 
+  /* Bright red sports needle */
   .needle {
     position: absolute;
     top: 50%;
     left: 50%;
     width: 4px;
-    height: 45%;
-    background: #ff3333;
+    height: 48%;
+    background: #e62020;
     transform-origin: bottom center;
     transform: translate(-50%, -100%);
     border-radius: 4px 4px 0 0;
-    box-shadow: 0 0 5px rgba(255, 51, 51, 0.6);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
 
+  /* Chrome center cap */
   .needle-center {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 24px;
-    height: 24px;
-    background: #111;
-    border: 3px solid #333;
+    width: 28px;
+    height: 28px;
+    background: radial-gradient(circle, #fff, #bbb);
+    border: 2px solid #888;
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
   }
 
   /* 
-    4. THE STEERING WHEEL HORN
+    4. STEERING WHEEL HORN (Leather and Aluminum style)
   */
   .horn-wrapper {
     position: absolute;
-    bottom: -60px;
+    bottom: -80px;
     left: 50%;
     transform: translateX(-50%);
-    width: 400px;
-    height: 200px;
-    background: #111;
-    border-radius: 200px 200px 0 0;
-    border: 15px solid #050505;
+    width: 450px;
+    height: 220px;
+    /* Dark charcoal leather rim */
+    background: #2a2c2e;
+    border-radius: 225px 225px 0 0;
+    border: 18px solid #1a1a1c;
     border-bottom: none;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     padding-top: 30px;
     z-index: 10;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.3);
   }
 
+  /* The center horn pad */
   .horn-btn {
-    width: 100px;
-    height: 100px;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, var(--purple-d), #1a0f2e);
-    border: 4px solid var(--purple);
-    color: #fff;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    background: radial-gradient(circle at 40% 40%, #ffffff, #dcdcdc);
+    border: 3px solid #a0a0a0;
+    color: #333;
     cursor: pointer;
-    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5);
+    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.3);
     transition: all 0.1s ease;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
   }
 
   .horn-btn:active {
-    transform: scale(0.92) translateY(5px);
-    box-shadow: inset 0 5px 15px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5);
+    transform: scale(0.95) translateY(4px);
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.2);
   }
 
-  .horn-btn svg {
-    width: 40px;
-    height: 40px;
-    fill: var(--green);
+  .horn-btn span {
+    font-weight: 900;
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: #48286D;
+  }
+  
+  .horn-btn .subtext {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 1px;
+    margin-top: 4px;
   }
 
 </style>
@@ -307,11 +371,28 @@
 
   <!-- WINDSHIELD SCENE -->
   <div class="windshield">
-    <div class="hud-text">
-      TARGET: 500,000 UNITS<br>
-      STATUS: IN TRANSIT
+    
+    <div class="party-destination">
+      <div class="emojis">🎪🎉🎈</div>
+      <div class="banner">500K Goal</div>
     </div>
-    <div class="road"></div>
+
+    <div class="world">
+      <div class="road"></div>
+      <!-- Passing Roadsigns -->
+      <div class="sign sign-1">
+        <h4>2024</h4>
+        <p>25,000</p>
+      </div>
+      <div class="sign sign-2">
+        <h4>2025</h4>
+        <p>198,000</p>
+      </div>
+      <div class="sign sign-3">
+        <h4>AUG 2026</h4>
+        <p>437,958</p>
+      </div>
+    </div>
   </div>
 
   <!-- DASHBOARD UI -->
@@ -322,8 +403,8 @@
       <div class="gauge-label">GM</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <!-- 212 is approx 75% of the circle (283 circumference) to leave a gap at bottom -->
-        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45"></circle>
+        <!-- EV blue accent for GM -->
+        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #0077cc;"></circle>
       </svg>
       <div class="needle-container" id="needle-gm">
         <div class="needle"></div>
@@ -338,14 +419,15 @@
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #2288ee;"></circle>
+        <!-- Green accent for KDDI -->
+        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #66CC00;"></circle>
       </svg>
       <div class="needle-container" id="needle-kddi">
         <div class="needle"></div>
       </div>
       <div class="needle-center"></div>
       <div class="gauge-value" id="val-kddi">0</div>
-      <div class="gauge-pct" style="color: #2288ee;">8.07%</div>
+      <div class="gauge-pct" style="color: #66CC00;">8.07%</div>
     </div>
 
     <!-- CHERRY GAUGE -->
@@ -353,23 +435,22 @@
       <div class="gauge-label">CHERRY</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #ee2222;"></circle>
+        <!-- Purple accent for Cherry -->
+        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #48286D;"></circle>
       </svg>
       <div class="needle-container" id="needle-cherry">
         <div class="needle"></div>
       </div>
       <div class="needle-center"></div>
       <div class="gauge-value" id="val-cherry">0</div>
-      <div class="gauge-pct" style="color: #ee2222;">0.00%</div>
+      <div class="gauge-pct" style="color: #48286D;">Loading</div>
     </div>
 
     <!-- STEERING WHEEL HORN -->
     <div class="horn-wrapper">
       <button class="horn-btn" onclick="honkHorn()">
-        <!-- SVG Horn Icon -->
-        <svg viewBox="0 0 24 24">
-          <path d="M12.89,3L14.85,3.4L11.11,21L9.15,20.6L12.89,3M19.59,12L16,8.41V5.58L22.42,12L16,18.41V15.58L19.59,12M1.58,12L8,5.58V8.41L4.41,12L8,15.58V18.41L1.58,12Z" />
-        </svg>
+        <span>GM</span>
+        <div class="subtext">Honk</div>
       </button>
     </div>
 
@@ -377,18 +458,14 @@
 
   <script>
     // --- GAUGE ANIMATION LOGIC ---
-    // Circumference of our gauge (r=45) is ~282.7. 
-    // We only use 75% of the circle for the gauge arc, which is ~212.
     const MAX_DASH = 212; 
     const DASH_OFFSET_START = 283; 
-    
-    // Degrees rotation for needle (Starts at -135deg, sweeps 270deg max)
     const MAX_DEG = 270;
 
     const data = [
       { id: 'gm', targetVal: 437958, pct: 87.59 },
       { id: 'kddi', targetVal: 40339, pct: 8.07 },
-      { id: 'cherry', targetVal: 0, pct: 0.1 } // Give cherry a tiny bump so it's not dead zero visually
+      { id: 'cherry', targetVal: 0, pct: 0.1 } 
     ];
 
     function animateValue(obj, start, end, duration) {
@@ -408,24 +485,19 @@
     window.onload = () => {
       setTimeout(() => {
         data.forEach(item => {
-          // 1. Animate SVGs
           const fill = document.getElementById(`fill-${item.id}`);
           const needle = document.getElementById(`needle-${item.id}`);
           const valEl = document.getElementById(`val-${item.id}`);
 
-          // Calculate offset based on percentage
-          // To fill it, we reduce the offset. 
           const fillAmount = (item.pct / 100) * MAX_DASH; 
           fill.style.strokeDashoffset = DASH_OFFSET_START - fillAmount;
 
-          // Calculate needle rotation
           const rotDegree = -135 + ((item.pct / 100) * MAX_DEG);
           needle.style.transform = `rotate(${rotDegree}deg)`;
 
-          // 2. Animate Numbers
           animateValue(valEl, 0, item.targetVal, 2000);
         });
-      }, 300); // slight delay for effect
+      }, 400); 
     };
 
     // --- WEB AUDIO API HORN LOGIC ---
@@ -433,35 +505,38 @@
     let audioCtx;
 
     function honkHorn() {
-      // Initialize context on first click to bypass browser autoplay policies
       if (!audioCtx) {
         audioCtx = new AudioContext();
       }
 
-      // Create oscillator (the sound source)
-      const osc = audioCtx.createOscillator();
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
 
-      // Configure sound type to sound vaguely like a digital car horn
-      osc.type = 'sawtooth'; 
-      osc.frequency.setValueAtTime(350, audioCtx.currentTime); // 350Hz 
+      // Two slightly detuned oscillators create a realistic, dissonant car horn sound
+      osc1.type = 'sawtooth'; 
+      osc1.frequency.setValueAtTime(350, audioCtx.currentTime); 
       
-      // Envelope to make it punchy
+      osc2.type = 'square'; 
+      osc2.frequency.setValueAtTime(400, audioCtx.currentTime); 
+      
       gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
 
-      osc.connect(gainNode);
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
       gainNode.connect(audioCtx.destination);
 
-      // Play sound
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.3);
+      osc1.start();
+      osc2.start();
+      osc1.stop(audioCtx.currentTime + 0.4);
+      osc2.stop(audioCtx.currentTime + 0.4);
 
-      // Add a visual flash to the windshield
+      // Flash the windshield slightly to register the honk visually
       const windshield = document.querySelector('.windshield');
-      windshield.style.background = 'linear-gradient(to bottom, #2a0a0a 0%, #3a1a1a 100%)';
+      windshield.style.filter = 'brightness(1.2)';
       setTimeout(() => {
-        windshield.style.background = 'linear-gradient(to bottom, #0a0a1a 0%, #1a1a3a 100%)';
+        windshield.style.filter = 'none';
       }, 150);
     }
   </script>
