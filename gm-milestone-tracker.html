@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Base Milestone Race - GM Dashboard</title>
+<title>Vehicle Base Race - 1 Million Edition</title>
+<!-- Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -26,94 +29,121 @@
     background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 60%, #e0f4ff 100%);
     overflow: hidden;
     border-bottom: 8px solid #333;
-    perspective: 800px;
-    perspective-origin: 50% 50%;
-    min-height: 50vh; 
   }
 
-  .windshield::before {
-    content: '';
+  .hud {
     position: absolute;
-    top: 10%;
-    right: 15%;
-    width: 100px;
-    height: 100px;
-    background: #fff9d6;
-    border-radius: 50%;
-    box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
+    top: 20px;
+    left: 20px;
+    z-index: 20;
+    color: #cc0000;
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+    transition: color 0.5s;
   }
 
-  .world {
+  .hud.upgraded {
+    color: #007733;
+    animation: hudPulse 1s infinite alternate;
+  }
+
+  @keyframes hudPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+  }
+
+  /* 
+    2. THE 3D WORLD MAP (The Fix)
+    Everything is attached to the "track" which we slide forward.
+  */
+  .world-camera {
     position: absolute;
-    top: 50%; 
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    perspective: 600px;
+  }
+
+  .world-floor {
+    position: absolute;
+    bottom: -100px;
     left: -50%;
     width: 200%;
-    height: 100%;
+    height: 150vh;
     background: #7bb558; 
     transform: rotateX(80deg);
-    transform-origin: top center;
+    transform-origin: bottom center;
     transform-style: preserve-3d;
+  }
+
+  /* The actual physical track that holds the road and signs */
+  .track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 12000px; /* A massively long road */
+    transform: translateY(0); /* We animate this with JS to drive forward */
+    will-change: transform;
   }
 
   .road {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 300px;
-    height: 200%;
-    background: #555;
+    height: 100%;
+    background: #444;
     border-left: 10px solid #fff;
     border-right: 10px solid #fff;
   }
 
-  /* 
-    Road Lines - Now hardware accelerated via transform 
-    to guarantee buttery smooth braking and stopping.
-  */
-  .road-lines-container {
-    position: absolute;
-    top: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 10px; height: 100%;
-    overflow: hidden;
-  }
-
   .road-lines {
     position: absolute;
-    bottom: 0; left: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 10px;
-    height: 12000px; /* Extremely long to allow scrolling down */
-    background: repeating-linear-gradient(to top, #fbcc04 0, #fbcc04 80px, transparent 80px, transparent 160px);
-    transform: translateY(0);
-    /* The transition creates the smooth accelerate and brake effect */
-    transition: transform 3s ease-in-out;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to top, /* Going away from camera */
+      #fbcc04 0,
+      #fbcc04 100px,
+      transparent 100px,
+      transparent 200px
+    );
   }
 
-  /* 
-    ROAD SIGNS - Controlled exclusively by CSS state classes
-  */
-  .sign {
+  /* 3D Objects attached to the track */
+  .object-3d {
     position: absolute;
-    top: 0;
+    left: 50%;
+    /* Stand the objects up perpendicular to the 80deg floor */
+    transform: translateX(-50%) rotateX(-80deg); 
+    transform-origin: bottom center;
+    text-align: center;
+  }
+
+  .sign {
     background: #007733;
     color: white;
     border: 3px solid #fff;
     border-radius: 6px;
     padding: 10px 15px;
-    text-align: center;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-    opacity: 0;
-    transition: all 3s ease-in-out;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
   }
-  
+
   .sign::after {
     content: '';
     position: absolute;
     bottom: -40px;
     left: 50%;
     transform: translateX(-50%);
-    width: 6px;
+    width: 8px;
     height: 40px;
     background: #999;
   }
@@ -121,74 +151,32 @@
   .sign h4 { font-size: 24px; margin-bottom: 5px; }
   .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
 
-  /* Left Side Path */
-  .sign.left-side {
-    left: 49%; transform: rotateX(-80deg) translate(-50%, -100%) scale(0.1);
-  }
-  .sign.left-side.parked {
-    left: 20%; top: 350px; transform: rotateX(-80deg) translate(0, 0) scale(1.5); opacity: 1;
-  }
-  .sign.left-side.passed {
-    transition: all 1.5s ease-in; /* Faster flyby */
-    left: -10%; top: 800px; transform: rotateX(-80deg) translate(-200px, 0) scale(3); opacity: 0;
-  }
-
-  /* Right Side Path */
-  .sign.right-side {
-    left: 51%; transform: rotateX(-80deg) translate(-50%, -100%) scale(0.1);
-  }
-  .sign.right-side.parked {
-    left: 80%; top: 350px; transform: rotateX(-80deg) translate(0, 0) scale(1.5); opacity: 1;
-  }
-  .sign.right-side.passed {
-    transition: all 1.5s ease-in;
-    left: 110%; top: 800px; transform: rotateX(-80deg) translate(200px, 0) scale(3); opacity: 0;
-  }
-
-  /* The Party on the Horizon */
-  .party-destination {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    text-align: center;
-    z-index: 10;
-    transform: translate(-50%, -80%) scale(0.1);
-    opacity: 0;
-    transition: all 3s ease-in-out;
-  }
-
-  .party-destination.parked {
-    transform: translate(-50%, -100%) scale(1.6);
-    opacity: 1;
-  }
-
-  .party-destination .emojis {
-    font-size: 32px;
-    letter-spacing: -5px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-    animation: bounceParty 1s infinite alternate;
+  /* Specific Map Locations */
+  #sign-2024 { bottom: 1500px; margin-left: -200px; }
+  #sign-2025 { bottom: 4000px; margin-left: 200px; }
+  
+  /* The 500k Party Zone */
+  #party-500k {
+    bottom: 6500px;
+    font-size: 50px;
+    width: 400px;
+    text-shadow: 0 5px 15px rgba(0,0,0,0.5);
   }
   
-  .party-destination .banner {
+  .party-banner {
     background: #cc0000;
-    color: white;
-    padding: 4px 8px;
-    font-size: 10px;
-    font-weight: bold;
-    border-radius: 4px;
-    text-transform: uppercase;
-    margin-top: 4px;
-    border: 1px solid #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 900;
+    padding: 10px;
+    border: 3px solid #fff;
+    border-radius: 8px;
   }
 
-  @keyframes bounceParty {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-10px); }
-  }
+  #sign-1m { bottom: 10000px; margin-left: 0; background: #222; }
 
   /* 
-    2. THE WINDSHIELD WIPER 
+    3. THE WINDSHIELD WIPER 
   */
   .wiper-arm {
     position: absolute;
@@ -217,7 +205,7 @@
   }
 
   .wiper-arm.is-wiping {
-    animation: wipeAction 1.5s ease-in-out;
+    animation: wipeAction 1.2s ease-in-out;
   }
 
   @keyframes wipeAction {
@@ -227,7 +215,7 @@
   }
 
   /* 
-    3. THE DASHBOARD CONSOLE 
+    4. THE DASHBOARD CONSOLE 
   */
   .dashboard {
     height: 45vh;
@@ -245,7 +233,7 @@
   }
 
   /* 
-    4. THE GAUGES 
+    5. THE GAUGES 
   */
   .gauge-container {
     position: relative;
@@ -261,10 +249,7 @@
     justify-content: center;
   }
 
-  /* Offset center gauge */
-  .gauge-center {
-    transform: translateY(-45px);
-  }
+  .gauge-center { transform: translateY(-45px); }
 
   .gauge-label {
     position: absolute;
@@ -347,11 +332,10 @@
     border: 2px solid #888;
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
   }
 
   /* 
-    5. STEERING WHEEL & CONTROLS
+    6. STEERING WHEEL & CONTROLS
   */
   .steering-column {
     position: absolute;
@@ -386,9 +370,7 @@
     z-index: 9;
   }
 
-  .wiper-stalk:active {
-    transform: rotate(-5deg);
-  }
+  .wiper-stalk:active { transform: rotate(-5deg); }
 
   .horn-wrapper {
     position: relative;
@@ -451,30 +433,41 @@
   <!-- WINDSHIELD SCENE -->
   <div class="windshield">
     
-    <div class="party-destination" id="partyDest">
-      <div class="emojis">🎪🎉🎈</div>
-      <div class="banner">500K Goal</div>
-    </div>
+    <div class="hud" id="hud-target">TARGET: 500,000</div>
 
-    <div class="world">
-      <div class="road">
-        <div class="road-lines-container">
-          <div class="road-lines" id="roadLines"></div>
+    <div class="world-camera">
+      <div class="world-floor">
+        
+        <!-- THE PHYSICAL TRACK (Everything is mounted here and moves as one) -->
+        <div class="track" id="master-track">
+          
+          <div class="road">
+            <div class="road-lines"></div>
+          </div>
+          
+          <!-- Physical locations on the map -->
+          <div class="object-3d sign" id="sign-2024">
+            <h4>2024</h4>
+            <p>25,000</p>
+          </div>
+          
+          <div class="object-3d sign" id="sign-2025">
+            <h4>2025</h4>
+            <p>198,000</p>
+          </div>
+          
+          <div class="object-3d" id="party-500k">
+            <div>🎊🎉🎈🚗💨</div>
+            <div class="party-banner">500K CRUSHED - JULY 2026</div>
+          </div>
+
+          <div class="object-3d sign" id="sign-1m">
+            <h4>TARGET</h4>
+            <p style="color: #00ff66;">1,000,000</p>
+          </div>
+
         </div>
-      </div>
-      
-      <!-- Passing Roadsigns -->
-      <div class="sign left-side" id="sign1">
-        <h4>2024</h4>
-        <p>25,000</p>
-      </div>
-      <div class="sign right-side" id="sign2">
-        <h4>2025</h4>
-        <p>198,000</p>
-      </div>
-      <div class="sign left-side" id="sign3">
-        <h4>AUG 2026</h4>
-        <p>437,958</p>
+
       </div>
     </div>
 
@@ -549,21 +542,24 @@
   </div>
 
   <script>
+    // --- GAUGE LOGIC ---
+    // The new target is 1,000,000. So 523,028 is ~52.3% of the dial.
+    const TARGET_1M = 1000000;
     const MAX_DASH = 212; 
     const DASH_OFFSET_START = 283; 
     const MAX_DEG = 270;
 
     let reqFrames = {};
     let currentVals = { gm: 0, kddi: 0, cherry: 0 };
-    let driveGeneration = 0; // Ensures old drive sequences stop if you hit reset
+    let driveSequenceActive = false;
+    let trackY = 0; // Current position of the track
 
-    // Utility sleep function to orchestrate the timeline
+    // Utility: Wait for X milliseconds
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-    // Animate text numbers smoothly over a specific duration
+    // Animate text numbers smoothly
     function animateValue(id, start, end, duration) {
       if (reqFrames[id]) cancelAnimationFrame(reqFrames[id]);
-      
       const obj = document.getElementById(`val-${id}`);
       let startTimestamp = null;
       
@@ -582,10 +578,11 @@
       reqFrames[id] = window.requestAnimationFrame(step);
     }
 
-    // Set gauges and animate to target
+    // Update Gauges to the new values
     function updateGauges(targets, durationMs) {
       Object.keys(targets).forEach(id => {
-        const item = targets[id];
+        const val = targets[id];
+        const pct = (val / TARGET_1M) * 100; // New 1 Million scale!
         
         const fill = document.getElementById(`fill-${id}`);
         const needle = document.getElementById(`needle-${id}`);
@@ -594,121 +591,130 @@
         fill.style.transition = `stroke-dashoffset ${durationMs}ms ease-in-out`;
         needle.style.transition = `transform ${durationMs}ms ease-in-out`;
         
-        const fillAmount = (item.pct / 100) * MAX_DASH; 
+        // Prevent going backwards to zero if Cherry stays at 0
+        const displayPct = Math.max(pct, 0.1); 
+
+        const fillAmount = (displayPct / 100) * MAX_DASH; 
         fill.style.strokeDashoffset = DASH_OFFSET_START - fillAmount;
 
-        const rotDegree = -135 + ((item.pct / 100) * MAX_DEG);
+        const rotDegree = -135 + ((displayPct / 100) * MAX_DEG);
         needle.style.transform = `rotate(${rotDegree}deg)`;
 
         if (id !== 'cherry') {
-            pctEl.innerHTML = item.pct.toFixed(2) + "%";
+            pctEl.innerHTML = pct.toFixed(2) + "% of 1M";
         }
 
         if (durationMs > 0) {
-            animateValue(id, currentVals[id], item.val, durationMs);
+            animateValue(id, currentVals[id], val, durationMs);
         } else {
-            document.getElementById(`val-${id}`).innerHTML = item.val.toLocaleString();
+            document.getElementById(`val-${id}`).innerHTML = val.toLocaleString();
         }
-        currentVals[id] = item.val;
+        currentVals[id] = val;
       });
     }
 
-    // The Master Timeline Sequence
+    // --- THE MASTER 3D DRIVE ENGINE ---
+    // Uses the Web Animations API to perfectly lock JavaScript execution 
+    // to the end of the physical CSS movement. Guaranteed sync.
+    async function driveTo(distanceY, duration) {
+      if (!driveSequenceActive) return;
+      const track = document.getElementById('master-track');
+      
+      const anim = track.animate([
+        { transform: `translateY(${trackY}px)` },
+        { transform: `translateY(${distanceY}px)` }
+      ], { 
+        duration: duration, 
+        easing: 'ease-in-out', 
+        fill: 'forwards' 
+      });
+
+      trackY = distanceY;
+      
+      // Wait for the animation to physically finish moving the world
+      await anim.finished; 
+    }
+
+    // The sequential journey
     async function startDriveSequence() {
-      driveGeneration++;
-      const currentGen = driveGeneration;
+      driveSequenceActive = false; // Kill previous run
+      await sleep(50);
+      driveSequenceActive = true;
+      trackY = 0;
 
-      // DOM Elements
-      const roadLines = document.getElementById('roadLines');
-      const s1 = document.getElementById('sign1');
-      const s2 = document.getElementById('sign2');
-      const s3 = document.getElementById('sign3');
-      const party = document.getElementById('partyDest');
+      // Reset HUD
+      const hud = document.getElementById('hud-target');
+      hud.className = 'hud';
+      hud.innerHTML = 'TARGET: 500,000';
 
-      // 1. Instant Reset (no transitions)
-      roadLines.style.transition = 'none';
-      roadLines.style.transform = 'translateY(0)';
-      
-      s1.className = 'sign left-side';
-      s2.className = 'sign right-side';
-      s3.className = 'sign left-side';
-      party.className = 'party-destination';
-      
+      // Reset World and Gauges instantly
+      document.getElementById('master-track').style.transform = `translateY(0)`;
+      updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 0);
       currentVals = { gm: 0, kddi: 0, cherry: 0 };
-      updateGauges({ gm: { val: 0, pct: 0 }, kddi: { val: 0, pct: 0 }, cherry: { val: 0, pct: 0.1 } }, 0);
       
-      // Force DOM Reflow to ensure resets are applied instantly
-      void roadLines.offsetWidth; 
+      await sleep(1000);
+      if (!driveSequenceActive) return;
 
-      await sleep(500);
-      if (currentGen !== driveGeneration) return;
-
-      // Enable transitions for driving
-      roadLines.style.transition = 'transform 3s ease-in-out';
-
-      // LEG 1: Drive to 2024
-      roadLines.style.transform = 'translateY(1500px)';
-      s1.classList.add('parked');
+      // LEG 1: Drive to 2024 
+      // Moves track 1200px down so the 2024 sign (at bottom 1500) slides up to the camera
+      await driveTo(1200, 3000); 
+      if (!driveSequenceActive) return;
       
-      // Wait for car to arrive and physically stop
-      await sleep(3000); 
-      if (currentGen !== driveGeneration) return;
-
-      // PAUSE: Update Gauges
-      updateGauges({ gm: { val: 25000, pct: 5 }, kddi: { val: 0, pct: 0 }, cherry: { val: 0, pct: 0.1 } }, 2000);
-      await sleep(2500); 
-      if (currentGen !== driveGeneration) return;
-
+      updateGauges({ gm: 25000, kddi: 0, cherry: 0 }, 2000);
+      await sleep(2500); // Pause to read gauges
 
       // LEG 2: Drive to 2025
-      roadLines.style.transform = 'translateY(3000px)';
-      s1.classList.replace('parked', 'passed'); // Sign 1 flies past
-      s2.classList.add('parked'); // Sign 2 arrives
-      
-      await sleep(3000);
-      if (currentGen !== driveGeneration) return;
+      await driveTo(3700, 3500); 
+      if (!driveSequenceActive) return;
 
-      // PAUSE: Update Gauges
-      updateGauges({ gm: { val: 198000, pct: 39.6 }, kddi: { val: 12000, pct: 2.4 }, cherry: { val: 0, pct: 0.1 } }, 2000);
+      updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
-      if (currentGen !== driveGeneration) return;
 
+      // LEG 3: Drive to the 500k Party (July 2026 update)
+      await driveTo(6200, 3500); 
+      if (!driveSequenceActive) return;
 
-      // LEG 3: Drive to Aug 2026
-      roadLines.style.transform = 'translateY(4500px)';
-      s2.classList.replace('parked', 'passed');
-      s3.classList.add('parked');
+      // BOOM! We hit 564,083!
+      updateGauges({ gm: 523028, kddi: 41055, cherry: 0 }, 2000);
       
-      await sleep(3000);
-      if (currentGen !== driveGeneration) return;
+      // Pop massive confetti
+      fireConfetti();
+      await sleep(800);
+      fireConfetti();
+      
+      // Update HUD to 1 Million Target!
+      hud.classList.add('upgraded');
+      hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
+      
+      await sleep(3500); // Linger at the party a bit longer
 
-      // PAUSE: Update Gauges
-      updateGauges({ gm: { val: 437958, pct: 87.59 }, kddi: { val: 40339, pct: 8.07 }, cherry: { val: 0, pct: 0.1 } }, 2000);
-      await sleep(2500);
-      if (currentGen !== driveGeneration) return;
+      // LEG 4: Set sights on 1 Million and drive into horizon
+      await driveTo(9700, 4000); 
+    }
 
-
-      // LEG 4: Drive to 500K Party
-      roadLines.style.transform = 'translateY(6000px)';
-      s3.classList.replace('parked', 'passed');
-      party.classList.add('parked');
+    function fireConfetti() {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.4 },
+        colors: ['#4ba3e3', '#007733', '#fbcc04', '#cc0000', '#ffffff']
+      });
     }
 
     function triggerWipeAndReset() {
       const wiper = document.getElementById('wiperArm');
-      
       wiper.classList.remove('is-wiping');
       void wiper.offsetWidth;
       wiper.classList.add('is-wiping');
 
       // Start the sequence exactly when the wiper blade crosses the screen
-      setTimeout(startDriveSequence, 750);
+      setTimeout(startDriveSequence, 600);
     }
 
     function honkHorn() {
       const audio = document.getElementById('carHornAudio');
       audio.currentTime = 0; 
-      audio.play().catch(e => console.log("Audio play blocked by browser policy until user interacts"));
+      audio.play().catch(e => console.log("Horn requires user interaction first."));
     }
 
     // Auto-start on load
