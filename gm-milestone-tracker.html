@@ -25,10 +25,9 @@
   .windshield {
     flex: 1;
     position: relative;
-    /* Hard stop at 50% for a perfect horizon line */
     background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 50%, #7bb558 50%, #7bb558 100%);
     overflow: hidden;
-    border-bottom: 8px solid #333;
+    border-bottom: 12px solid #111;
   }
 
   .hud {
@@ -38,14 +37,15 @@
     z-index: 20;
     color: #cc0000;
     font-weight: 900;
-    font-size: 14px;
-    letter-spacing: 2px;
+    font-size: 16px;
+    letter-spacing: 3px;
     text-shadow: 0 2px 4px rgba(255,255,255,0.8);
     transition: color 0.5s;
   }
 
   .hud.upgraded {
-    color: #007733;
+    color: #00ff66;
+    text-shadow: 0 0 10px rgba(0,255,102,0.8);
     animation: hudPulse 1s infinite alternate;
   }
 
@@ -67,7 +67,7 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
-  /* Horizon Mountains sitting exactly at the 50% horizon line */
+  /* Horizon Mountains */
   .mountains {
     position: absolute;
     top: 50%;
@@ -91,10 +91,6 @@
     height: 100%;
     perspective: 600px;
     z-index: 2;
-    /* 
-      THE FIX: We force the entire 3D layer to be 100% transparent above the 50% line.
-      It smoothly fades into existence just below the mountains.
-    */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 49%, black 52%, black 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, transparent 49%, black 52%, black 100%);
   }
@@ -127,11 +123,11 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 300px;
+    width: 400px;
     height: 100%;
-    background: #444;
-    border-left: 10px solid #fff;
-    border-right: 10px solid #fff;
+    background: #333;
+    border-left: 12px solid #fff;
+    border-right: 12px solid #fff;
   }
 
   .road-lines {
@@ -139,14 +135,14 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 10px;
+    width: 12px;
     height: 100%;
     background: repeating-linear-gradient(
       to top, 
       #fbcc04 0,
-      #fbcc04 100px,
-      transparent 100px,
-      transparent 200px
+      #fbcc04 120px,
+      transparent 120px,
+      transparent 240px
     );
   }
 
@@ -159,90 +155,52 @@
     backface-visibility: hidden;
   }
 
+  /* LARGER ROAD SIGNS */
   .sign {
     background: #007733;
     color: white;
-    border: 3px solid #fff;
-    border-radius: 6px;
-    padding: 10px 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    border: 4px solid #fff;
+    border-radius: 8px;
+    padding: 15px 25px; /* Increased padding */
+    box-shadow: 0 30px 60px rgba(0,0,0,0.7);
   }
 
   .sign::after {
     content: '';
     position: absolute;
-    bottom: -40px;
+    bottom: -60px;
     left: 50%;
     transform: translateX(-50%);
-    width: 8px;
-    height: 40px;
-    background: #999;
+    width: 12px;
+    height: 60px;
+    background: #888;
   }
 
-  .sign h4 { font-size: 24px; margin-bottom: 5px; }
-  .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
+  .sign h4 { font-size: 32px; margin-bottom: 5px; letter-spacing: 2px; }
+  .sign p { font-size: 24px; font-weight: bold; color: #fbcc04; }
 
   /* Map Locations */
-  #sign-2024 { bottom: 1500px; margin-left: -200px; }
-  #sign-2025 { bottom: 4000px; margin-left: 200px; }
+  #sign-2024 { bottom: 1500px; margin-left: -250px; }
+  #sign-2025 { bottom: 4000px; margin-left: 250px; }
   
   #party-500k {
     bottom: 6500px;
-    font-size: 50px;
-    width: 400px;
-    text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    font-size: 60px;
+    width: 500px;
+    text-shadow: 0 8px 20px rgba(0,0,0,0.6);
   }
   
   .party-banner {
     background: #cc0000;
     color: #fff;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 900;
-    padding: 10px;
-    border: 3px solid #fff;
-    border-radius: 8px;
+    padding: 12px;
+    border: 4px solid #fff;
+    border-radius: 10px;
   }
 
-  #sign-1m { bottom: 10000px; margin-left: 0; background: #222; border-color: #00ff66; }
-
-  /* 
-    3. THE WINDSHIELD WIPER & HONK GRAPHIC
-  */
-  .wiper-arm {
-    position: absolute;
-    bottom: -20px;
-    left: 45%;
-    width: 12px;
-    height: 45vh;
-    background: #1a1a1a;
-    transform-origin: bottom center;
-    transform: rotate(-80deg);
-    border-radius: 6px;
-    z-index: 50;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-  }
-
-  .wiper-arm::before {
-    content: '';
-    position: absolute;
-    top: 5%;
-    left: -6px;
-    width: 24px;
-    height: 90%;
-    background: #2a2a2a;
-    border-radius: 4px;
-    border-right: 2px solid #555;
-  }
-
-  .wiper-arm.is-wiping {
-    animation: wipeAction 1.2s ease-in-out;
-  }
-
-  @keyframes wipeAction {
-    0% { transform: rotate(-80deg); }
-    50% { transform: rotate(80deg); }
-    100% { transform: rotate(-80deg); }
-  }
+  #sign-1m { bottom: 10000px; margin-left: 0; background: #111; border-color: #00ff66; }
 
   /* The Pop-Up HONK Graphic */
   #honkGraphic {
@@ -271,66 +229,110 @@
   }
 
   /* 
-    4. THE DASHBOARD CONSOLE 
+    3. THE DASHBOARD CONSOLE (Sleek, Modern Dark Mode)
   */
   .dashboard {
     height: 45vh;
-    min-height: 350px;
-    background: linear-gradient(to bottom, #e4e7eb 0%, #cfd4db 100%);
+    min-height: 380px;
+    background: linear-gradient(to bottom, #2a2d30 0%, #151719 100%);
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5vw;
+    gap: 4vw;
     padding: 20px;
-    border-top: 12px solid #b8c0c8;
-    box-shadow: inset 0 8px 15px rgba(255,255,255,0.7), 0 -10px 30px rgba(0,0,0,0.2);
+    border-top: 4px solid #444;
+    box-shadow: inset 0 8px 15px rgba(255,255,255,0.05), 0 -15px 40px rgba(0,0,0,0.6);
     z-index: 100;
   }
 
+  /* AC Vents */
+  .ac-vent {
+    position: absolute;
+    top: 30px;
+    width: 60px;
+    height: 120px;
+    background: #0a0a0a;
+    border: 3px solid #333;
+    border-radius: 8px;
+    box-shadow: inset 0 0 10px #000, 0 2px 5px rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    padding: 10px 5px;
+  }
+  .ac-vent.left { left: 40px; }
+  .ac-vent.right { right: 40px; }
+  .vent-slat { width: 100%; height: 6px; background: #222; border-bottom: 1px solid #444; }
+
+  /* Digital Display Cluster */
+  .digital-dash {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #050505;
+    border: 2px solid #333;
+    border-radius: 6px;
+    padding: 8px 20px;
+    display: flex;
+    gap: 30px;
+    color: #00bfff;
+    font-family: monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    box-shadow: inset 0 0 15px rgba(0,191,255,0.1);
+  }
+  .digital-dash span { display: flex; flex-direction: column; align-items: center; }
+  .digital-dash small { font-size: 8px; color: #666; margin-bottom: 2px; }
+  .gear { color: #fff; font-weight: bold; }
+  .gear.active { color: #00ff66; text-shadow: 0 0 5px #00ff66; }
+
   /* 
-    5. THE GAUGES 
+    4. LARGER, MODERN GAUGES 
   */
   .gauge-container {
     position: relative;
-    width: 220px;
-    height: 220px;
-    background: #ffffff;
+    width: 270px; /* Increased Size */
+    height: 270px;
+    background: radial-gradient(circle, #1a1a1a, #050505);
     border-radius: 50%;
-    border: 10px solid #dcdcdc;
-    box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.15);
+    /* Sleek metallic/matte bezel */
+    border: 6px solid #2b2e33;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 15px 35px rgba(0,0,0,0.5), 0 0 0 2px #000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 
-  .gauge-center { transform: translateY(-45px); }
+  .gauge-center { transform: translateY(-50px); }
 
   .gauge-label {
     position: absolute;
-    top: 35px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #666;
+    top: 45px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #888;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
   }
 
   .gauge-value {
     position: absolute;
-    bottom: 50px;
-    font-size: 22px;
+    bottom: 60px;
+    font-size: 28px;
     font-weight: 900;
-    color: #222;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.2);
   }
 
   .gauge-pct {
     position: absolute;
-    bottom: 30px;
-    font-size: 11px;
+    bottom: 35px;
+    font-size: 12px;
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
   }
 
   svg.gauge-svg {
@@ -342,18 +344,28 @@
     transform: rotate(135deg);
   }
 
+  /* Tick marks for realism */
+  .gauge-ticks {
+    fill: none;
+    stroke: #444;
+    stroke-width: 4;
+    stroke-dasharray: 2 12;
+  }
+
   .gauge-track {
     fill: none;
-    stroke: #e0e0e0;
-    stroke-width: 8;
+    stroke: #222;
+    stroke-width: 4;
   }
 
   .gauge-fill {
     fill: none;
-    stroke-width: 8;
-    stroke-dasharray: 283;
+    stroke-width: 6;
+    stroke-dasharray: 283; /* Based on r=45, circumference ~283 */
     stroke-dashoffset: 283;
     stroke-linecap: round;
+    /* Glow effect on the stroke */
+    filter: drop-shadow(0 0 6px currentColor);
   }
 
   .needle-container {
@@ -365,37 +377,61 @@
     transform: rotate(-135deg);
   }
 
+  /* Sleek modern needle */
   .needle {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 4px;
-    height: 48%;
-    background: #e62020;
+    width: 2px;
+    height: 46%;
+    background: #fff;
     transform-origin: bottom center;
     transform: translate(-50%, -100%);
-    border-radius: 4px 4px 0 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  }
+
+  /* Triangle pointer at top of needle */
+  .needle::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid currentColor;
   }
 
   .needle-center {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 28px;
-    height: 28px;
-    background: radial-gradient(circle, #fff, #bbb);
-    border: 2px solid #888;
+    width: 34px;
+    height: 34px;
+    background: radial-gradient(circle, #333, #0a0a0a);
+    border: 2px solid #555;
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.6);
+  }
+  
+  /* Colored dot in the center of the needle cap */
+  .needle-center::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 5px currentColor;
   }
 
   /* 
-    6. STEERING WHEEL & CONTROLS
+    5. STEERING WHEEL, WIPER, AND IGNITION
   */
   .steering-column {
     position: absolute;
-    bottom: -50px;
+    bottom: -40px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -404,56 +440,111 @@
     z-index: 10;
   }
 
-  /* Pushed way out and down to clear the gauge completely */
   .wiper-stalk {
     position: absolute;
-    left: -200px; 
-    top: 90px; 
-    width: 110px;
-    height: 30px;
-    background: linear-gradient(to bottom, #444, #222);
-    border: 2px solid #111;
-    border-radius: 15px 0 0 15px;
-    color: white;
+    left: -220px; 
+    top: 100px; 
+    width: 120px;
+    height: 28px;
+    background: linear-gradient(to bottom, #333, #111);
+    border: 2px solid #000;
+    border-radius: 14px 0 0 14px;
+    color: #aaa;
     font-size: 10px;
     font-weight: bold;
     text-transform: uppercase;
     text-align: left;
     padding-left: 15px;
     cursor: pointer;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     transform-origin: right center;
-    transition: transform 0.1s;
+    transition: transform 0.1s, color 0.2s;
     z-index: 9;
   }
 
+  .wiper-stalk:hover { color: #fff; }
   .wiper-stalk:active { transform: rotate(-5deg); }
 
+  /* IGNITION BUTTON */
+  .ignition-btn {
+    position: absolute;
+    right: -210px;
+    top: 70px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #222, #0a0a0a);
+    border: 4px solid #555;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 9;
+  }
+
+  .ignition-btn.off {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,0,0,0.3);
+    border-color: #aa2222;
+  }
+  
+  .ignition-btn.on {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,102,0.4);
+    border-color: #00ff66;
+  }
+
+  .ignition-btn:active { transform: scale(0.92); }
+
+  .ignition-btn span {
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+    line-height: 1.2;
+  }
+  
+  .ignition-btn .status-light {
+    width: 12px; height: 4px;
+    background: #ff3333;
+    border-radius: 2px;
+    margin-top: 6px;
+    box-shadow: 0 0 5px #ff3333;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .ignition-btn.on .status-light {
+    background: #00ff66;
+    box-shadow: 0 0 8px #00ff66;
+  }
+
+  /* Horn / Wheel */
   .horn-wrapper {
     position: relative;
-    width: 450px;
-    height: 220px;
-    background: #2a2c2e;
-    border-radius: 225px 225px 0 0;
-    border: 18px solid #1a1a1c;
+    width: 480px;
+    height: 240px;
+    background: #111;
+    border-radius: 240px 240px 0 0;
+    border: 20px solid #050505;
     border-bottom: none;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 30px;
-    box-shadow: 0 -15px 40px rgba(0,0,0,0.3);
+    padding-top: 35px;
+    box-shadow: 0 -15px 50px rgba(0,0,0,0.6);
     z-index: 10;
   }
 
   .horn-btn {
-    width: 130px;
-    height: 130px;
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 40%, #ffffff, #dcdcdc);
-    border: 3px solid #a0a0a0;
-    color: #333;
+    background: radial-gradient(circle at 40% 40%, #333, #111);
+    border: 2px solid #000;
+    color: #fff;
     cursor: pointer;
-    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.3);
+    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.5), 0 15px 30px rgba(0,0,0,0.5);
     transition: all 0.1s ease;
     display: flex;
     flex-direction: column;
@@ -462,47 +553,34 @@
   }
 
   .horn-btn:active {
-    transform: scale(0.95) translateY(4px);
-    box-shadow: inset 0 5px 15px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.2);
+    transform: scale(0.96) translateY(5px);
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5);
   }
 
   .horn-btn span {
     font-weight: 900;
-    font-size: 24px;
-    letter-spacing: 2px;
-    color: #48286D;
-  }
-  
-  .horn-btn .subtext {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #666;
-    letter-spacing: 1px;
-    margin-top: 4px;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: #ddd;
+    text-shadow: 0 2px 4px #000;
   }
 
 </style>
 </head>
 <body>
 
-  <!-- WINDSHIELD SCENE -->
   <div class="windshield">
-    
     <div class="hud" id="hud-target">TARGET: 500,000</div>
     <div id="honkGraphic">HONK!!!</div>
     <div class="mountains"></div>
 
     <div class="world-camera">
       <div class="world-floor">
-        
-        <!-- THE PHYSICAL TRACK -->
         <div class="track" id="master-track">
-          
           <div class="road">
             <div class="road-lines"></div>
           </div>
           
-          <!-- Physical locations on the map -->
           <div class="object-3d sign" id="sign-2024">
             <h4>2024</h4>
             <p>25,000</p>
@@ -522,75 +600,93 @@
             <h4>TARGET</h4>
             <p style="color: #00ff66;">1,000,000</p>
           </div>
-
         </div>
-
       </div>
     </div>
-
-    <div class="wiper-arm" id="wiperArm"></div>
-
   </div>
 
   <!-- DASHBOARD UI -->
   <div class="dashboard">
     
-    <!-- GM GAUGE -->
+    <!-- AC VENTS -->
+    <div class="ac-vent left">
+      <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
+    </div>
+    <div class="ac-vent right">
+      <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
+    </div>
+
+    <!-- DIGITAL DASH DISPLAY -->
+    <div class="digital-dash">
+      <span><small>TEMP</small>72°F</span>
+      <span><small>GEAR</small><span class="gear" id="gear-indicator">P</span></span>
+      <span><small>DATE</small>AUG 11 2026</span>
+    </div>
+    
+    <!-- GM GAUGE (EV Blue) -->
     <div class="gauge-container">
       <div class="gauge-label">GM</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #0077cc;"></circle>
+        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45" style="stroke: #00bfff; color: #00bfff;"></circle>
       </svg>
       <div class="needle-container" id="needle-gm">
-        <div class="needle"></div>
+        <div class="needle" style="color: #00bfff;"></div>
       </div>
-      <div class="needle-center"></div>
+      <div class="needle-center" style="color: #00bfff;"></div>
       <div class="gauge-value" id="val-gm">0</div>
-      <div class="gauge-pct" style="color: #0077cc;" id="pct-gm">0.00%</div>
+      <div class="gauge-pct" style="color: #00bfff;" id="pct-gm">0.00%</div>
     </div>
 
-    <!-- KDDI GAUGE (Raised) -->
+    <!-- KDDI GAUGE (Neon Green) -->
     <div class="gauge-container gauge-center">
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #66CC00;"></circle>
+        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #39ff14; color: #39ff14;"></circle>
       </svg>
       <div class="needle-container" id="needle-kddi">
-        <div class="needle"></div>
+        <div class="needle" style="color: #39ff14;"></div>
       </div>
-      <div class="needle-center"></div>
+      <div class="needle-center" style="color: #39ff14;"></div>
       <div class="gauge-value" id="val-kddi">0</div>
-      <div class="gauge-pct" style="color: #66CC00;" id="pct-kddi">0.00%</div>
+      <div class="gauge-pct" style="color: #39ff14;" id="pct-kddi">0.00%</div>
     </div>
 
-    <!-- CHERRY GAUGE -->
+    <!-- CHERRY GAUGE (Neon Purple) -->
     <div class="gauge-container">
       <div class="gauge-label">CHERRY</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-ticks" cx="50" cy="50" r="45"></circle>
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
-        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #48286D;"></circle>
+        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #b026ff; color: #b026ff;"></circle>
       </svg>
       <div class="needle-container" id="needle-cherry">
-        <div class="needle"></div>
+        <div class="needle" style="color: #b026ff;"></div>
       </div>
-      <div class="needle-center"></div>
+      <div class="needle-center" style="color: #b026ff;"></div>
       <div class="gauge-value" id="val-cherry">0</div>
-      <div class="gauge-pct" style="color: #48286D;" id="pct-cherry">Loading</div>
+      <div class="gauge-pct" style="color: #b026ff;" id="pct-cherry">Loading</div>
     </div>
 
     <!-- STEERING COLUMN & CONTROLS -->
     <div class="steering-column">
       
-      <button class="wiper-stalk" onclick="triggerWipeAndReset()">
-        Wipe /<br>Reset
+      <button class="wiper-stalk" onclick="triggerWipe()">
+        Wipe
       </button>
+
+      <!-- NEW IGNITION BUTTON -->
+      <div class="ignition-btn off" id="ignitionBtn" onclick="toggleIgnition()">
+        <span>ENGINE<br>START<br>STOP</span>
+        <div class="status-light"></div>
+      </div>
 
       <div class="horn-wrapper">
         <button class="horn-btn" onclick="honkHorn()">
           <span>GM</span>
-          <div class="subtext">Honk</div>
         </button>
       </div>
 
@@ -599,7 +695,6 @@
   </div>
 
   <script>
-    // 1 Million Target Logic
     const TARGET_1M = 1000000;
     const MAX_DASH = 212; 
     const DASH_OFFSET_START = 283; 
@@ -609,6 +704,7 @@
     let currentVals = { gm: 0, kddi: 0, cherry: 0 };
     let driveSequenceActive = false;
     let trackY = 0; 
+    let engineRunning = false;
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -682,6 +778,35 @@
       await anim.finished; 
     }
 
+    // IGNITION LOGIC
+    function toggleIgnition() {
+      const btn = document.getElementById('ignitionBtn');
+      const gear = document.getElementById('gear-indicator');
+      
+      if (!engineRunning) {
+        // Start Engine
+        engineRunning = true;
+        btn.classList.replace('off', 'on');
+        gear.innerHTML = 'D';
+        gear.classList.add('active');
+        startDriveSequence();
+      } else {
+        // Stop Engine
+        engineRunning = false;
+        driveSequenceActive = false;
+        btn.classList.replace('on', 'off');
+        gear.innerHTML = 'P';
+        gear.classList.remove('active');
+        
+        // Reset everything instantly
+        document.getElementById('master-track').style.transform = `translateY(0)`;
+        updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 500);
+        const hud = document.getElementById('hud-target');
+        hud.className = 'hud';
+        hud.innerHTML = 'TARGET: 500,000';
+      }
+    }
+
     async function startDriveSequence() {
       driveSequenceActive = false; 
       await sleep(50);
@@ -699,25 +824,21 @@
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      // LEG 1: Drive to 2024
+      // LEG 1: 2024
       await driveTo(1200, 3000); 
       if (!driveSequenceActive) return;
-      
       updateGauges({ gm: 25000, kddi: 0, cherry: 0 }, 2000);
       await sleep(2500); 
 
-      // LEG 2: Drive to 2025
+      // LEG 2: 2025
       await driveTo(3700, 3500); 
       if (!driveSequenceActive) return;
-
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party (July 2026 update)
+      // LEG 3: 500k Party
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
-
-      // Updated Totals!
       updateGauges({ gm: 523028, kddi: 41055, cherry: 0 }, 2000);
       
       fireConfetti();
@@ -726,10 +847,9 @@
       
       hud.classList.add('upgraded');
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
-      
       await sleep(3500); 
 
-      // LEG 4: Drive toward 1 Million
+      // LEG 4: Toward 1 Million
       await driveTo(9700, 4000); 
     }
 
@@ -738,19 +858,17 @@
         particleCount: 150,
         spread: 100,
         origin: { y: 0.4 },
-        colors: ['#4ba3e3', '#007733', '#fbcc04', '#cc0000', '#ffffff']
+        colors: ['#4ba3e3', '#00ff66', '#fbcc04', '#cc0000', '#ffffff']
       });
     }
 
-    function triggerWipeAndReset() {
+    function triggerWipe() {
       const wiper = document.getElementById('wiperArm');
       wiper.classList.remove('is-wiping');
       void wiper.offsetWidth;
       wiper.classList.add('is-wiping');
-      setTimeout(startDriveSequence, 600);
     }
 
-    // Visual Honk Feature
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
@@ -764,8 +882,9 @@
       }, 350);
     }
 
+    // Initialize layout but wait for ignition button press
     window.onload = () => {
-      setTimeout(startDriveSequence, 400); 
+      updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 0);
     };
   </script>
 </body>
