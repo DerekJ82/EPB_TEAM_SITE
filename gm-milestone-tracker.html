@@ -25,7 +25,8 @@
   .windshield {
     flex: 1;
     position: relative;
-    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 60%, #e0f4ff 100%);
+    /* Hard stop at 50% for a perfect horizon line */
+    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 50%, #7bb558 50%, #7bb558 100%);
     overflow: hidden;
     border-bottom: 8px solid #333;
   }
@@ -53,10 +54,11 @@
     to { transform: scale(1.05); }
   }
 
+  /* The Sun */
   .windshield::before {
     content: '';
     position: absolute;
-    top: 12%;
+    top: 10%;
     right: 15%;
     width: 90px;
     height: 90px;
@@ -65,28 +67,17 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
+  /* Horizon Mountains sitting exactly at the 50% horizon line */
   .mountains {
     position: absolute;
-    top: 55%;
+    top: 50%;
     left: 0;
     width: 100%;
     height: 250px;
-    transform: translateY(-98%);
+    transform: translateY(-100%);
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
     background-size: 800px 250px;
     z-index: 1;
-  }
-
-  .haze {
-    position: absolute;
-    top: 55%;
-    left: 0;
-    width: 100%;
-    height: 120px;
-    transform: translateY(-50%);
-    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, rgba(224,244,255,0.6) 40%, rgba(123,181,88,0.6) 60%, rgba(123,181,88,0) 100%);
-    z-index: 5;
-    pointer-events: none;
   }
 
   /* 
@@ -100,8 +91,12 @@
     height: 100%;
     perspective: 600px;
     z-index: 2;
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,1) 55%);
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,1) 55%);
+    /* 
+      THE FIX: We force the entire 3D layer to be 100% transparent above the 50% line.
+      It smoothly fades into existence just below the mountains.
+    */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 49%, black 52%, black 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, transparent 49%, black 52%, black 100%);
   }
 
   .world-floor {
@@ -249,6 +244,7 @@
     100% { transform: rotate(-80deg); }
   }
 
+  /* The Pop-Up HONK Graphic */
   #honkGraphic {
     position: absolute;
     top: 40%;
@@ -408,11 +404,12 @@
     z-index: 10;
   }
 
+  /* Pushed way out and down to clear the gauge completely */
   .wiper-stalk {
     position: absolute;
-    left: -140px; 
-    top: 30px; 
-    width: 100px;
+    left: -200px; 
+    top: 90px; 
+    width: 110px;
     height: 30px;
     background: linear-gradient(to bottom, #444, #222);
     border: 2px solid #111;
@@ -494,7 +491,6 @@
     <div class="hud" id="hud-target">TARGET: 500,000</div>
     <div id="honkGraphic">HONK!!!</div>
     <div class="mountains"></div>
-    <div class="haze"></div>
 
     <div class="world-camera">
       <div class="world-floor">
@@ -514,7 +510,6 @@
           
           <div class="object-3d sign" id="sign-2025">
             <h4>2025</h4>
-            <!-- 198,000 GM + 12,000 KDDI -->
             <p>210,000</p>
           </div>
           
@@ -718,7 +713,7 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party
+      // LEG 3: Drive to the 500k Party (July 2026 update)
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
@@ -734,7 +729,7 @@
       
       await sleep(3500); 
 
-      // LEG 4: Set sights on 1 Million
+      // LEG 4: Drive toward 1 Million
       await driveTo(9700, 4000); 
     }
 
@@ -755,6 +750,7 @@
       setTimeout(startDriveSequence, 600);
     }
 
+    // Visual Honk Feature
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
