@@ -57,13 +57,40 @@
   .windshield::before {
     content: '';
     position: absolute;
-    top: 15%;
-    right: 10%;
-    width: 80px;
-    height: 80px;
+    top: 12%;
+    right: 15%;
+    width: 90px;
+    height: 90px;
     background: #fff9d6;
     border-radius: 50%;
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
+  }
+
+  /* Horizon Mountains to fix the "Cliff" look */
+  .mountains {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 250px;
+    transform: translateY(-99%);
+    /* Inline SVG for beautiful, scalable mountains */
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
+    background-size: 800px 250px;
+    z-index: 1;
+  }
+
+  /* Atmospheric Haze to blend the road into the mountains */
+  .haze {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    transform: translateY(-50%);
+    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, rgba(224,244,255,0.8) 40%, rgba(123,181,88,0.8) 60%, rgba(123,181,88,0) 100%);
+    z-index: 5;
+    pointer-events: none;
   }
 
   /* 
@@ -76,6 +103,7 @@
     width: 100%;
     height: 100%;
     perspective: 600px;
+    z-index: 2;
   }
 
   .world-floor {
@@ -83,14 +111,13 @@
     bottom: -150px;
     left: -50%;
     width: 200%;
-    height: 250vh; /* Stretched further to reach the horizon */
+    height: 250vh; 
     background: #7bb558; 
     transform: rotateX(80deg);
     transform-origin: bottom center;
     transform-style: preserve-3d;
   }
 
-  /* The track MUST preserve-3d so the signs stand up */
   .track {
     position: absolute;
     bottom: 0;
@@ -99,7 +126,7 @@
     height: 12000px; 
     transform: translateY(0); 
     will-change: transform;
-    transform-style: preserve-3d; /* This fixes the flattened/squished signs! */
+    transform-style: preserve-3d; 
   }
 
   .road {
@@ -130,11 +157,9 @@
     );
   }
 
-  /* 3D Objects attached to the track */
   .object-3d {
     position: absolute;
     left: 50%;
-    /* Stand the objects up perpendicular to the 80deg floor */
     transform: translateX(-50%) rotateX(-80deg); 
     transform-origin: bottom center;
     text-align: center;
@@ -360,7 +385,6 @@
     z-index: 10;
   }
 
-  /* Moved wiper stalk UP and INWARD so it doesn't get cut off */
   .wiper-stalk {
     position: absolute;
     left: -140px; 
@@ -441,17 +465,17 @@
 </head>
 <body>
 
-  <audio id="carHornAudio" src="https://actions.google.com/sounds/v1/alarms/car_horn.ogg" preload="auto"></audio>
-
   <!-- WINDSHIELD SCENE -->
   <div class="windshield">
     
     <div class="hud" id="hud-target">TARGET: 500,000</div>
+    <div class="mountains"></div>
+    <div class="haze"></div>
 
     <div class="world-camera">
       <div class="world-floor">
         
-        <!-- THE PHYSICAL TRACK (Everything is mounted here and moves as one) -->
+        <!-- THE PHYSICAL TRACK -->
         <div class="track" id="master-track">
           
           <div class="road">
@@ -506,7 +530,7 @@
       <div class="gauge-pct" style="color: #0077cc;" id="pct-gm">0.00%</div>
     </div>
 
-    <!-- KDDI GAUGE (Raised) -->
+    <!-- KDDI GAUGE -->
     <div class="gauge-container gauge-center">
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
@@ -555,7 +579,7 @@
   </div>
 
   <script>
-    // The new target is 1,000,000. So 523,028 is ~52.3% of the dial.
+    // 1 Million Target Logic
     const TARGET_1M = 1000000;
     const MAX_DASH = 212; 
     const DASH_OFFSET_START = 283; 
@@ -669,11 +693,11 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party (July 2026)
+      // LEG 3: Drive to the 500k Party
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
-      // Updated Totals!
+      // Update to July 2026 actuals!
       updateGauges({ gm: 523028, kddi: 41055, cherry: 0 }, 2000);
       
       fireConfetti();
@@ -685,7 +709,7 @@
       
       await sleep(3500); 
 
-      // LEG 4: Set sights on 1 Million
+      // LEG 4: Drive toward 1 Million
       await driveTo(9700, 4000); 
     }
 
@@ -706,10 +730,34 @@
       setTimeout(startDriveSequence, 600);
     }
 
+    // Mathematical Web Audio API Horn - Guaranteed to play on click
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
     function honkHorn() {
-      const audio = document.getElementById('carHornAudio');
-      audio.currentTime = 0; 
-      audio.play().catch(e => console.log("Horn requires user interaction first."));
+      if (!audioCtx) audioCtx = new AudioContext();
+
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      osc1.type = 'sawtooth'; 
+      osc1.frequency.setValueAtTime(350, audioCtx.currentTime); 
+      
+      osc2.type = 'square'; 
+      osc2.frequency.setValueAtTime(400, audioCtx.currentTime); 
+      
+      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      osc1.start();
+      osc2.start();
+      osc1.stop(audioCtx.currentTime + 0.4);
+      osc2.stop(audioCtx.currentTime + 0.4);
     }
 
     window.onload = () => {
