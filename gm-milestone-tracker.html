@@ -21,11 +21,14 @@
 
   /* 
     1. THE WINDSHIELD
+    FIX: The background itself is now split perfectly at the horizon (55%).
+    This guarantees no blue sky can ever show beneath the horizon line, 
+    filling in those empty corner gaps flawlessly.
   */
   .windshield {
     flex: 1;
     position: relative;
-    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 60%, #e0f4ff 100%);
+    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 55%, #7bb558 55%, #7bb558 100%);
     overflow: hidden;
     border-bottom: 8px solid #333;
   }
@@ -66,28 +69,27 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
-  /* Horizon Mountains */
+  /* Horizon Mountains sitting exactly at the 55% horizon */
   .mountains {
     position: absolute;
     top: 55%;
     left: 0;
     width: 100%;
     height: 250px;
-    transform: translateY(-90%);
+    transform: translateY(-98%);
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
     background-size: 800px 250px;
     z-index: 1;
   }
 
-  /* Atmospheric Haze (Updated to blend into the sky color, not green) */
   .haze {
     position: absolute;
-    top: 50%;
+    top: 55%;
     left: 0;
     width: 100%;
     height: 120px;
     transform: translateY(-50%);
-    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, #e0f4ff 50%, rgba(224,244,255,0) 100%);
+    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, rgba(224,244,255,0.6) 40%, rgba(123,181,88,0.6) 60%, rgba(123,181,88,0) 100%);
     z-index: 5;
     pointer-events: none;
   }
@@ -103,19 +105,17 @@
     height: 100%;
     perspective: 600px;
     z-index: 2;
-    /* THE FIX: This mask fades the 3D world to transparent at the horizon, 
-       creating perfect atmospheric depth so the road doesn't hit the mountains */
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 38%, rgba(0,0,0,1) 52%);
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 38%, rgba(0,0,0,1) 52%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,1) 55%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,1) 55%);
   }
 
+  /* We no longer need to color the 3D floor green since the 2D background handles it. */
   .world-floor {
     position: absolute;
     bottom: -150px;
     left: -150%; 
     width: 400%; 
     height: 250vh; 
-    background: #7bb558; 
     transform: rotateX(80deg);
     transform-origin: bottom center;
     transform-style: preserve-3d;
@@ -405,7 +405,6 @@
   */
   .steering-column {
     position: absolute;
-    /* Moved up significantly for better visibility */
     bottom: -50px;
     left: 50%;
     transform: translateX(-50%);
@@ -415,21 +414,22 @@
     z-index: 10;
   }
 
+  /* FIX: Wiper stalk moved significantly further down and left */
   .wiper-stalk {
     position: absolute;
-    left: -140px; 
-    top: 30px; 
-    width: 100px;
-    height: 30px;
+    left: -180px; 
+    top: 110px; 
+    width: 110px;
+    height: 35px;
     background: linear-gradient(to bottom, #444, #222);
     border: 2px solid #111;
-    border-radius: 15px 0 0 15px;
+    border-radius: 17px 0 0 17px;
     color: white;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
     text-transform: uppercase;
     text-align: left;
-    padding-left: 15px;
+    padding-left: 18px;
     cursor: pointer;
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
     transform-origin: right center;
@@ -761,7 +761,6 @@
       setTimeout(startDriveSequence, 600);
     }
 
-    // New Visual Honk Feature
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
