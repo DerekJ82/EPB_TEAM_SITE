@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,712 +5,266 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vehicle Base Milestone Race</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #1a1a2e; font-family: 'Arial', sans-serif; overflow-x: hidden; min-height: 100vh; }
+  /* 
+    1. THE VISUAL CONTRACT (TOKENS) 
+    Declare these once as custom properties and never hard-code a hex value anywhere else. 
+  */
+  :root {
+    --purple: #48286D; --purple-d: #38205A; --purple-l: #633988;
+    --ink: #2A1A3E;
+    --green: #66CC00; --green-d: #488500; --lime: #8FDD3D;
+    --tint: #F6F2FA; --tint2: #F0EAF7;
+    --line: #E8E6EC; --line-d: #D8D5DE;
+    --grey: #54505C; --grey-l: #918A9C;
 
-  /* LEADERBOARD */
-  .leaderboard {
-    background: linear-gradient(135deg, #4B286D, #2A2C2E);
-    padding: 10px 20px; display: flex; align-items: center;
-    justify-content: space-between; border-bottom: 3px solid #00A400;
-    z-index: 50; position: relative;
+    /* Typographic Roles (Using neutral sans as fallback per guide) */
+    --disp: "Helvetica Neue", Arial, sans-serif;
+    --text: "Helvetica Neue", Arial, sans-serif;
+    --micro: "Helvetica Neue", Arial, sans-serif;
+
+    /* Fluid Gutter */
+    --gut: clamp(20px, 5vw, 72px);
   }
-  .leaderboard h2 { color: #f0c040; font-size: 16px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 10px rgba(240,192,64,0.5); }
-  .lb-entries { display: flex; gap: 16px; }
-  .lb-entry { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); }
-  .lb-rank { font-size: 16px; font-weight: 900; }
-  .lb-name { color: white; font-weight: bold; font-size: 13px; }
-  .lb-num  { font-weight: 900; font-size: 14px; }
-  .lb-entry.rank1 { border-color: #f0c040; background: rgba(240,192,64,0.15); }
-  .lb-entry.rank2 { border-color: #aaa;    background: rgba(170,170,170,0.1); }
-  .lb-entry.rank3 { border-color: #cd7f32; background: rgba(205,127,50,0.1); }
 
-  /* RACE LANES */
-  .race-container { display: flex; flex-direction: column; }
-  .race-lane { width: 100vw; height: calc((100vh - 56px) / 3); position: relative; overflow: hidden; }
-  .lane-gm    { background: linear-gradient(180deg, #87CEEB 0%, #b0e0f5 42%, #7ec850 42%, #5a9e35 100%); }
-  .lane-kddi  { background: linear-gradient(180deg, #b8d4f0 0%, #d0e8f8 42%, #8ed46a 42%, #6ab040 100%); }
-  .lane-cherry{ background: linear-gradient(180deg, #c8e8f8 0%, #dff0fc 42%, #9adc76 42%, #72b84a 100%); }
-  .lane-divider { height: 3px; background: linear-gradient(90deg, #4B286D, #00A400, #4B286D); opacity: 0.6; }
-
-  /* COMPANY BADGE */
-  .company-badge { position: absolute; top: 6px; left: 8px; padding: 3px 10px; border-radius: 12px; font-weight: 900; font-size: 12px; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.4); cursor: pointer; }
-  .badge-gm    { background: #00A400; color: white; }
-  .badge-kddi  { background: #1a6bcc; color: white; }
-  .badge-cherry{ background: #cc1a1a; color: white; }
-
-  /* ROAD */
-  .road { position: absolute; bottom: 22%; left: 0; width: 100%; height: 52px; background: #2A2C2E; z-index: 2; }
-  .road-line { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; height: 4px; background: repeating-linear-gradient(90deg, #f0c040 0px, #f0c040 40px, transparent 40px, transparent 80px); }
-
-  /* WAREHOUSE */
-  .warehouse { position: absolute; bottom: calc(22% + 52px); left: 10px; width: 95px; z-index: 3; }
-  .warehouse-building { width: 95px; height: 62px; border-radius: 3px 3px 0 0; position: relative; }
-  .wh-gm    { background: #4B286D; }
-  .wh-kddi  { background: #1a6bcc; }
-  .wh-cherry{ background: #cc1a1a; }
-  .warehouse-roof { width: 0; height: 0; border-left: 47px solid transparent; border-right: 47px solid transparent; position: absolute; top: -17px; left: 0; }
-  .roof-gm    { border-bottom: 17px solid #3a1d54; }
-  .roof-kddi  { border-bottom: 17px solid #0d4a99; }
-  .roof-cherry{ border-bottom: 17px solid #991111; }
-  .warehouse-door { width: 26px; height: 32px; background: #1a0a2e; position: absolute; bottom: 0; left: 34px; border-radius: 2px 2px 0 0; }
-  .warehouse-label { text-align: center; color: white; font-size: 7px; font-weight: bold; background: #2A2C2E; padding: 2px 4px; border-radius: 2px; margin-top: 2px; }
-
-  /* CAR */
-  /*
-    Track: 12% (start) to 88% (500K) = 76% wide
-    GM:     437958/500000 = 87.59%  → 12% + (87.59% × 76%) = ~78.57%
-    KDDI:   40339/500000 = 8.07%   → 12% + (8.07% × 76%) = ~18.13%
-    Cherry: ~0K → stays near 12%
+  /* 
+    2. RESET & BASE LAYOUT 
   */
-  .car-wrapper { position: absolute; bottom: calc(22% + 52px); z-index: 10; }
-  .anim-gm    { animation: carGm    5s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
-  .anim-kddi  { animation: carKddi  5s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
-  .anim-cherry{ animation: carCherry 5s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    background: #fff; 
+    font-family: var(--text); 
+    color: var(--ink); 
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  
+  .pad { padding-left: var(--gut); padding-right: var(--gut); }
+  
+  .sect { padding: clamp(50px, 6.5vw, 86px) 0; }
+  .sect.tint { 
+    background: var(--tint); 
+    border-top: 1px solid var(--line); 
+    border-bottom: 1px solid var(--line); 
+  }
 
-  @keyframes carGm     { 0%{left:12%} 85%{left:80%} 92%{left:78%} 100%{left:78.57%} }
-  @keyframes carKddi   { 0%{left:12%} 85%{left:20%} 92%{left:17.5%} 100%{left:18.13%} }
-  @keyframes carCherry { 0%{left:12%} 85%{left:13%} 92%{left:12.2%} 100%{left:12.5%} }
-
-  .car-svg { width: 90px; height: auto; display: block; }
-
-  .driver-bubble { position: absolute; top: -28px; left: 28px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; overflow: hidden; background: #b8e0ff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 20; }
-  .driver-bubble img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-
-  .exhaust { position: absolute; bottom: 8px; left: -7px; z-index: 9; }
-  .puff { width: 9px; height: 9px; background: rgba(200,200,200,0.7); border-radius: 50%; position: absolute; animation: puffAway 1s ease-out infinite; }
-  .puff:nth-child(2) { animation-delay: 0.3s; width: 6px; height: 6px; }
-  .puff:nth-child(3) { animation-delay: 0.6s; width: 5px; height: 5px; }
-  @keyframes puffAway { 0%{opacity:0.8;transform:translateX(0) translateY(0) scale(1)} 100%{opacity:0;transform:translateX(-18px) translateY(-8px) scale(2)} }
-
-  /* MILESTONES */
-  .milestone { position: absolute; bottom: calc(22% + 52px); z-index: 5; text-align: center; transform: translateX(-50%); cursor: pointer; }
-  .milestone-pole { width: 3px; height: 38px; background: #2A2C2E; margin: 0 auto; }
-  .milestone-sign { padding: 3px 7px; border-radius: 5px; font-weight: bold; font-size: 10px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.2s; }
-  .milestone-sign:hover { transform: scale(1.05); }
-  .milestone-sub { font-size: 8px; font-weight: normal; opacity: 0.85; margin-top: 1px; display: block; }
-  .milestone-year .milestone-pole { height: 26px; background: #555; }
-  .milestone-year .milestone-sign { background: rgba(42,44,46,0.9); color: white; border: 1px solid #888; font-size: 9px; padding: 3px 6px; }
-
-  /*
-    Milestone positions:
-    Track: 12% (0K) to 88% (500K) = 76% wide
-    2023 (0K):   12%
-    2024 (25K):  12% + (25/500 × 76%) = ~15.8% → 16%
-    2025 (198K for GM, 12K for KDDI): 12% + (198/500 × 76%) = ~42%
-    GM current (437958): 12% + (437958/500000 × 76%) = ~78.57%
-    KDDI current (40339): 12% + (40339/500000 × 76%) = ~18.13%
-    Cherry current (0K): ~13%
-    500K: 88%
+  /* 
+    3. TYPOGRAPHY (FLUID SCALE) 
   */
-  .ms-start  { left: 12%; }
-  .ms-2024   { left: 16%; }
-  .ms-2025   { left: 42%; }
-  .ms-current-gm    { left: 78.57%; }
-  .ms-current-kddi  { left: 22%; }
-  .ms-current-cherry{ left: 13%; }
-  .ms-500k { left: 88%; }
+  h1 { font-family: var(--disp); font-size: clamp(31px, 4.8vw, 64px); font-weight: 900; letter-spacing: -0.028em; color: var(--purple); text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: clamp(23px, 2.7vw, 37px); font-weight: 750; letter-spacing: -0.024em; color: var(--purple); margin-bottom: 34px; }
+  h3 { font-family: var(--disp); font-size: clamp(17px, 2vw, 20px); font-weight: 750; letter-spacing: -0.018em; color: var(--ink); }
+  
+  p { font-size: clamp(15px, 1.5vw, 16px); font-weight: 400; color: var(--grey); max-width: 74ch; margin-bottom: 16px; }
+  
+  .micro { font-family: var(--micro); font-size: clamp(10px, 1vw, 11px); font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey); }
+  .big-figure { font-family: var(--disp); font-size: clamp(26px, 3vw, 38px); font-weight: 900; letter-spacing: -0.026em; color: var(--purple); }
 
-  .ms-current-kddi .milestone-pole,
-  .ms-current-cherry .milestone-pole { height: 70px; }
+  /* 
+    4. COMPONENTS 
+  */
+  /* Status Badges */
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-family: var(--micro); font-size: 10px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.1em; margin-bottom: 12px; }
+  .badge.positive { background: #EEF7E0; color: #488500; } /* Positive/retained */
+  .badge.caution { background: #FFF3CD; color: #856404; } /* Caution/revised */
+  .badge.neutral { background: var(--tint2); color: var(--purple); } /* Neutral/merged */
 
-  .ms-current-gm .milestone-sign    { background: #4B286D; color: white; border: 1.5px solid #6b3d9e; font-size: 10px; }
-  .ms-current-kddi .milestone-sign  { background: #1a6bcc; color: white; border: 1.5px solid #4488ee; font-size: 10px; }
-  .ms-current-cherry .milestone-sign{ background: #cc1a1a; color: white; border: 1.5px solid #ee4444; font-size: 10px; }
-  .ms-500k .milestone-sign { background: #00A400; color: white; border: 1.5px solid #00cc00; font-size: 11px; animation: pulse 1.5s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{transform:scale(1);box-shadow:0 2px 6px rgba(0,164,0,0.4)} 50%{transform:scale(1.08);box-shadow:0 4px 14px rgba(0,164,0,0.7)} }
+  /* Flexible Grid */
+  .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .split-grid { display: grid; gap: 20px; grid-template-columns: 1.15fr 0.85fr; }
 
-  /* PARTY ZONE */
-  .party-zone { position: absolute; bottom: calc(22% + 52px); left: 74%; width: 200px; z-index: 4; }
-  .balloon { position: absolute; border-radius: 50%; animation: balloonFloat 2s ease-in-out infinite alternate; }
-  .balloon::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 1px; height: 10px; background: #555; }
-  .b1 { width: 20px; height: 24px; background: #4B286D; left: 10px;  bottom: 8px;  animation-delay: 0s; }
-  .b2 { width: 17px; height: 20px; background: #00A400; left: 38px;  bottom: 15px; animation-delay: 0.4s; }
-  .b3 { width: 19px; height: 22px; background: #f0c040; left: 75px;  bottom: 9px;  animation-delay: 0.8s; }
-  .b4 { width: 17px; height: 19px; background: #e84393; left: 120px; bottom: 13px; animation-delay: 0.2s; }
-  .b5 { width: 19px; height: 21px; background: #2288ee; left: 158px; bottom: 8px;  animation-delay: 0.6s; }
-  @keyframes balloonFloat { 0%{transform:translateY(0) rotate(-3deg)} 100%{transform:translateY(-10px) rotate(3deg)} }
-  .confetti-piece { position: absolute; width: 6px; height: 6px; border-radius: 2px; animation: confettiFall 2.5s ease-in infinite; }
-  @keyframes confettiFall { 0%{transform:translateY(-12px) rotate(0deg);opacity:1} 100%{transform:translateY(90px) rotate(720deg);opacity:0} }
-  .sparkle { position: absolute; font-size: 13px; animation: sparkleAnim 1.2s ease-in-out infinite alternate; }
-  @keyframes sparkleAnim { 0%{opacity:0.3;transform:scale(0.8) rotate(0deg)} 100%{opacity:1;transform:scale(1.2) rotate(20deg)} }
+  /* Cards */
+  .card { 
+    background: #fff; 
+    border: 1px solid var(--line); 
+    border-top: 3px solid var(--line-d); 
+    border-radius: 10px; 
+    padding: clamp(20px, 2.2vw, 30px); 
+    transition: border-top-color .2s, transform .2s, box-shadow .2s; 
+    cursor: pointer;
+    position: relative;
+  }
+  .card:hover { 
+    border-top-color: var(--green); 
+    transform: translateY(-3px); 
+    box-shadow: 0 14px 32px rgba(75,40,109,.09); 
+  }
+  
+  /* Stat Tiles */
+  .stat-tile {
+    background: #fff;
+    border: 1px solid var(--line); 
+    border-left: 3px solid var(--purple);
+    border-radius: 10px;
+    padding: clamp(20px, 2.2vw, 30px); 
+  }
 
-  /* DANCERS */
-  .dancer-wrapper { position: absolute; z-index: 8; display: flex; flex-direction: column; align-items: center; }
-  .dancer1 { animation: danceBounce1 0.55s ease-in-out infinite alternate; }
-  .dancer2 { animation: danceBounce2 0.65s ease-in-out infinite alternate; animation-delay: 0.2s; }
-  @keyframes danceBounce1 { 0%{transform:translateY(0) rotate(-5deg)} 100%{transform:translateY(-9px) rotate(5deg)} }
-  @keyframes danceBounce2 { 0%{transform:translateY(-4px) rotate(4deg)} 100%{transform:translateY(4px) rotate(-4deg)} }
-  .dancer-head { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; overflow: hidden; background: #b8e0ff; box-shadow: 0 2px 6px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; margin-bottom: 2px; flex-shrink: 0; }
-  .dancer-head img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  .stick-body { display: flex; flex-direction: column; align-items: center; position: relative; }
-  .stick-torso { width: 2px; height: 20px; background: #2A2C2E; border-radius: 2px; }
-  .stick-arms { position: absolute; top: 3px; width: 42px; height: 2px; left: 50%; transform: translateX(-50%); }
-  .dancer1 .stick-arms { animation: armWave1 0.55s ease-in-out infinite alternate; }
-  .dancer2 .stick-arms { animation: armWave2 0.65s ease-in-out infinite alternate; animation-delay: 0.15s; }
-  @keyframes armWave1 { 0%{transform:translateX(-50%) rotate(-38deg)} 100%{transform:translateX(-50%) rotate(38deg)} }
-  @keyframes armWave2 { 0%{transform:translateX(-50%) rotate(33deg)} 100%{transform:translateX(-50%) rotate(-33deg)} }
-  .stick-arm-left  { position: absolute; left: 0; top: 0; width: 19px; height: 2px; background: #2A2C2E; border-radius: 2px; transform-origin: right center; }
-  .stick-arm-right { position: absolute; right: 0; top: 0; width: 19px; height: 2px; background: #2A2C2E; border-radius: 2px; transform-origin: left center; }
-  .stick-legs { position: relative; width: 32px; height: 22px; }
-  .stick-leg-left  { position: absolute; left: 6px; top: 0; width: 2px; height: 20px; background: #2A2C2E; border-radius: 2px; transform-origin: top center; }
-  .stick-leg-right { position: absolute; right: 6px; top: 0; width: 2px; height: 20px; background: #2A2C2E; border-radius: 2px; transform-origin: top center; }
-  .dancer1 .stick-leg-left  { animation: legL1 0.55s ease-in-out infinite alternate; }
-  .dancer1 .stick-leg-right { animation: legR1 0.55s ease-in-out infinite alternate; }
-  .dancer2 .stick-leg-left  { animation: legL2 0.65s ease-in-out infinite alternate; animation-delay: 0.1s; }
-  .dancer2 .stick-leg-right { animation: legR2 0.65s ease-in-out infinite alternate; animation-delay: 0.1s; }
-  @keyframes legL1 { 0%{transform:rotate(-26deg)} 100%{transform:rotate(26deg)} }
-  @keyframes legR1 { 0%{transform:rotate(26deg)}  100%{transform:rotate(-26deg)} }
-  @keyframes legL2 { 0%{transform:rotate(24deg)}  100%{transform:rotate(-24deg)} }
-  @keyframes legR2 { 0%{transform:rotate(-24deg)} 100%{transform:rotate(24deg)} }
+  /* Progress Bar (Interactive alternative to the race track) */
+  .progress-wrap { margin-top: 20px; background: var(--tint2); border-radius: 4px; height: 8px; overflow: hidden; position: relative; }
+  .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 1.2s cubic-bezier(.3,0,0,1); }
 
-  /* PROGRESS BAR */
-  .progress-bar-container { position: absolute; bottom: 4%; left: 5%; width: 90%; z-index: 10; }
-  .progress-label { display: flex; justify-content: space-between; color: white; font-size: 9px; font-weight: bold; margin-bottom: 3px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-  .progress-track { width: 100%; height: 14px; background: rgba(255,255,255,0.2); border-radius: 7px; border: 1.5px solid rgba(255,255,255,0.4); overflow: hidden; position: relative; }
-  .progress-fill { height: 100%; border-radius: 7px; width: 0%; position: relative; }
-  .pf-gm    { background: linear-gradient(90deg, #4B286D, #00A400); animation: fillGm    3s ease-out 1s forwards; }
-  .pf-kddi  { background: linear-gradient(90deg, #0d4a99, #2288ee); animation: fillKddi  3s ease-out 1s forwards; }
-  .pf-cherry{ background: linear-gradient(90deg, #991111, #ee2222); animation: fillCherry 3s ease-out 1s forwards; }
-  /* GM: 437958/500000 = 87.59%, KDDI: 40339/500000 = 8.07% */
-  @keyframes fillGm    { 0%{width:0%} 100%{width:87.59%} }
-  @keyframes fillKddi  { 0%{width:0%} 100%{width:8.07%} }
-  @keyframes fillCherry{ 0%{width:0%} 100%{width:0.2%} }
-  .pf-gm::after    { content:'437,958'; position:absolute; right:6px; top:50%; transform:translateY(-50%); color:white; font-size:8px; font-weight:bold; }
-  .pf-kddi::after  { content:'40,339'; position:absolute; right:6px; top:50%; transform:translateY(-50%); color:white; font-size:8px; font-weight:bold; }
-  .pf-cherry::after{ content:'0K';     position:absolute; right:6px; top:50%; transform:translateY(-50%); color:white; font-size:8px; font-weight:bold; }
-  .progress-pct { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); color: #2A2C2E; font-size: 8px; font-weight: bold; }
+  /* Focus Ring Accessibility */
+  button:focus, .card:focus { outline: 3px solid var(--green); outline-offset: 2px; }
 
-  /* TREES */
-  .tree { position: absolute; bottom: calc(22% + 52px); z-index: 3; }
-  .tree-trunk { width: 7px; height: 12px; background: #8B4513; margin: 0 auto; }
-  .tree-top { width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid #228B22; margin: 0 auto; }
+  /* Media Queries for Layout collapses */
+  @media (max-width: 1024px) {
+    .split-grid { grid-template-columns: 1fr; }
+  }
 
-  /* CLOUDS */
-  .cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.65; }
-  .cloud::before, .cloud::after { content: ''; position: absolute; background: white; border-radius: 50%; }
-  .c1 { width: 80px; height: 26px; top: 8%; left: -90px; animation: cloudLoop 65s linear infinite; }
-  .c1::before { width: 40px; height: 40px; top: -20px; left: 8px; }
-  .c1::after  { width: 32px; height: 32px; top: -16px; left: 36px; }
-  .c2 { width: 60px; height: 20px; top: 22%; left: -70px; animation: cloudLoop 85s linear infinite 22s; }
-  .c2::before { width: 30px; height: 30px; top: -15px; left: 6px; }
-  .c2::after  { width: 24px; height: 24px; top: -12px; left: 26px; }
-  @keyframes cloudLoop { 0%{transform:translateX(0)} 100%{transform:translateX(110vw)} }
-
-  /* CONFETTI BURST */
-  .confetti-burst { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; display: none; }
-  .burst-piece { position: absolute; border-radius: 3px; animation: burstFall 2s ease-in forwards; }
-  @keyframes burstFall { 0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1} 100%{transform:translateY(100vh) rotate(720deg) scale(0.5);opacity:0} }
-
-  /* CONTROL BUTTONS */
-  .controls { position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
-  .ctrl-btn { padding: 8px 14px; border: none; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.4); transition: transform 0.15s, box-shadow 0.15s; }
-  .ctrl-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
-  .btn-celebrate { background: linear-gradient(135deg, #f0c040, #e84393); color: white; }
-  .btn-replay    { background: linear-gradient(135deg, #4B286D, #2288ee); color: white; }
-  .btn-stats     { background: linear-gradient(135deg, #00A400, #4B286D); color: white; }
-
-  /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: center; justify-content: center; }
-  .modal-overlay.active { display: flex; }
-  .modal-box { background: linear-gradient(135deg, #1e1e3a, #2a2c4e); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 24px; max-width: 340px; width: 90%; color: white; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
-  .modal-box h3 { font-size: 1.1rem; margin-bottom: 12px; color: #f0c040; }
-  .modal-box p  { font-size: 0.85rem; line-height: 1.5; color: #ccc; margin-bottom: 8px; }
-  .modal-close  { margin-top: 14px; padding: 8px 20px; background: #4B286D; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; }
-  .modal-close:hover { background: #6b3d9e; }
-  .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.82rem; }
-  .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: #9ca3af; }
-  .stat-val   { color: #4ade80; font-weight: bold; }
+  /* Reveal Motion */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 900ms cubic-bezier(.2,0,0,1), transform 900ms cubic-bezier(.2,0,0,1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
 
-<div class="confetti-burst" id="confettiBurst"></div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal-box" id="modalBox">
-    <h3 id="modalTitle">Info</h3>
-    <div id="modalContent"></div>
-    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('active')">Close</button>
-  </div>
-</div>
-
-<!-- CONTROLS -->
-<div class="controls">
-  <button class="ctrl-btn btn-celebrate" onclick="launchConfetti()">🎉 Celebrate!</button>
-  <button class="ctrl-btn btn-stats" onclick="showStats()">📊 Race Stats</button>
-  <button class="ctrl-btn btn-replay" onclick="replayRace()">🔄 Replay Race</button>
-</div>
-
-<!-- LEADERBOARD -->
-<div class="leaderboard">
-  <h2>🏁 VEHICLE BASE RACE TO 500K 🏁</h2>
-  <div class="lb-entries">
-    <div class="lb-entry rank1">
-      <span class="lb-rank">🥇</span>
-      <span class="lb-name">GM</span>
-      <span class="lb-num" style="color:#00A400;">437,958</span>
+  <!-- GREETER / HERO SECTION -->
+  <section class="sect tint pad view">
+    <div class="reveal">
+      <div class="micro" style="margin-bottom: 24px;">EPB Logistics &bull; June 2026</div>
+      <h1>Race to 500K Vehicles</h1>
+      <p style="margin-top: 24px;">Monitoring the ramp-up of deliveries across our three primary fleets. Target completion: 500,000 units.</p>
     </div>
-    <div class="lb-entry rank2">
-      <span class="lb-rank">🥈</span>
-      <span class="lb-name">KDDI</span>
-      <span class="lb-num" style="color:#2288ee;">40,339</span>
-    </div>
-    <div class="lb-entry rank3">
-      <span class="lb-rank">🥉</span>
-      <span class="lb-name">Cherry</span>
-      <span class="lb-num" style="color:#ee4444;">0K</span>
-    </div>
-  </div>
-</div>
+  </section>
 
-<!-- RACE CONTAINER -->
-<div class="race-container">
+  <!-- SPLIT SECTION: OVERVIEW STATS & PROGRESS -->
+  <section class="sect pad">
+    <div class="reveal">
+      <h2>Current Standings</h2>
+      <div class="split-grid">
+        
+        <!-- Interactive Cards Grid -->
+        <div class="grid">
+          <div class="card" tabindex="0" aria-label="Open GM Details">
+            <span class="badge positive">Leading</span>
+            <h3>GM</h3>
+            <p>Dominating the race with rapid expansion. Strong ramp-up since 2025.</p>
+            <div class="progress-wrap">
+              <div class="progress-bar" data-target="87.59"></div>
+            </div>
+            <div class="micro" style="margin-top: 8px; color: var(--green-d);">87.59% to goal</div>
+          </div>
+          
+          <div class="card" tabindex="0" aria-label="Open KDDI Details">
+            <span class="badge caution">Ramping Up</span>
+            <h3>KDDI</h3>
+            <p>Strong growth since the initial 12K output in 2025. Over tripled in volume.</p>
+            <div class="progress-wrap">
+              <div class="progress-bar" data-target="8.07"></div>
+            </div>
+            <div class="micro" style="margin-top: 8px;">8.07% to goal</div>
+          </div>
 
-  <!-- ===== GM LANE ===== -->
-  <div class="race-lane lane-gm">
-    <div class="company-badge badge-gm" onclick="showCompanyInfo('gm')">🚗 GM</div>
-    <div class="cloud c1"></div><div class="cloud c2"></div>
-    <div class="road"><div class="road-line"></div></div>
-    <div class="warehouse">
-      <div class="warehouse-building wh-gm">
-        <div class="warehouse-roof roof-gm"></div>
-        <div class="warehouse-door"></div>
-      </div>
-      <div class="warehouse-label">GM WAREHOUSE</div>
-    </div>
-    <div class="tree" style="left:61%"><div class="tree-top"></div><div class="tree-trunk"></div></div>
-    <div class="tree" style="left:65%"><div class="tree-top" style="border-bottom-color:#1a6e1a;border-left-width:9px;border-right-width:9px;border-bottom-width:18px"></div><div class="tree-trunk" style="height:9px"></div></div>
-
-    <!-- Car GM -->
-    <div class="car-wrapper anim-gm" id="carGm" style="position:absolute;">
-      <div style="position:relative;">
-        <div class="driver-bubble">
-          <span id="gmDrPh" style="font-size:12px">⏳</span>
-          <img id="gmDrImg" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/>
+          <div class="card" tabindex="0" aria-label="Open Cherry Details">
+            <span class="badge neutral">Pre-Launch</span>
+            <h3>Cherry</h3>
+            <p>Program initiated, currently loading initial manufacturing waves.</p>
+            <div class="progress-wrap">
+              <div class="progress-bar" data-target="0"></div>
+            </div>
+            <div class="micro" style="margin-top: 8px;">0% to goal</div>
+          </div>
         </div>
-        <div class="exhaust" id="exGm"><div class="puff"></div><div class="puff"></div><div class="puff"></div></div>
-        <svg class="car-svg" viewBox="0 0 120 55" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="28" width="110" height="18" rx="4" fill="#00A400"/>
-          <path d="M28 28 Q35 10 55 10 L80 10 Q95 10 98 28 Z" fill="#008000"/>
-          <path d="M35 27 Q40 14 55 14 L72 14 Q82 14 85 27 Z" fill="#b8e0ff" opacity="0.85"/>
-          <line x1="62" y1="14" x2="62" y2="27" stroke="#006600" stroke-width="2"/>
-          <circle cx="30" cy="46" r="9" fill="#1a1a1a"/><circle cx="30" cy="46" r="5" fill="#555"/><circle cx="30" cy="46" r="2" fill="#888"/>
-          <circle cx="88" cy="46" r="9" fill="#1a1a1a"/><circle cx="88" cy="46" r="5" fill="#555"/><circle cx="88" cy="46" r="2" fill="#888"/>
-          <ellipse cx="113" cy="34" rx="4" ry="3" fill="#fffacd"/>
-          <rect x="5" y="30" width="5" height="6" rx="1" fill="#ff4444"/>
-          <text x="50" y="41" font-size="8" font-weight="bold" fill="white" text-anchor="middle">GM</text>
-        </svg>
-      </div>
-    </div>
 
-    <!-- GM Milestones -->
-    <div class="milestone milestone-year ms-start" onclick="showMilestone('2023','GM','0K','Start of program')">
-      <div class="milestone-sign">📅 2023<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2024" onclick="showMilestone('2024','GM','25K','First deliveries')">
-      <div class="milestone-sign">📅 2024<br><span>25K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2025" onclick="showMilestone('2025','GM','198K','Strong ramp-up')">
-      <div class="milestone-sign">📅 2025<br><span>198K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone ms-current-gm" onclick="showMilestone('Jun 2026','GM','437,958','Current position — 87.59% to goal!')">
-      <div class="milestone-sign">📍 437,958 — We Are Here!<span class="milestone-sub">Jun 2026</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-
-    <!-- Party Zone GM -->
-    <div class="party-zone">
-      <div class="balloon b1"></div><div class="balloon b2"></div><div class="balloon b3"></div>
-      <div class="balloon b4"></div><div class="balloon b5"></div>
-      <div class="confetti-piece" style="background:#4B286D;left:12px;animation-delay:0s;animation-duration:2s"></div>
-      <div class="confetti-piece" style="background:#00A400;left:42px;animation-delay:0.5s;animation-duration:2.3s"></div>
-      <div class="confetti-piece" style="background:#f0c040;left:78px;animation-delay:1s;animation-duration:1.8s"></div>
-      <div class="confetti-piece" style="background:#e84393;left:112px;animation-delay:0.3s;animation-duration:2.5s"></div>
-      <div class="confetti-piece" style="background:#2288ee;left:148px;animation-delay:0.8s;animation-duration:2.1s"></div>
-      <div class="sparkle" style="left:18px;bottom:38px;animation-delay:0s">⭐</div>
-      <div class="sparkle" style="left:98px;bottom:44px;animation-delay:0.4s">✨</div>
-      <div class="sparkle" style="left:175px;bottom:38px;animation-delay:0.8s">🌟</div>
-    </div>
-
-    <!-- Dancers GM -->
-    <div class="dancer-wrapper dancer1" style="bottom:calc(42% + 30px);left:79%">
-      <div class="dancer-head"><span id="gmD1Ph" style="font-size:16px">🕺</span><img id="gmD1Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-    <div class="dancer-wrapper dancer2" style="bottom:calc(42% + 30px);left:85%">
-      <div class="dancer-head"><span id="gmD2Ph" style="font-size:16px">💃</span><img id="gmD2Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-
-    <div class="milestone ms-500k" onclick="showMilestone('Target','ALL','500K','🎉 PARTY TIME! The finish line!')">
-      <div class="milestone-sign">🎉 500K — PARTY TIME! 🎉</div>
-      <div class="milestone-pole"></div>
-    </div>
-
-    <div class="progress-bar-container">
-      <div class="progress-label"><span>🏭 Warehouse</span><span>🎯 437,958 / 500K (87.59%)</span><span>🎉 500K</span></div>
-      <div class="progress-track"><div class="progress-fill pf-gm"></div><span class="progress-pct">500K 🎉</span></div>
-    </div>
-  </div>
-
-  <div class="lane-divider"></div>
-
-  <!-- ===== KDDI LANE ===== -->
-  <div class="race-lane lane-kddi">
-    <div class="company-badge badge-kddi" onclick="showCompanyInfo('kddi')">🚙 KDDI</div>
-    <div class="cloud c1" style="animation-delay:18s"></div>
-    <div class="road"><div class="road-line"></div></div>
-    <div class="warehouse">
-      <div class="warehouse-building wh-kddi">
-        <div class="warehouse-roof roof-kddi"></div>
-        <div class="warehouse-door"></div>
-      </div>
-      <div class="warehouse-label">KDDI WAREHOUSE</div>
-    </div>
-    <div class="tree" style="left:61%"><div class="tree-top"></div><div class="tree-trunk"></div></div>
-
-    <!-- Car KDDI -->
-    <div class="car-wrapper anim-kddi" id="carKddi" style="position:absolute;">
-      <div style="position:relative;">
-        <div class="driver-bubble">
-          <span id="kddiDrPh" style="font-size:12px">⏳</span>
-          <img id="kddiDrImg" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/>
+        <!-- Big Stat Tiles -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="stat-tile">
+            <div class="micro">Global Target</div>
+            <div class="big-figure">500,000</div>
+            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Total units needed for the 2026 milestone.</p>
+          </div>
+          <div class="stat-tile">
+            <div class="micro">GM Current Volume</div>
+            <div class="big-figure" style="color: var(--green-d);">437,958</div>
+            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Only 62,042 units away from securing the overall goal.</p>
+          </div>
+          <div class="stat-tile">
+            <div class="micro">KDDI Current Volume</div>
+            <div class="big-figure">40,339</div>
+            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Up from 12K at the end of 2025.</p>
+          </div>
         </div>
-        <div class="exhaust" id="exKddi"><div class="puff"></div><div class="puff"></div><div class="puff"></div></div>
-        <svg class="car-svg" viewBox="0 0 120 55" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="28" width="110" height="18" rx="4" fill="#2288ee"/>
-          <path d="M28 28 Q35 10 55 10 L80 10 Q95 10 98 28 Z" fill="#1166cc"/>
-          <path d="M35 27 Q40 14 55 14 L72 14 Q82 14 85 27 Z" fill="#b8e0ff" opacity="0.85"/>
-          <line x1="62" y1="14" x2="62" y2="27" stroke="#0d4a99" stroke-width="2"/>
-          <circle cx="30" cy="46" r="9" fill="#1a1a1a"/><circle cx="30" cy="46" r="5" fill="#555"/><circle cx="30" cy="46" r="2" fill="#888"/>
-          <circle cx="88" cy="46" r="9" fill="#1a1a1a"/><circle cx="88" cy="46" r="5" fill="#555"/><circle cx="88" cy="46" r="2" fill="#888"/>
-          <ellipse cx="113" cy="34" rx="4" ry="3" fill="#fffacd"/>
-          <rect x="5" y="30" width="5" height="6" rx="1" fill="#ff4444"/>
-          <text x="50" y="41" font-size="7" font-weight="bold" fill="white" text-anchor="middle">KDDI</text>
-        </svg>
+        
       </div>
     </div>
+  </section>
 
-    <!-- KDDI Milestones -->
-    <div class="milestone milestone-year ms-start" onclick="showMilestone('2023','KDDI','0K','Program start')">
-      <div class="milestone-sign">📅 2023<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2024" onclick="showMilestone('2024','KDDI','0K','Pre-launch phase')">
-      <div class="milestone-sign">📅 2024<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2025" onclick="showMilestone('2025','KDDI','12K','Initial ramp')">
-      <div class="milestone-sign">📅 2025<br><span>12K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone ms-current-kddi" onclick="showMilestone('Jun 2026','KDDI','40,339','Current position — 8.07% to goal!')">
-      <div class="milestone-sign">📍 40,339 — We Are Here!<span class="milestone-sub">Jun 2026</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-
-    <!-- Party Zone KDDI -->
-    <div class="party-zone">
-      <div class="balloon b1"></div><div class="balloon b2"></div><div class="balloon b3"></div>
-      <div class="balloon b4"></div><div class="balloon b5"></div>
-      <div class="confetti-piece" style="background:#1a6bcc;left:12px;animation-delay:0.2s;animation-duration:2.1s"></div>
-      <div class="confetti-piece" style="background:#f0c040;left:50px;animation-delay:0.7s;animation-duration:2.4s"></div>
-      <div class="confetti-piece" style="background:#00A400;left:88px;animation-delay:1.2s;animation-duration:1.9s"></div>
-      <div class="confetti-piece" style="background:#e84393;left:126px;animation-delay:0.4s;animation-duration:2.6s"></div>
-      <div class="sparkle" style="left:22px;bottom:38px;animation-delay:0.2s">⭐</div>
-      <div class="sparkle" style="left:105px;bottom:44px;animation-delay:0.6s">✨</div>
-      <div class="sparkle" style="left:175px;bottom:38px;animation-delay:1s">🌟</div>
-    </div>
-
-    <!-- Dancers KDDI -->
-    <div class="dancer-wrapper dancer1" style="bottom:calc(42% + 30px);left:79%">
-      <div class="dancer-head"><span id="kddiD1Ph" style="font-size:16px">🕺</span><img id="kddiD1Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-    <div class="dancer-wrapper dancer2" style="bottom:calc(42% + 30px);left:85%">
-      <div class="dancer-head"><span id="kddiD2Ph" style="font-size:16px">💃</span><img id="kddiD2Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-
-    <div class="milestone ms-500k" onclick="showMilestone('Target','ALL','500K','🎉 PARTY TIME! The finish line!')">
-      <div class="milestone-sign">🎉 500K — PARTY TIME! 🎉</div>
-      <div class="milestone-pole"></div>
-    </div>
-
-    <div class="progress-bar-container">
-      <div class="progress-label"><span>🏭 Warehouse</span><span>🎯 40,339 / 500K (8.07%)</span><span>🎉 500K</span></div>
-      <div class="progress-track"><div class="progress-fill pf-kddi"></div><span class="progress-pct">500K 🎉</span></div>
-    </div>
-  </div>
-
-  <div class="lane-divider"></div>
-
-  <!-- ===== CHERRY LANE ===== -->
-  <div class="race-lane lane-cherry">
-    <div class="company-badge badge-cherry" onclick="showCompanyInfo('cherry')">🍒 Cherry</div>
-    <div class="cloud c2" style="animation-delay:35s"></div>
-    <div class="road"><div class="road-line"></div></div>
-    <div class="warehouse">
-      <div class="warehouse-building wh-cherry">
-        <div class="warehouse-roof roof-cherry"></div>
-        <div class="warehouse-door"></div>
-      </div>
-      <div class="warehouse-label">CHERRY WAREHOUSE</div>
-    </div>
-    <div class="tree" style="left:61%"><div class="tree-top"></div><div class="tree-trunk"></div></div>
-
-    <!-- Car Cherry -->
-    <div class="car-wrapper anim-cherry" id="carCherry" style="position:absolute;">
-      <div style="position:relative;">
-        <div class="driver-bubble">
-          <span id="cherryDrPh" style="font-size:12px">⏳</span>
-          <img id="cherryDrImg" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/>
-        </div>
-        <div class="exhaust" id="exCherry"><div class="puff"></div><div class="puff"></div><div class="puff"></div></div>
-        <svg class="car-svg" viewBox="0 0 120 55" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="28" width="110" height="18" rx="4" fill="#ee2222"/>
-          <path d="M28 28 Q35 10 55 10 L80 10 Q95 10 98 28 Z" fill="#cc1111"/>
-          <path d="M35 27 Q40 14 55 14 L72 14 Q82 14 85 27 Z" fill="#b8e0ff" opacity="0.85"/>
-          <line x1="62" y1="14" x2="62" y2="27" stroke="#991111" stroke-width="2"/>
-          <circle cx="30" cy="46" r="9" fill="#1a1a1a"/><circle cx="30" cy="46" r="5" fill="#555"/><circle cx="30" cy="46" r="2" fill="#888"/>
-          <circle cx="88" cy="46" r="9" fill="#1a1a1a"/><circle cx="88" cy="46" r="5" fill="#555"/><circle cx="88" cy="46" r="2" fill="#888"/>
-          <ellipse cx="113" cy="34" rx="4" ry="3" fill="#fffacd"/>
-          <rect x="5" y="30" width="5" height="6" rx="1" fill="#ff8888"/>
-          <text x="50" y="41" font-size="8" font-weight="bold" fill="white" text-anchor="middle">🍒</text>
-        </svg>
+  <!-- TABLE SECTION -->
+  <section class="sect tint pad">
+    <div class="reveal">
+      <h2>Historical Milestones</h2>
+      <p>Tracking the year-over-year growth from program inception to the current quarter.</p>
+      
+      <!-- Tables must be wrapped in overflow-x:auto per the constraints -->
+      <div style="overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr>
+              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">Fleet</th>
+              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">2024 Vol</th>
+              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">2025 Vol</th>
+              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">Jun 2026 Status</th>
+            </tr>
+          </thead>
+          <tbody style="font-size: 13.6px; font-family: var(--text);">
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">GM</td>
+              <td style="padding: 16px 8px;">25,000</td>
+              <td style="padding: 16px 8px;">198,000</td>
+              <td style="padding: 16px 8px; font-weight: bold;">437,958</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">KDDI</td>
+              <td style="padding: 16px 8px;">0</td>
+              <td style="padding: 16px 8px;">12,000</td>
+              <td style="padding: 16px 8px; font-weight: bold;">40,339</td>
+            </tr>
+            <tr>
+              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">Cherry</td>
+              <td style="padding: 16px 8px;">0</td>
+              <td style="padding: 16px 8px;">0</td>
+              <td style="padding: 16px 8px; font-weight: bold; color: var(--grey-l);">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
+  </section>
 
-    <!-- Cherry Milestones -->
-    <div class="milestone milestone-year ms-start" onclick="showMilestone('2023','Cherry','0K','Program start')">
-      <div class="milestone-sign">📅 2023<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2024" onclick="showMilestone('2024','Cherry','0K','Pre-launch')">
-      <div class="milestone-sign">📅 2024<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone milestone-year ms-2025" onclick="showMilestone('2025','Cherry','0K','Pre-launch')">
-      <div class="milestone-sign">📅 2025<br><span>0K</span></div>
-      <div class="milestone-pole"></div>
-    </div>
-    <div class="milestone ms-current-cherry" onclick="showMilestone('Jun 2026','Cherry','0K','Just loading — stay tuned!')">
-      <div class="milestone-sign">📍 0K — Just Loading!<span class="milestone-sub">Jun 2026</span></div>
-      <div class="milestone-pole"></div>
-    </div>
+  <script>
+    // Reveal on scroll via IntersectionObserver
+    // Checks for prefers-reduced-motion to paint end states immediately if needed.
+    const still = () => matchMedia('(prefers-reduced-motion:reduce)').matches || document.hidden;
 
-    <!-- Party Zone Cherry -->
-    <div class="party-zone">
-      <div class="balloon b1"></div><div class="balloon b2"></div><div class="balloon b3"></div>
-      <div class="balloon b4"></div><div class="balloon b5"></div>
-      <div class="confetti-piece" style="background:#cc1a1a;left:12px;animation-delay:0.3s;animation-duration:2.2s"></div>
-      <div class="confetti-piece" style="background:#f0c040;left:48px;animation-delay:0.8s;animation-duration:2.5s"></div>
-      <div class="confetti-piece" style="background:#00A400;left:85px;animation-delay:1.3s;animation-duration:2s"></div>
-      <div class="confetti-piece" style="background:#4B286D;left:122px;animation-delay:0.5s;animation-duration:2.3s"></div>
-      <div class="sparkle" style="left:20px;bottom:38px;animation-delay:0.3s">⭐</div>
-      <div class="sparkle" style="left:100px;bottom:44px;animation-delay:0.7s">✨</div>
-      <div class="sparkle" style="left:175px;bottom:38px;animation-delay:1.1s">🌟</div>
-    </div>
-
-    <!-- Dancers Cherry -->
-    <div class="dancer-wrapper dancer1" style="bottom:calc(42% + 30px);left:79%">
-      <div class="dancer-head"><span id="cherryD1Ph" style="font-size:16px">🕺</span><img id="cherryD1Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-    <div class="dancer-wrapper dancer2" style="bottom:calc(42% + 30px);left:85%">
-      <div class="dancer-head"><span id="cherryD2Ph" style="font-size:16px">💃</span><img id="cherryD2Img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt=""/></div>
-      <div class="stick-body"><div class="stick-torso"></div><div class="stick-arms"><div class="stick-arm-left"></div><div class="stick-arm-right"></div></div><div class="stick-legs"><div class="stick-leg-left"></div><div class="stick-leg-right"></div></div></div>
-    </div>
-
-    <div class="milestone ms-500k" onclick="showMilestone('Target','ALL','500K','🎉 PARTY TIME! The finish line!')">
-      <div class="milestone-sign">🎉 500K — PARTY TIME! 🎉</div>
-      <div class="milestone-pole"></div>
-    </div>
-
-    <div class="progress-bar-container">
-      <div class="progress-label"><span>🏭 Warehouse</span><span>🎯 0K / 500K (Just Starting!)</span><span>🎉 500K</span></div>
-      <div class="progress-track"><div class="progress-fill pf-cherry"></div><span class="progress-pct">500K 🎉</span></div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  const driverUrl  = 'https://firebasestorage.googleapis.com/v0/b/cdo-fuelix-app-pr-5c588b.appspot.com/o/users%2Fuser-Zx1alcPZwjfXu50r3ZBB%2Ffile-cWBjlOU27TnLljbbNh3C?alt=media&token=756a73e0-de11-486e-b819-60bf9fda5f09';
-  const dancer1Url = 'https://firebasestorage.googleapis.com/v0/b/cdo-fuelix-app-pr-5c588b.appspot.com/o/users%2Fuser-Zx1alcPZwjfXu50r3ZBB%2Ffile-PAlaKgDQhQEYPv8JTsMI?alt=media&token=050db376-02ac-4751-b799-de8a078dd9ed';
-  const dancer2Url = 'https://firebasestorage.googleapis.com/v0/b/cdo-fuelix-app-pr-5c588b.appspot.com/o/users%2Fuser-Zx1alcPZwjfXu50r3ZBB%2Ffile-pE0SDY7YwSZYcGH7ymI8?alt=media&token=cc9acae5-6d4e-4605-b089-f8ab9a91c3fc';
-
-  function loadImg(imgId, phId, url, fallback) {
-    const img = document.getElementById(imgId);
-    const ph  = document.getElementById(phId);
-    if (!img || !ph) return;
-    img.onload  = () => { ph.style.display='none'; img.style.display='block'; };
-    img.onerror = () => { ph.innerHTML = fallback; };
-    img.src = url;
-  }
-
-  loadImg('gmDrImg',    'gmDrPh',    driverUrl,  '😊');
-  loadImg('gmD1Img',    'gmD1Ph',    dancer1Url, '🕺');
-  loadImg('gmD2Img',    'gmD2Ph',    dancer2Url, '💃');
-  loadImg('kddiDrImg',  'kddiDrPh',  driverUrl,  '😊');
-  loadImg('kddiD1Img',  'kddiD1Ph',  dancer1Url, '🕺');
-  loadImg('kddiD2Img',  'kddiD2Ph',  dancer2Url, '💃');
-  loadImg('cherryDrImg','cherryDrPh',driverUrl,  '😊');
-  loadImg('cherryD1Img','cherryD1Ph',dancer1Url, '🕺');
-  loadImg('cherryD2Img','cherryD2Ph',dancer2Url, '💃');
-
-  // Stop exhaust after animation
-  setTimeout(() => {
-    ['exGm','exKddi','exCherry'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-  }, 5300);
-
-  // Dynamic alignment: nudge KDDI car to align with sign after animation
-  setTimeout(() => {
-    const lane = document.querySelector('.lane-kddi');
-    const car  = document.getElementById('carKddi');
-    const sign = lane ? lane.querySelector('.ms-current-kddi') : null;
-    if (car && sign && lane) {
-      const laneW   = lane.offsetWidth;
-      const signPct = 22;
-      const signPx  = (signPct / 100) * laneW;
-      const carW    = car.offsetWidth;
-      const targetPx  = signPx - carW;
-      const targetPct = (targetPx / laneW) * 100;
-      car.style.animation = 'none';
-      car.style.left = targetPct + '%';
-    }
-  }, 5400);
-
-  // Confetti burst
-  function launchConfetti() {
-    const burst = document.getElementById('confettiBurst');
-    burst.style.display = 'block';
-    burst.innerHTML = '';
-    const colors = ['#4B286D','#00A400','#f0c040','#e84393','#2288ee','#cc1a1a','#fff'];
-    for (let i = 0; i < 160; i++) {
-      const p = document.createElement('div');
-      p.className = 'burst-piece';
-      p.style.cssText = `
-        left: ${Math.random()*100}%;
-        top: ${Math.random()*25}%;
-        background: ${colors[Math.floor(Math.random()*colors.length)]};
-        animation-delay: ${Math.random()*0.8}s;
-        animation-duration: ${1.5 + Math.random()*1.5}s;
-        width: ${6+Math.random()*8}px;
-        height: ${6+Math.random()*8}px;
-        border-radius: ${Math.random()>0.5?'50%':'3px'};
-      `;
-      burst.appendChild(p);
-    }
-    setTimeout(() => { burst.style.display = 'none'; }, 3200);
-  }
-
-  // Show stats modal
-  function showStats() {
-    document.getElementById('modalTitle').textContent = '📊 Race Standings — June 2026';
-    document.getElementById('modalContent').innerHTML = `
-      <div class="stat-row"><span class="stat-label">🥇 GM</span><span class="stat-val">437,958 (87.59%)</span></div>
-      <div class="stat-row"><span class="stat-label">🥈 KDDI</span><span class="stat-val">40,339 (8.07%)</span></div>
-      <div class="stat-row"><span class="stat-label">🥉 Cherry</span><span class="stat-val">0K (Just Starting)</span></div>
-      <div class="stat-row"><span class="stat-label">🎯 Target</span><span class="stat-val">500K</span></div>
-      <div class="stat-row"><span class="stat-label">📅 Updated</span><span class="stat-val">June 2026</span></div>
-      <p style="margin-top:10px;font-size:0.8rem;color:#a78bca;">GM is crushing it at 87.59% — only 62,042 to go! 🚀</p>
-    `;
-    document.getElementById('modalOverlay').classList.add('active');
-  }
-
-  // Show company info
-  function showCompanyInfo(company) {
-    const data = {
-      gm:     { title: '🚗 GM — Race Leader', color: '#00A400', current: '437,958', pct: '87.59%', y2025: '198K', y2024: '25K', note: 'Dominating the race! Only 62,042 away from the 500K goal. Keep pushing! 🔥' },
-      kddi:   { title: '🚙 KDDI — Picking Up Speed', color: '#2288ee', current: '40,339', pct: '8.07%', y2025: '12K', y2024: '0K', note: 'Strong growth from 12K to 40,339 — more than tripled since 2025! 📈' },
-      cherry: { title: '🍒 Cherry — Loading...', color: '#ee2222', current: '0K', pct: '0%', y2025: '0K', y2024: '0K', note: 'Just getting started. Watch this space! 🌱' }
-    };
-    const d = data[company];
-    document.getElementById('modalTitle').innerHTML = `<span style="color:${d.color}">${d.title}</span>`;
-    document.getElementById('modalContent').innerHTML = `
-      <div class="stat-row"><span class="stat-label">Current (Jun 2026)</span><span class="stat-val">${d.current}</span></div>
-      <div class="stat-row"><span class="stat-label">% to 500K Goal</span><span class="stat-val">${d.pct}</span></div>
-      <div class="stat-row"><span class="stat-label">End of 2025</span><span class="stat-val">${d.y2025}</span></div>
-      <div class="stat-row"><span class="stat-label">End of 2024</span><span class="stat-val">${d.y2024}</span></div>
-      <p style="margin-top:10px;font-size:0.8rem;color:#a78bca;">${d.note}</p>
-    `;
-    document.getElementById('modalOverlay').classList.add('active');
-  }
-
-  // Show milestone info
-  function showMilestone(period, company, value, note) {
-    document.getElementById('modalTitle').textContent = `📍 ${company} — ${period}`;
-    document.getElementById('modalContent').innerHTML = `
-      <div class="stat-row"><span class="stat-label">Vehicles Delivered</span><span class="stat-val">${value}</span></div>
-      <div class="stat-row"><span class="stat-label">Period</span><span class="stat-val">${period}</span></div>
-      <p style="margin-top:10px;font-size:0.82rem;color:#a78bca;">${note}</p>
-    `;
-    document.getElementById('modalOverlay').classList.add('active');
-  }
-
-  // Close modal on overlay click
-  function closeModal(e) {
-    if (e.target === document.getElementById('modalOverlay')) {
-      document.getElementById('modalOverlay').classList.remove('active');
-    }
-  }
-
-  // Replay race
-  function replayRace() {
-    ['carGm','carKddi','carCherry'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.style.animation = 'none';
-      el.style.left = '12%';
-      void el.offsetWidth; // reflow
-    });
-    document.querySelectorAll('.progress-fill').forEach(f => {
-      f.style.animation = 'none';
-      f.style.width = '0';
-      void f.offsetWidth;
-      f.style.animation = '';
-    });
-    ['exGm','exKddi','exCherry'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'block';
-    });
-    setTimeout(() => {
-      document.getElementById('carGm').style.animation    = 'carGm    5s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-      document.getElementById('carKddi').style.animation  = 'carKddi  5s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-      document.getElementById('carCherry').style.animation= 'carCherry 5s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-    }, 100);
-    setTimeout(() => {
-      ['exGm','exKddi','exCherry'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (still()) {
+            // Paint end states immediately to prevent blank content
+            entry.target.style.transition = 'none';
+            entry.target.classList.add('visible');
+            
+            const bars = entry.target.querySelectorAll('.progress-bar');
+            bars.forEach(bar => {
+              bar.style.transition = 'none';
+              bar.style.width = bar.getAttribute('data-target') + '%';
+            });
+          } else {
+            // Run standard 900ms entrance reveal and 1200ms chart draws
+            entry.target.classList.add('visible');
+            
+            const bars = entry.target.querySelectorAll('.progress-bar');
+            bars.forEach(bar => {
+              setTimeout(() => {
+                bar.style.width = bar.getAttribute('data-target') + '%';
+              }, 200); // slight stagger
+            });
+          }
+          obs.unobserve(entry.target);
+        }
       });
-      // Re-align KDDI car
-      const lane = document.querySelector('.lane-kddi');
-      const car  = document.getElementById('carKddi');
-      if (car && lane) {
-        const laneW = lane.offsetWidth;
-        const signPx = (22 / 100) * laneW;
-        const carW = car.offsetWidth;
-        const targetPct = ((signPx - carW) / laneW) * 100;
-        car.style.animation = 'none';
-        car.style.left = targetPct + '%';
-      }
-    }, 5400);
-    launchConfetti();
-  }
+    }, { threshold: 0.1 });
 
-  // Launch confetti on load
-  setTimeout(launchConfetti, 600);
-</script>
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
 </body>
 </html>
