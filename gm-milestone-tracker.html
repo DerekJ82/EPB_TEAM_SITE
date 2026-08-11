@@ -104,10 +104,6 @@
     z-index: 2;
   }
 
-  /* 
-    Floor widened significantly (400%) to ensure extreme 
-    corners of the screen are filled at all rotation angles 
-  */
   .world-floor {
     position: absolute;
     bottom: -150px;
@@ -157,30 +153,6 @@
       transparent 100px,
       transparent 200px
     );
-  }
-
-  /* 3D Scenery - Trees! */
-  .tree {
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-left: 35px solid transparent;
-    border-right: 35px solid transparent;
-    border-bottom: 120px solid #2d5a27; /* Pine green */
-    transform: translateX(-50%) rotateX(-80deg); 
-    transform-origin: bottom center;
-    backface-visibility: hidden;
-  }
-
-  /* Tree trunks */
-  .tree::after {
-    content: '';
-    position: absolute;
-    top: 120px; 
-    left: -10px;
-    width: 20px;
-    height: 30px;
-    background: #4a3424;
   }
 
   .object-3d {
@@ -287,7 +259,6 @@
     font-style: italic;
     color: #fbcc04;
     text-transform: uppercase;
-    /* Comic book text stroke/shadow effect */
     text-shadow: 
       4px 4px 0 #cc0000, -4px -4px 0 #cc0000,
       4px -4px 0 #cc0000, -4px 4px 0 #cc0000,
@@ -429,7 +400,6 @@
   */
   .steering-column {
     position: absolute;
-    /* Moved up significantly for better visibility */
     bottom: -50px;
     left: 50%;
     transform: translateX(-50%);
@@ -439,10 +409,11 @@
     z-index: 10;
   }
 
+  /* Moved wiper stalk slightly lower and further back so it clears the GM gauge */
   .wiper-stalk {
     position: absolute;
-    left: -140px; 
-    top: 30px; 
+    left: -160px; 
+    top: 75px; 
     width: 100px;
     height: 30px;
     background: linear-gradient(to bottom, #444, #222);
@@ -536,30 +507,6 @@
           <div class="road">
             <div class="road-lines"></div>
           </div>
-          
-          <!-- Trees on the Left side -->
-          <div class="tree" style="left: 20%; bottom: 600px;"></div>
-          <div class="tree" style="left: 30%; bottom: 1800px;"></div>
-          <div class="tree" style="left: 15%; bottom: 2500px;"></div>
-          <div class="tree" style="left: 25%; bottom: 3500px;"></div>
-          <div class="tree" style="left: 10%; bottom: 4800px;"></div>
-          <div class="tree" style="left: 20%; bottom: 6000px;"></div>
-          <div class="tree" style="left: 32%; bottom: 7500px;"></div>
-          <div class="tree" style="left: 18%; bottom: 8500px;"></div>
-          <div class="tree" style="left: 28%; bottom: 9800px;"></div>
-          <div class="tree" style="left: 15%; bottom: 10800px;"></div>
-
-          <!-- Trees on the Right side -->
-          <div class="tree" style="left: 80%; bottom: 800px;"></div>
-          <div class="tree" style="left: 70%; bottom: 2000px;"></div>
-          <div class="tree" style="left: 85%; bottom: 3200px;"></div>
-          <div class="tree" style="left: 75%; bottom: 4200px;"></div>
-          <div class="tree" style="left: 90%; bottom: 5500px;"></div>
-          <div class="tree" style="left: 80%; bottom: 6800px;"></div>
-          <div class="tree" style="left: 70%; bottom: 8000px;"></div>
-          <div class="tree" style="left: 88%; bottom: 9000px;"></div>
-          <div class="tree" style="left: 75%; bottom: 10200px;"></div>
-          <div class="tree" style="left: 85%; bottom: 11200px;"></div>
           
           <!-- Physical locations on the map -->
           <div class="object-3d sign" id="sign-2024">
@@ -772,7 +719,7 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party (July 2026 update)
+      // LEG 3: Drive to the 500k Party
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
@@ -809,12 +756,11 @@
       setTimeout(startDriveSequence, 600);
     }
 
-    // New Visual Honk Feature
+    // New Visual Honk Feature (No Sound)
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
       
-      // Flash the windshield slightly
       const windshield = document.querySelector('.windshield');
       windshield.style.filter = 'brightness(1.15)';
       
