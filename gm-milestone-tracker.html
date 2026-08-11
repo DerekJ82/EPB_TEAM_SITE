@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vehicle Base Race - 1 Million Edition</title>
-<!-- Confetti Library -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
@@ -54,9 +53,21 @@
     to { transform: scale(1.05); }
   }
 
+  /* The Sun */
+  .windshield::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 10%;
+    width: 80px;
+    height: 80px;
+    background: #fff9d6;
+    border-radius: 50%;
+    box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
+  }
+
   /* 
-    2. THE 3D WORLD MAP (The Fix)
-    Everything is attached to the "track" which we slide forward.
+    2. THE 3D WORLD MAP
   */
   .world-camera {
     position: absolute;
@@ -69,25 +80,26 @@
 
   .world-floor {
     position: absolute;
-    bottom: -100px;
+    bottom: -150px;
     left: -50%;
     width: 200%;
-    height: 150vh;
+    height: 250vh; /* Stretched further to reach the horizon */
     background: #7bb558; 
     transform: rotateX(80deg);
     transform-origin: bottom center;
     transform-style: preserve-3d;
   }
 
-  /* The actual physical track that holds the road and signs */
+  /* The track MUST preserve-3d so the signs stand up */
   .track {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 12000px; /* A massively long road */
-    transform: translateY(0); /* We animate this with JS to drive forward */
+    height: 12000px; 
+    transform: translateY(0); 
     will-change: transform;
+    transform-style: preserve-3d; /* This fixes the flattened/squished signs! */
   }
 
   .road {
@@ -110,7 +122,7 @@
     width: 10px;
     height: 100%;
     background: repeating-linear-gradient(
-      to top, /* Going away from camera */
+      to top, 
       #fbcc04 0,
       #fbcc04 100px,
       transparent 100px,
@@ -126,6 +138,7 @@
     transform: translateX(-50%) rotateX(-80deg); 
     transform-origin: bottom center;
     text-align: center;
+    backface-visibility: hidden;
   }
 
   .sign {
@@ -151,11 +164,10 @@
   .sign h4 { font-size: 24px; margin-bottom: 5px; }
   .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
 
-  /* Specific Map Locations */
+  /* Map Locations */
   #sign-2024 { bottom: 1500px; margin-left: -200px; }
   #sign-2025 { bottom: 4000px; margin-left: 200px; }
   
-  /* The 500k Party Zone */
   #party-500k {
     bottom: 6500px;
     font-size: 50px;
@@ -173,7 +185,7 @@
     border-radius: 8px;
   }
 
-  #sign-1m { bottom: 10000px; margin-left: 0; background: #222; }
+  #sign-1m { bottom: 10000px; margin-left: 0; background: #222; border-color: #00ff66; }
 
   /* 
     3. THE WINDSHIELD WIPER 
@@ -348,10 +360,11 @@
     z-index: 10;
   }
 
+  /* Moved wiper stalk UP and INWARD so it doesn't get cut off */
   .wiper-stalk {
     position: absolute;
-    left: -190px;
-    top: 75px;
+    left: -140px; 
+    top: 30px; 
     width: 100px;
     height: 30px;
     background: linear-gradient(to bottom, #444, #222);
@@ -542,7 +555,6 @@
   </div>
 
   <script>
-    // --- GAUGE LOGIC ---
     // The new target is 1,000,000. So 523,028 is ~52.3% of the dial.
     const TARGET_1M = 1000000;
     const MAX_DASH = 212; 
@@ -552,12 +564,10 @@
     let reqFrames = {};
     let currentVals = { gm: 0, kddi: 0, cherry: 0 };
     let driveSequenceActive = false;
-    let trackY = 0; // Current position of the track
+    let trackY = 0; 
 
-    // Utility: Wait for X milliseconds
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-    // Animate text numbers smoothly
     function animateValue(id, start, end, duration) {
       if (reqFrames[id]) cancelAnimationFrame(reqFrames[id]);
       const obj = document.getElementById(`val-${id}`);
@@ -578,11 +588,10 @@
       reqFrames[id] = window.requestAnimationFrame(step);
     }
 
-    // Update Gauges to the new values
     function updateGauges(targets, durationMs) {
       Object.keys(targets).forEach(id => {
         const val = targets[id];
-        const pct = (val / TARGET_1M) * 100; // New 1 Million scale!
+        const pct = (val / TARGET_1M) * 100; 
         
         const fill = document.getElementById(`fill-${id}`);
         const needle = document.getElementById(`needle-${id}`);
@@ -591,7 +600,6 @@
         fill.style.transition = `stroke-dashoffset ${durationMs}ms ease-in-out`;
         needle.style.transition = `transform ${durationMs}ms ease-in-out`;
         
-        // Prevent going backwards to zero if Cherry stays at 0
         const displayPct = Math.max(pct, 0.1); 
 
         const fillAmount = (displayPct / 100) * MAX_DASH; 
@@ -613,9 +621,6 @@
       });
     }
 
-    // --- THE MASTER 3D DRIVE ENGINE ---
-    // Uses the Web Animations API to perfectly lock JavaScript execution 
-    // to the end of the physical CSS movement. Guaranteed sync.
     async function driveTo(distanceY, duration) {
       if (!driveSequenceActive) return;
       const track = document.getElementById('master-track');
@@ -630,24 +635,19 @@
       });
 
       trackY = distanceY;
-      
-      // Wait for the animation to physically finish moving the world
       await anim.finished; 
     }
 
-    // The sequential journey
     async function startDriveSequence() {
-      driveSequenceActive = false; // Kill previous run
+      driveSequenceActive = false; 
       await sleep(50);
       driveSequenceActive = true;
       trackY = 0;
 
-      // Reset HUD
       const hud = document.getElementById('hud-target');
       hud.className = 'hud';
       hud.innerHTML = 'TARGET: 500,000';
 
-      // Reset World and Gauges instantly
       document.getElementById('master-track').style.transform = `translateY(0)`;
       updateGauges({ gm: 0, kddi: 0, cherry: 0 }, 0);
       currentVals = { gm: 0, kddi: 0, cherry: 0 };
@@ -655,13 +655,12 @@
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      // LEG 1: Drive to 2024 
-      // Moves track 1200px down so the 2024 sign (at bottom 1500) slides up to the camera
+      // LEG 1: Drive to 2024
       await driveTo(1200, 3000); 
       if (!driveSequenceActive) return;
       
       updateGauges({ gm: 25000, kddi: 0, cherry: 0 }, 2000);
-      await sleep(2500); // Pause to read gauges
+      await sleep(2500); 
 
       // LEG 2: Drive to 2025
       await driveTo(3700, 3500); 
@@ -670,25 +669,23 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party (July 2026 update)
+      // LEG 3: Drive to the 500k Party (July 2026)
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
-      // BOOM! We hit 564,083!
+      // Updated Totals!
       updateGauges({ gm: 523028, kddi: 41055, cherry: 0 }, 2000);
       
-      // Pop massive confetti
       fireConfetti();
       await sleep(800);
       fireConfetti();
       
-      // Update HUD to 1 Million Target!
       hud.classList.add('upgraded');
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
       
-      await sleep(3500); // Linger at the party a bit longer
+      await sleep(3500); 
 
-      // LEG 4: Set sights on 1 Million and drive into horizon
+      // LEG 4: Set sights on 1 Million
       await driveTo(9700, 4000); 
     }
 
@@ -706,8 +703,6 @@
       wiper.classList.remove('is-wiping');
       void wiper.offsetWidth;
       wiper.classList.add('is-wiping');
-
-      // Start the sequence exactly when the wiper blade crosses the screen
       setTimeout(startDriveSequence, 600);
     }
 
@@ -717,7 +712,6 @@
       audio.play().catch(e => console.log("Horn requires user interaction first."));
     }
 
-    // Auto-start on load
     window.onload = () => {
       setTimeout(startDriveSequence, 400); 
     };
