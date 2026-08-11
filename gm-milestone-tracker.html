@@ -18,7 +18,7 @@
   }
 
   /* 
-    1. THE WINDSHIELD (Daytime 3D Road)
+    1. THE WINDSHIELD
   */
   .windshield {
     flex: 1;
@@ -31,7 +31,6 @@
     min-height: 50vh; 
   }
 
-  /* The Sun */
   .windshield::before {
     content: '';
     position: absolute;
@@ -44,7 +43,6 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
-  /* 3D Ground and Road */
   .world {
     position: absolute;
     top: 50%; 
@@ -70,50 +68,34 @@
   }
 
   /* 
-    Moving dashed lines - Synced to 24s Master Timeline 
-    Uses ease-out for braking, ease-in for accelerating
+    Road Lines - Now hardware accelerated via transform 
+    to guarantee buttery smooth braking and stopping.
   */
-  .road::after {
-    content: '';
+  .road-lines-container {
     position: absolute;
-    top: 0;
-    left: 50%;
+    top: 0; left: 50%;
     transform: translateX(-50%);
+    width: 10px; height: 100%;
+    overflow: hidden;
+  }
+
+  .road-lines {
+    position: absolute;
+    bottom: 0; left: 0;
     width: 10px;
-    height: 100%;
-    background: repeating-linear-gradient(
-      to bottom,
-      #fbcc04 0,
-      #fbcc04 80px,
-      transparent 80px,
-      transparent 160px
-    );
+    height: 12000px; /* Extremely long to allow scrolling down */
+    background: repeating-linear-gradient(to top, #fbcc04 0, #fbcc04 80px, transparent 80px, transparent 160px);
+    transform: translateY(0);
+    /* The transition creates the smooth accelerate and brake effect */
+    transition: transform 3s ease-in-out;
   }
 
-  .road.is-driving::after {
-    animation: driveRoad 24s forwards;
-  }
-
-  @keyframes driveRoad {
-    0%   { background-position: 0 0; animation-timing-function: ease-out; } /* Drive to 2024 */
-    15%  { background-position: 0 1000px; animation-timing-function: linear; } /* Pause at 2024 */
-    25%  { background-position: 0 1000px; animation-timing-function: ease-in; } /* Accelerate away */
-    30%  { background-position: 0 1200px; animation-timing-function: ease-out; } /* Drive to 2025 */
-    45%  { background-position: 0 2200px; animation-timing-function: linear; } /* Pause at 2025 */
-    55%  { background-position: 0 2200px; animation-timing-function: ease-in; } /* Accelerate away */
-    60%  { background-position: 0 2400px; animation-timing-function: ease-out; } /* Drive to Aug 2026 */
-    75%  { background-position: 0 3400px; animation-timing-function: linear; } /* Pause at 2026 */
-    85%  { background-position: 0 3400px; animation-timing-function: ease-in; } /* Accelerate away */
-    90%  { background-position: 0 3600px; animation-timing-function: ease-out; } /* Drive to Party */
-    100% { background-position: 0 4000px; } /* Final Stop */
-  }
-
-  /* Passing Roadsigns tied directly to the 24s master timeline */
+  /* 
+    ROAD SIGNS - Controlled exclusively by CSS state classes
+  */
   .sign {
     position: absolute;
     top: 0;
-    transform: rotateX(-80deg) translate(-50%, -100%) scale(0.1);
-    transform-origin: bottom center;
     background: #007733;
     color: white;
     border: 3px solid #fff;
@@ -122,7 +104,7 @@
     text-align: center;
     box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     opacity: 0;
-    will-change: transform, opacity;
+    transition: all 3s ease-in-out;
   }
   
   .sign::after {
@@ -139,31 +121,28 @@
   .sign h4 { font-size: 24px; margin-bottom: 5px; }
   .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
 
-  .sign-1.is-driving { animation: sign1 24s forwards; }
-  @keyframes sign1 {
-    0%   { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
-    15%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: linear; }
-    25%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: ease-in; }
-    30%  { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
-    100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
+  /* Left Side Path */
+  .sign.left-side {
+    left: 49%; transform: rotateX(-80deg) translate(-50%, -100%) scale(0.1);
+  }
+  .sign.left-side.parked {
+    left: 20%; top: 350px; transform: rotateX(-80deg) translate(0, 0) scale(1.5); opacity: 1;
+  }
+  .sign.left-side.passed {
+    transition: all 1.5s ease-in; /* Faster flyby */
+    left: -10%; top: 800px; transform: rotateX(-80deg) translate(-200px, 0) scale(3); opacity: 0;
   }
 
-  .sign-2.is-driving { animation: sign2 24s forwards; }
-  @keyframes sign2 {
-    0%, 30% { left: 49%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
-    45%  { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); animation-timing-function: linear; }
-    55%  { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); animation-timing-function: ease-in; }
-    60%  { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
-    100% { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
+  /* Right Side Path */
+  .sign.right-side {
+    left: 51%; transform: rotateX(-80deg) translate(-50%, -100%) scale(0.1);
   }
-
-  .sign-3.is-driving { animation: sign3 24s forwards; }
-  @keyframes sign3 {
-    0%, 60% { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
-    75%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: linear; }
-    85%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: ease-in; }
-    90%  { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
-    100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
+  .sign.right-side.parked {
+    left: 80%; top: 350px; transform: rotateX(-80deg) translate(0, 0) scale(1.5); opacity: 1;
+  }
+  .sign.right-side.passed {
+    transition: all 1.5s ease-in;
+    left: 110%; top: 800px; transform: rotateX(-80deg) translate(200px, 0) scale(3); opacity: 0;
   }
 
   /* The Party on the Horizon */
@@ -173,17 +152,14 @@
     left: 50%;
     text-align: center;
     z-index: 10;
-    opacity: 0;
     transform: translate(-50%, -80%) scale(0.1);
+    opacity: 0;
+    transition: all 3s ease-in-out;
   }
 
-  .party-destination.is-driving {
-    animation: partyDest 24s forwards;
-  }
-  
-  @keyframes partyDest {
-    0%, 90% { transform: translate(-50%, -80%) scale(0.1); opacity: 0; animation-timing-function: ease-out; }
-    100% { transform: translate(-50%, -100%) scale(1.6); opacity: 1; }
+  .party-destination.parked {
+    transform: translate(-50%, -100%) scale(1.6);
+    opacity: 1;
   }
 
   .party-destination .emojis {
@@ -285,7 +261,7 @@
     justify-content: center;
   }
 
-  /* Staggered instrument cluster to clear the steering wheel completely */
+  /* Offset center gauge */
   .gauge-center {
     transform: translateY(-45px);
   }
@@ -379,7 +355,6 @@
   */
   .steering-column {
     position: absolute;
-    /* Lowered significantly to clear the KDDI dial completely */
     bottom: -110px;
     left: 50%;
     transform: translateX(-50%);
@@ -389,7 +364,6 @@
     z-index: 10;
   }
 
-  /* Wiper Stalk Button - Repositioned wide and down */
   .wiper-stalk {
     position: absolute;
     left: -190px;
@@ -472,30 +446,33 @@
 </head>
 <body>
 
-  <!-- Real Car Horn Audio File (Google UI Sounds Library) -->
   <audio id="carHornAudio" src="https://actions.google.com/sounds/v1/alarms/car_horn.ogg" preload="auto"></audio>
 
   <!-- WINDSHIELD SCENE -->
   <div class="windshield">
     
-    <div class="party-destination animation-target">
+    <div class="party-destination" id="partyDest">
       <div class="emojis">🎪🎉🎈</div>
       <div class="banner">500K Goal</div>
     </div>
 
     <div class="world">
-      <div class="road animation-target"></div>
+      <div class="road">
+        <div class="road-lines-container">
+          <div class="road-lines" id="roadLines"></div>
+        </div>
+      </div>
       
       <!-- Passing Roadsigns -->
-      <div class="sign sign-1 animation-target">
+      <div class="sign left-side" id="sign1">
         <h4>2024</h4>
         <p>25,000</p>
       </div>
-      <div class="sign sign-2 animation-target">
+      <div class="sign right-side" id="sign2">
         <h4>2025</h4>
         <p>198,000</p>
       </div>
-      <div class="sign sign-3 animation-target">
+      <div class="sign left-side" id="sign3">
         <h4>AUG 2026</h4>
         <p>437,958</p>
       </div>
@@ -523,7 +500,7 @@
       <div class="gauge-pct" style="color: #0077cc;" id="pct-gm">0.00%</div>
     </div>
 
-    <!-- KDDI GAUGE (Raised via .gauge-center class) -->
+    <!-- KDDI GAUGE (Raised) -->
     <div class="gauge-container gauge-center">
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
@@ -577,10 +554,13 @@
     const MAX_DEG = 270;
 
     let reqFrames = {};
-    let driveTimeouts = [];
     let currentVals = { gm: 0, kddi: 0, cherry: 0 };
+    let driveGeneration = 0; // Ensures old drive sequences stop if you hit reset
 
-    // Function to animate the text numbers over a specific duration
+    // Utility sleep function to orchestrate the timeline
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // Animate text numbers smoothly over a specific duration
     function animateValue(id, start, end, duration) {
       if (reqFrames[id]) cancelAnimationFrame(reqFrames[id]);
       
@@ -590,7 +570,6 @@
       const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        // Smooth ease-in-out for the numbers to match the gauge needles
         const easeOut = 0.5 - Math.cos(progress * Math.PI) / 2; 
         const current = Math.floor(easeOut * (end - start) + start);
         
@@ -603,7 +582,7 @@
       reqFrames[id] = window.requestAnimationFrame(step);
     }
 
-    // Function to set all gauges for a specific leg of the journey
+    // Set gauges and animate to target
     function updateGauges(targets, durationMs) {
       Object.keys(targets).forEach(id => {
         const item = targets[id];
@@ -625,62 +604,94 @@
             pctEl.innerHTML = item.pct.toFixed(2) + "%";
         }
 
-        animateValue(id, currentVals[id], item.val, durationMs);
+        if (durationMs > 0) {
+            animateValue(id, currentVals[id], item.val, durationMs);
+        } else {
+            document.getElementById(`val-${id}`).innerHTML = item.val.toLocaleString();
+        }
         currentVals[id] = item.val;
       });
     }
 
-    function startDriveSequence() {
-      // 1. Reset physical drive CSS animations
-      const targets = document.querySelectorAll('.animation-target');
-      targets.forEach(el => {
-        el.classList.remove('is-driving');
-        void el.offsetWidth; 
-        el.classList.add('is-driving');
-      });
+    // The Master Timeline Sequence
+    async function startDriveSequence() {
+      driveGeneration++;
+      const currentGen = driveGeneration;
 
-      // 2. Clear all JS timeouts and frames if reset mid-drive
-      driveTimeouts.forEach(clearTimeout);
-      driveTimeouts = [];
-      Object.values(reqFrames).forEach(cancelAnimationFrame);
-      reqFrames = {};
+      // DOM Elements
+      const roadLines = document.getElementById('roadLines');
+      const s1 = document.getElementById('sign1');
+      const s2 = document.getElementById('sign2');
+      const s3 = document.getElementById('sign3');
+      const party = document.getElementById('partyDest');
 
-      // 3. Reset Gauges immediately to 0
-      currentVals = { gm: 0, kddi: 0, cherry: 0 };
-      updateGauges({ 
-          gm: { val: 0, pct: 0 }, 
-          kddi: { val: 0, pct: 0 }, 
-          cherry: { val: 0, pct: 0.1 } 
-      }, 0);
-
-      // 4. Choreograph the Gauge movements to match the 24s CSS road timeline
+      // 1. Instant Reset (no transitions)
+      roadLines.style.transition = 'none';
+      roadLines.style.transform = 'translateY(0)';
       
-      // Pause 1: Drive to 2024 (Arrives at 3.6s, pauses for 2.4s)
-      driveTimeouts.push(setTimeout(() => {
-        updateGauges({ 
-            gm: { val: 25000, pct: 5 }, 
-            kddi: { val: 0, pct: 0 }, 
-            cherry: { val: 0, pct: 0.1 } 
-        }, 2400); 
-      }, 3600));
+      s1.className = 'sign left-side';
+      s2.className = 'sign right-side';
+      s3.className = 'sign left-side';
+      party.className = 'party-destination';
+      
+      currentVals = { gm: 0, kddi: 0, cherry: 0 };
+      updateGauges({ gm: { val: 0, pct: 0 }, kddi: { val: 0, pct: 0 }, cherry: { val: 0, pct: 0.1 } }, 0);
+      
+      // Force DOM Reflow to ensure resets are applied instantly
+      void roadLines.offsetWidth; 
 
-      // Pause 2: Drive to 2025 (Arrives at 10.8s, pauses for 2.4s)
-      driveTimeouts.push(setTimeout(() => {
-        updateGauges({ 
-            gm: { val: 198000, pct: 39.6 }, 
-            kddi: { val: 12000, pct: 2.4 }, 
-            cherry: { val: 0, pct: 0.1 } 
-        }, 2400);
-      }, 10800));
+      await sleep(500);
+      if (currentGen !== driveGeneration) return;
 
-      // Pause 3: Drive to Aug 2026 (Arrives at 18.0s, pauses for 2.4s)
-      driveTimeouts.push(setTimeout(() => {
-        updateGauges({ 
-            gm: { val: 437958, pct: 87.59 }, 
-            kddi: { val: 40339, pct: 8.07 }, 
-            cherry: { val: 0, pct: 0.1 } 
-        }, 2400);
-      }, 18000));
+      // Enable transitions for driving
+      roadLines.style.transition = 'transform 3s ease-in-out';
+
+      // LEG 1: Drive to 2024
+      roadLines.style.transform = 'translateY(1500px)';
+      s1.classList.add('parked');
+      
+      // Wait for car to arrive and physically stop
+      await sleep(3000); 
+      if (currentGen !== driveGeneration) return;
+
+      // PAUSE: Update Gauges
+      updateGauges({ gm: { val: 25000, pct: 5 }, kddi: { val: 0, pct: 0 }, cherry: { val: 0, pct: 0.1 } }, 2000);
+      await sleep(2500); 
+      if (currentGen !== driveGeneration) return;
+
+
+      // LEG 2: Drive to 2025
+      roadLines.style.transform = 'translateY(3000px)';
+      s1.classList.replace('parked', 'passed'); // Sign 1 flies past
+      s2.classList.add('parked'); // Sign 2 arrives
+      
+      await sleep(3000);
+      if (currentGen !== driveGeneration) return;
+
+      // PAUSE: Update Gauges
+      updateGauges({ gm: { val: 198000, pct: 39.6 }, kddi: { val: 12000, pct: 2.4 }, cherry: { val: 0, pct: 0.1 } }, 2000);
+      await sleep(2500);
+      if (currentGen !== driveGeneration) return;
+
+
+      // LEG 3: Drive to Aug 2026
+      roadLines.style.transform = 'translateY(4500px)';
+      s2.classList.replace('parked', 'passed');
+      s3.classList.add('parked');
+      
+      await sleep(3000);
+      if (currentGen !== driveGeneration) return;
+
+      // PAUSE: Update Gauges
+      updateGauges({ gm: { val: 437958, pct: 87.59 }, kddi: { val: 40339, pct: 8.07 }, cherry: { val: 0, pct: 0.1 } }, 2000);
+      await sleep(2500);
+      if (currentGen !== driveGeneration) return;
+
+
+      // LEG 4: Drive to 500K Party
+      roadLines.style.transform = 'translateY(6000px)';
+      s3.classList.replace('parked', 'passed');
+      party.classList.add('parked');
     }
 
     function triggerWipeAndReset() {
@@ -690,6 +701,7 @@
       void wiper.offsetWidth;
       wiper.classList.add('is-wiping');
 
+      // Start the sequence exactly when the wiper blade crosses the screen
       setTimeout(startDriveSequence, 750);
     }
 
@@ -699,6 +711,7 @@
       audio.play().catch(e => console.log("Audio play blocked by browser policy until user interacts"));
     }
 
+    // Auto-start on load
     window.onload = () => {
       setTimeout(startDriveSequence, 400); 
     };
