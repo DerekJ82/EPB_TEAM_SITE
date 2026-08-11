@@ -66,7 +66,7 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
-  /* Horizon Mountains to fix the "Cliff" look */
+  /* Horizon Mountains */
   .mountains {
     position: absolute;
     top: 50%;
@@ -74,13 +74,11 @@
     width: 100%;
     height: 250px;
     transform: translateY(-99%);
-    /* Inline SVG for beautiful, scalable mountains */
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
     background-size: 800px 250px;
     z-index: 1;
   }
 
-  /* Atmospheric Haze to blend the road into the mountains */
   .haze {
     position: absolute;
     top: 50%;
@@ -106,11 +104,15 @@
     z-index: 2;
   }
 
+  /* 
+    Floor widened significantly (400%) to ensure extreme 
+    corners of the screen are filled at all rotation angles 
+  */
   .world-floor {
     position: absolute;
     bottom: -150px;
-    left: -50%;
-    width: 200%;
+    left: -150%; 
+    width: 400%; 
     height: 250vh; 
     background: #7bb558; 
     transform: rotateX(80deg);
@@ -155,6 +157,30 @@
       transparent 100px,
       transparent 200px
     );
+  }
+
+  /* 3D Scenery - Trees! */
+  .tree {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 35px solid transparent;
+    border-right: 35px solid transparent;
+    border-bottom: 120px solid #2d5a27; /* Pine green */
+    transform: translateX(-50%) rotateX(-80deg); 
+    transform-origin: bottom center;
+    backface-visibility: hidden;
+  }
+
+  /* Tree trunks */
+  .tree::after {
+    content: '';
+    position: absolute;
+    top: 120px; 
+    left: -10px;
+    width: 20px;
+    height: 30px;
+    background: #4a3424;
   }
 
   .object-3d {
@@ -213,7 +239,7 @@
   #sign-1m { bottom: 10000px; margin-left: 0; background: #222; border-color: #00ff66; }
 
   /* 
-    3. THE WINDSHIELD WIPER 
+    3. THE WINDSHIELD WIPER & HONK GRAPHIC
   */
   .wiper-arm {
     position: absolute;
@@ -249,6 +275,33 @@
     0% { transform: rotate(-80deg); }
     50% { transform: rotate(80deg); }
     100% { transform: rotate(-80deg); }
+  }
+
+  /* The Pop-Up HONK Graphic */
+  #honkGraphic {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    font-size: 110px;
+    font-weight: 900;
+    font-style: italic;
+    color: #fbcc04;
+    text-transform: uppercase;
+    /* Comic book text stroke/shadow effect */
+    text-shadow: 
+      4px 4px 0 #cc0000, -4px -4px 0 #cc0000,
+      4px -4px 0 #cc0000, -4px 4px 0 #cc0000,
+      0 10px 20px rgba(0,0,0,0.6);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%, -50%) scale(0) rotate(-15deg);
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  #honkGraphic.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-5deg);
   }
 
   /* 
@@ -376,7 +429,8 @@
   */
   .steering-column {
     position: absolute;
-    bottom: -110px;
+    /* Moved up significantly for better visibility */
+    bottom: -50px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -469,6 +523,7 @@
   <div class="windshield">
     
     <div class="hud" id="hud-target">TARGET: 500,000</div>
+    <div id="honkGraphic">HONK!!!</div>
     <div class="mountains"></div>
     <div class="haze"></div>
 
@@ -481,6 +536,30 @@
           <div class="road">
             <div class="road-lines"></div>
           </div>
+          
+          <!-- Trees on the Left side -->
+          <div class="tree" style="left: 20%; bottom: 600px;"></div>
+          <div class="tree" style="left: 30%; bottom: 1800px;"></div>
+          <div class="tree" style="left: 15%; bottom: 2500px;"></div>
+          <div class="tree" style="left: 25%; bottom: 3500px;"></div>
+          <div class="tree" style="left: 10%; bottom: 4800px;"></div>
+          <div class="tree" style="left: 20%; bottom: 6000px;"></div>
+          <div class="tree" style="left: 32%; bottom: 7500px;"></div>
+          <div class="tree" style="left: 18%; bottom: 8500px;"></div>
+          <div class="tree" style="left: 28%; bottom: 9800px;"></div>
+          <div class="tree" style="left: 15%; bottom: 10800px;"></div>
+
+          <!-- Trees on the Right side -->
+          <div class="tree" style="left: 80%; bottom: 800px;"></div>
+          <div class="tree" style="left: 70%; bottom: 2000px;"></div>
+          <div class="tree" style="left: 85%; bottom: 3200px;"></div>
+          <div class="tree" style="left: 75%; bottom: 4200px;"></div>
+          <div class="tree" style="left: 90%; bottom: 5500px;"></div>
+          <div class="tree" style="left: 80%; bottom: 6800px;"></div>
+          <div class="tree" style="left: 70%; bottom: 8000px;"></div>
+          <div class="tree" style="left: 88%; bottom: 9000px;"></div>
+          <div class="tree" style="left: 75%; bottom: 10200px;"></div>
+          <div class="tree" style="left: 85%; bottom: 11200px;"></div>
           
           <!-- Physical locations on the map -->
           <div class="object-3d sign" id="sign-2024">
@@ -530,7 +609,7 @@
       <div class="gauge-pct" style="color: #0077cc;" id="pct-gm">0.00%</div>
     </div>
 
-    <!-- KDDI GAUGE -->
+    <!-- KDDI GAUGE (Raised) -->
     <div class="gauge-container gauge-center">
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
@@ -693,11 +772,11 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party
+      // LEG 3: Drive to the 500k Party (July 2026 update)
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
-      // Update to July 2026 actuals!
+      // Updated Totals!
       updateGauges({ gm: 523028, kddi: 41055, cherry: 0 }, 2000);
       
       fireConfetti();
@@ -730,34 +809,19 @@
       setTimeout(startDriveSequence, 600);
     }
 
-    // Mathematical Web Audio API Horn - Guaranteed to play on click
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx;
-
+    // New Visual Honk Feature
     function honkHorn() {
-      if (!audioCtx) audioCtx = new AudioContext();
-
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      osc1.type = 'sawtooth'; 
-      osc1.frequency.setValueAtTime(350, audioCtx.currentTime); 
+      const honk = document.getElementById('honkGraphic');
+      honk.classList.add('show');
       
-      osc2.type = 'square'; 
-      osc2.frequency.setValueAtTime(400, audioCtx.currentTime); 
+      // Flash the windshield slightly
+      const windshield = document.querySelector('.windshield');
+      windshield.style.filter = 'brightness(1.15)';
       
-      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      osc1.start();
-      osc2.start();
-      osc1.stop(audioCtx.currentTime + 0.4);
-      osc2.stop(audioCtx.currentTime + 0.4);
+      setTimeout(() => {
+        honk.classList.remove('show');
+        windshield.style.filter = 'none';
+      }, 350);
     }
 
     window.onload = () => {
