@@ -69,7 +69,10 @@
     border-right: 10px solid #fff;
   }
 
-  /* Moving dashed lines - Fully choreographed 24s timeline */
+  /* 
+    Moving dashed lines - Synced to 24s Master Timeline 
+    Uses ease-out for braking, ease-in for accelerating
+  */
   .road::after {
     content: '';
     position: absolute;
@@ -91,23 +94,18 @@
     animation: driveRoad 24s forwards;
   }
 
-  /* 
-    Master Road Timeline (24s Total)
-    0% - 15% (3.6s): Drive to 2024
-    15% - 25% (2.4s): Pause at 2024
-    25% - 40% (3.6s): Drive to 2025
-    40% - 50% (2.4s): Pause at 2025
-    50% - 65% (3.6s): Drive to Aug 2026
-    65% - 100%: Linger at Destination
-  */
   @keyframes driveRoad {
-    0%   { background-position: 0 0; animation-timing-function: ease-in-out; }
-    15%  { background-position: 0 800px; }
-    25%  { background-position: 0 800px; animation-timing-function: ease-in-out; }
-    40%  { background-position: 0 1600px; }
-    50%  { background-position: 0 1600px; animation-timing-function: ease-in-out; }
-    65%  { background-position: 0 2400px; }
-    100% { background-position: 0 2400px; }
+    0%   { background-position: 0 0; animation-timing-function: ease-out; } /* Drive to 2024 */
+    15%  { background-position: 0 1000px; animation-timing-function: linear; } /* Pause at 2024 */
+    25%  { background-position: 0 1000px; animation-timing-function: ease-in; } /* Accelerate away */
+    30%  { background-position: 0 1200px; animation-timing-function: ease-out; } /* Drive to 2025 */
+    45%  { background-position: 0 2200px; animation-timing-function: linear; } /* Pause at 2025 */
+    55%  { background-position: 0 2200px; animation-timing-function: ease-in; } /* Accelerate away */
+    60%  { background-position: 0 2400px; animation-timing-function: ease-out; } /* Drive to Aug 2026 */
+    75%  { background-position: 0 3400px; animation-timing-function: linear; } /* Pause at 2026 */
+    85%  { background-position: 0 3400px; animation-timing-function: ease-in; } /* Accelerate away */
+    90%  { background-position: 0 3600px; animation-timing-function: ease-out; } /* Drive to Party */
+    100% { background-position: 0 4000px; } /* Final Stop */
   }
 
   /* Passing Roadsigns tied directly to the 24s master timeline */
@@ -143,27 +141,29 @@
 
   .sign-1.is-driving { animation: sign1 24s forwards; }
   @keyframes sign1 {
-    0% { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-in-out; }
-    15% { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); }
-    25% { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: ease-in; }
-    30% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
+    0%   { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
+    15%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: linear; }
+    25%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: ease-in; }
+    30%  { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
     100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
   }
 
   .sign-2.is-driving { animation: sign2 24s forwards; }
   @keyframes sign2 {
-    0%, 25% { left: 49%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-in-out; }
-    40% { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); }
-    50% { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); animation-timing-function: ease-in; }
-    55% { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
+    0%, 30% { left: 49%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
+    45%  { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); animation-timing-function: linear; }
+    55%  { left: 30%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(-150px, 0) scale(1.5); animation-timing-function: ease-in; }
+    60%  { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
     100% { left: 0%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(-500px, 0) scale(3); }
   }
 
   .sign-3.is-driving { animation: sign3 24s forwards; }
   @keyframes sign3 {
-    0%, 50% { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-in-out; }
-    65% { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); }
-    100% { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); }
+    0%, 60% { left: 51%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); animation-timing-function: ease-out; }
+    75%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: linear; }
+    85%  { left: 70%; top: 350px; opacity: 1; transform: rotateX(-80deg) translate(150px, 0) scale(1.5); animation-timing-function: ease-in; }
+    90%  { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
+    100% { left: 100%; top: 800px; opacity: 0; transform: rotateX(-80deg) translate(500px, 0) scale(3); }
   }
 
   /* The Party on the Horizon */
@@ -182,8 +182,7 @@
   }
   
   @keyframes partyDest {
-    0%, 50% { transform: translate(-50%, -80%) scale(0.1); opacity: 0; animation-timing-function: ease-in-out; }
-    65% { transform: translate(-50%, -100%) scale(1.6); opacity: 1; }
+    0%, 90% { transform: translate(-50%, -80%) scale(0.1); opacity: 0; animation-timing-function: ease-out; }
     100% { transform: translate(-50%, -100%) scale(1.6); opacity: 1; }
   }
 
@@ -487,6 +486,7 @@
     <div class="world">
       <div class="road animation-target"></div>
       
+      <!-- Passing Roadsigns -->
       <div class="sign sign-1 animation-target">
         <h4>2024</h4>
         <p>25,000</p>
@@ -590,7 +590,8 @@
       const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const easeOut = 0.5 - Math.cos(progress * Math.PI) / 2; // smooth ease-in-out
+        // Smooth ease-in-out for the numbers to match the gauge needles
+        const easeOut = 0.5 - Math.cos(progress * Math.PI) / 2; 
         const current = Math.floor(easeOut * (end - start) + start);
         
         obj.innerHTML = current.toLocaleString();
@@ -653,32 +654,33 @@
       }, 0);
 
       // 4. Choreograph the Gauge movements to match the 24s CSS road timeline
-      // Drive to 2024 (Takes 3.6s)
+      
+      // Pause 1: Drive to 2024 (Arrives at 3.6s, pauses for 2.4s)
       driveTimeouts.push(setTimeout(() => {
         updateGauges({ 
             gm: { val: 25000, pct: 5 }, 
             kddi: { val: 0, pct: 0 }, 
             cherry: { val: 0, pct: 0.1 } 
-        }, 3600);
-      }, 50));
+        }, 2400); 
+      }, 3600));
 
-      // Drive to 2025 (Starts at 6.0s, takes 3.6s)
+      // Pause 2: Drive to 2025 (Arrives at 10.8s, pauses for 2.4s)
       driveTimeouts.push(setTimeout(() => {
         updateGauges({ 
             gm: { val: 198000, pct: 39.6 }, 
             kddi: { val: 12000, pct: 2.4 }, 
             cherry: { val: 0, pct: 0.1 } 
-        }, 3600);
-      }, 6000));
+        }, 2400);
+      }, 10800));
 
-      // Drive to Aug 2026 (Starts at 12.0s, takes 3.6s)
+      // Pause 3: Drive to Aug 2026 (Arrives at 18.0s, pauses for 2.4s)
       driveTimeouts.push(setTimeout(() => {
         updateGauges({ 
             gm: { val: 437958, pct: 87.59 }, 
             kddi: { val: 40339, pct: 8.07 }, 
             cherry: { val: 0, pct: 0.1 } 
-        }, 3600);
-      }, 12000));
+        }, 2400);
+      }, 18000));
     }
 
     function triggerWipeAndReset() {
