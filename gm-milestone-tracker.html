@@ -39,7 +39,7 @@
     font-weight: 900;
     font-size: 16px;
     letter-spacing: 3px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    text-shadow: 0 2px 4px rgba(255,255,255,0.8);
     transition: color 0.5s;
   }
 
@@ -66,6 +66,7 @@
     box-shadow: 0 0 60px 30px rgba(255, 249, 214, 0.6);
   }
 
+  /* Fixed Dirt Smudges - Now looks like light dust instead of dark blobs */
   #windshield-dirt {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -76,8 +77,8 @@
 
   .smudge {
     position: absolute;
-    background: rgba(90, 70, 45, 0.3);
-    filter: blur(8px);
+    background: rgba(200, 190, 170, 0.15);
+    filter: blur(12px);
     border-radius: 50%;
   }
 
@@ -125,7 +126,7 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 15000px; /* Extended to ensure the road stretches into infinity */
+    height: 15000px; 
     transform: translateY(0); 
     will-change: transform;
     transform-style: preserve-3d; 
@@ -153,13 +154,16 @@
     background: repeating-linear-gradient(to top, #fbcc04 0, #fbcc04 120px, transparent 120px, transparent 240px);
   }
 
+  /* 
+    Removed backface-visibility: hidden to prevent 
+    the squishing glitch in Safari/WebKit 
+  */
   .object-3d {
     position: absolute;
     left: 50%;
     transform: translateX(-50%) rotateX(-80deg); 
     transform-origin: bottom center;
     text-align: center;
-    backface-visibility: hidden;
   }
 
   .sign {
@@ -171,8 +175,7 @@
     box-shadow: 0 40px 80px rgba(0,0,0,0.8);
   }
 
-  /* Only normal signs get the single center pole */
-  .sign.pole::after {
+  .sign::after {
     content: '';
     position: absolute;
     bottom: -100px;
@@ -209,37 +212,32 @@
   }
 
   /* 
-    THE FIX: 1 Million Target is now a massive overhead gantry sign.
-    It sits 280px in the air, spanning the entire road. 
+    THE FIX: The 1 Million Target is now a massive block sitting on the ground.
+    It spans the width of the road and perfectly caps the vanishing point.
   */
   #sign-1m { 
-    bottom: 10000px; 
+    bottom: 10800px; 
     margin-left: 0; 
     background: #0a0a0a; 
     border-color: #00ff66;
-    width: 700px;
-    padding: 40px;
-    /* Lifts the sign over the road */
-    transform: translateX(-50%) rotateX(-80deg) translateY(-280px);
-    box-shadow: 0 60px 120px rgba(0,255,102,0.3);
+    width: 800px;
+    padding: 60px 40px;
+    box-shadow: 0 40px 100px rgba(0,255,102,0.2);
   }
-  
-  #sign-1m h4 { font-size: 80px; color: #fff; margin-bottom: 10px; }
-  #sign-1m p { font-size: 60px; color: #00ff66; text-shadow: 0 0 20px rgba(0,255,102,0.6); }
-
-  /* Left and right pillars dropping to the ground */
-  #sign-1m::before, #sign-1m::after {
+  #sign-1m::after {
+    /* Thick solid base extending downward */
     content: '';
     position: absolute;
     top: 100%;
-    width: 40px;
-    height: 280px;
-    background: #222;
-    border-left: 4px solid #555;
-    box-shadow: 10px 0 20px rgba(0,0,0,0.8);
+    left: -8px;
+    right: -8px;
+    height: 400px;
+    background: #111;
+    border-left: 8px solid #333;
+    border-right: 8px solid #333;
   }
-  #sign-1m::before { left: 40px; }
-  #sign-1m::after { right: 40px; }
+  #sign-1m h4 { font-size: 80px; color: #fff; margin-bottom: 10px; }
+  #sign-1m p { font-size: 60px; color: #00ff66; text-shadow: 0 0 20px rgba(0,255,102,0.6); }
 
   /* 
     3. DUAL WINDSHIELD WIPERS & HONK
@@ -548,12 +546,12 @@
             <div class="road-lines"></div>
           </div>
           
-          <div class="object-3d sign pole" id="sign-2024">
+          <div class="object-3d sign" id="sign-2024">
             <h4>2024</h4>
             <p>25,000</p>
           </div>
           
-          <div class="object-3d sign pole" id="sign-2025">
+          <div class="object-3d sign" id="sign-2025">
             <h4>2025</h4>
             <p>210,000</p>
           </div>
@@ -563,7 +561,7 @@
             <div class="party-banner">500K CRUSHED - JULY 2026</div>
           </div>
 
-          <!-- THE FIX: 1M Sign is now a massive gantry archway -->
+          <!-- THE FIX: Solid wall destination perfectly capping the horizon -->
           <div class="object-3d sign" id="sign-1m">
             <h4>TARGET</h4>
             <p>1,000,000</p>
@@ -630,7 +628,7 @@
       <div class="bottom-bar">
         <span>AUG 11 2026</span>
         <span class="gear-display" id="gear-indicator">P</span>
-        <span>1:54 PM</span>
+        <span>2:01 PM</span>
       </div>
     </div>
 
@@ -812,8 +810,8 @@
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
       await sleep(3500); 
 
-      // LEG 4: Toward 1 Million (Stops at 9000 so the Archway frames the horizon)
-      await driveTo(9000, 4000); 
+      // LEG 4: Drive up to the final 1M wall (caps the horizon)
+      await driveTo(9800, 4000); 
     }
 
     function fireConfetti() {
