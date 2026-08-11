@@ -69,7 +69,7 @@
     border-right: 10px solid #fff;
   }
 
-  /* Moving dashed lines - now finite and eases to a stop */
+  /* Moving dashed lines - Slower, longer animation */
   .road::after {
     content: '';
     position: absolute;
@@ -88,8 +88,8 @@
   }
 
   .road.is-driving::after {
-    /* Eases out over 12 seconds to simulate braking to a stop */
-    animation: driveEnd 12s ease-out forwards;
+    /* Extended to 24s for a much slower, relaxed drive */
+    animation: driveEnd 24s ease-out forwards;
   }
 
   @keyframes driveEnd {
@@ -109,8 +109,8 @@
   }
 
   .party-destination.is-driving {
-    /* Appears and grows closer as we drive, then stays fixed (forwards) */
-    animation: approachParty 12s ease-out forwards;
+    /* Extended to 24s to match the road */
+    animation: approachParty 24s ease-out forwards;
   }
   
   .party-destination .emojis {
@@ -175,16 +175,16 @@
   .sign h4 { font-size: 24px; margin-bottom: 5px; }
   .sign p { font-size: 18px; font-weight: bold; color: #fbcc04; }
 
-  /* Drive animation modifiers */
+  /* Drive animation modifiers - slowed down to 8s and staggered */
   .sign.is-driving {
-    animation-duration: 5s;
-    animation-timing-function: ease-in; /* Accelerates as it gets closer to camera */
+    animation-duration: 8s;
+    animation-timing-function: ease-in; 
     animation-fill-mode: forwards;
   }
 
-  .sign-1.is-driving { animation-name: flybyRight; animation-delay: 0.5s; }
-  .sign-2.is-driving { animation-name: flybyLeft; animation-delay: 4s; }
-  .sign-3.is-driving { animation-name: flybyRight; animation-delay: 7.5s; }
+  .sign-1.is-driving { animation-name: flybyRight; animation-delay: 1s; }
+  .sign-2.is-driving { animation-name: flybyLeft; animation-delay: 8s; }
+  .sign-3.is-driving { animation-name: flybyRight; animation-delay: 15s; }
 
   @keyframes flybyRight {
     0% { left: 52%; top: 0; opacity: 0; transform: rotateX(-80deg) translate(0, 0) scale(0.1); }
@@ -238,7 +238,7 @@
   }
 
   /* 
-    3. THE DASHBOARD CONSOLE (Modern GM Style)
+    3. THE DASHBOARD CONSOLE 
   */
   .dashboard {
     height: 45vh;
@@ -270,6 +270,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Raise the center gauge to avoid wheel overlap */
+  .gauge-center {
+    transform: translateY(-45px);
   }
 
   .gauge-label {
@@ -363,7 +368,8 @@
   */
   .steering-column {
     position: absolute;
-    bottom: -80px;
+    /* Dropped down further to clear the KDDI dial */
+    bottom: -110px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -372,11 +378,11 @@
     z-index: 10;
   }
 
-  /* Wiper Stalk Button */
+  /* Wiper Stalk Button - Shifted left and down */
   .wiper-stalk {
     position: absolute;
-    left: -160px;
-    top: 60px;
+    left: -190px;
+    top: 75px;
     width: 100px;
     height: 30px;
     background: linear-gradient(to bottom, #444, #222);
@@ -455,7 +461,6 @@
 </head>
 <body>
 
-  <!-- Real Car Horn Audio File (Google UI Sounds Library) -->
   <audio id="carHornAudio" src="https://actions.google.com/sounds/v1/alarms/car_horn.ogg" preload="auto"></audio>
 
   <!-- WINDSHIELD SCENE -->
@@ -468,7 +473,7 @@
 
     <div class="world">
       <div class="road animation-target"></div>
-      <!-- Passing Roadsigns -->
+      
       <div class="sign sign-1 animation-target">
         <h4>2024</h4>
         <p>25,000</p>
@@ -483,7 +488,6 @@
       </div>
     </div>
 
-    <!-- The Wiper Blade -->
     <div class="wiper-arm" id="wiperArm"></div>
 
   </div>
@@ -506,8 +510,8 @@
       <div class="gauge-pct" style="color: #0077cc;">87.59%</div>
     </div>
 
-    <!-- KDDI GAUGE -->
-    <div class="gauge-container">
+    <!-- KDDI GAUGE (Raised via .gauge-center class) -->
+    <div class="gauge-container gauge-center">
       <div class="gauge-label">KDDI</div>
       <svg class="gauge-svg" viewBox="0 0 100 100">
         <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
@@ -567,7 +571,6 @@
       { id: 'cherry', targetVal: 0, pct: 0.1 } 
     ];
 
-    // Math function to animate the gauge numbers
     function animateValue(obj, start, end, duration) {
       let startTimestamp = null;
       const step = (timestamp) => {
@@ -581,30 +584,25 @@
       window.requestAnimationFrame(step);
     }
 
-    // Function to start/restart all animations
     function startDriveSequence() {
-      // 1. Trigger road and sign animations
       const targets = document.querySelectorAll('.animation-target');
       targets.forEach(el => {
         el.classList.remove('is-driving');
-        void el.offsetWidth; // Force a DOM reflow to reset CSS animations
+        void el.offsetWidth; 
         el.classList.add('is-driving');
       });
 
-      // 2. Trigger Gauges
       data.forEach(item => {
         const fill = document.getElementById(`fill-${item.id}`);
         const needle = document.getElementById(`needle-${item.id}`);
         const valEl = document.getElementById(`val-${item.id}`);
 
-        // Reset gauges immediately
         fill.style.transition = 'none';
         needle.style.transition = 'none';
         fill.style.strokeDashoffset = DASH_OFFSET_START;
         needle.style.transform = `rotate(-135deg)`;
         valEl.innerHTML = '0';
 
-        // Re-apply transitions and animate after a tiny delay
         setTimeout(() => {
           fill.style.transition = 'stroke-dashoffset 2s cubic-bezier(.2, 0, 0, 1)';
           needle.style.transition = 'transform 2s cubic-bezier(.2, 0, 0, 1)';
@@ -620,28 +618,22 @@
       });
     }
 
-    // Wiper and Reset interaction
     function triggerWipeAndReset() {
       const wiper = document.getElementById('wiperArm');
       
-      // Trigger wiper animation
       wiper.classList.remove('is-wiping');
-      void wiper.offsetWidth; // Reflow
+      void wiper.offsetWidth;
       wiper.classList.add('is-wiping');
 
-      // Restart the drive sequence halfway through the wipe (when it covers the screen)
       setTimeout(startDriveSequence, 750);
     }
 
-    // Play actual horn sound
     function honkHorn() {
       const audio = document.getElementById('carHornAudio');
-      // Reset time to 0 so you can spam the horn button
       audio.currentTime = 0; 
       audio.play().catch(e => console.log("Audio play blocked by browser policy until user interacts"));
     }
 
-    // Start everything on initial page load
     window.onload = () => {
       setTimeout(startDriveSequence, 400); 
     };
