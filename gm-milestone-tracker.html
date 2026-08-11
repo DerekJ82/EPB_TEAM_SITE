@@ -69,24 +69,25 @@
   /* Horizon Mountains */
   .mountains {
     position: absolute;
-    top: 50%;
+    top: 55%;
     left: 0;
     width: 100%;
     height: 250px;
-    transform: translateY(-99%);
+    transform: translateY(-90%);
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
     background-size: 800px 250px;
     z-index: 1;
   }
 
+  /* Atmospheric Haze (Updated to blend into the sky color, not green) */
   .haze {
     position: absolute;
     top: 50%;
     left: 0;
     width: 100%;
-    height: 80px;
+    height: 120px;
     transform: translateY(-50%);
-    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, rgba(224,244,255,0.8) 40%, rgba(123,181,88,0.8) 60%, rgba(123,181,88,0) 100%);
+    background: linear-gradient(to bottom, rgba(224,244,255,0) 0%, #e0f4ff 50%, rgba(224,244,255,0) 100%);
     z-index: 5;
     pointer-events: none;
   }
@@ -102,6 +103,10 @@
     height: 100%;
     perspective: 600px;
     z-index: 2;
+    /* THE FIX: This mask fades the 3D world to transparent at the horizon, 
+       creating perfect atmospheric depth so the road doesn't hit the mountains */
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 38%, rgba(0,0,0,1) 52%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 38%, rgba(0,0,0,1) 52%);
   }
 
   .world-floor {
@@ -400,6 +405,7 @@
   */
   .steering-column {
     position: absolute;
+    /* Moved up significantly for better visibility */
     bottom: -50px;
     left: 50%;
     transform: translateX(-50%);
@@ -409,11 +415,10 @@
     z-index: 10;
   }
 
-  /* Moved wiper stalk slightly lower and further back so it clears the GM gauge */
   .wiper-stalk {
     position: absolute;
-    left: -160px; 
-    top: 75px; 
+    left: -140px; 
+    top: 30px; 
     width: 100px;
     height: 30px;
     background: linear-gradient(to bottom, #444, #222);
@@ -719,7 +724,7 @@
       updateGauges({ gm: 198000, kddi: 12000, cherry: 0 }, 2000);
       await sleep(2500);
 
-      // LEG 3: Drive to the 500k Party
+      // LEG 3: Drive to the 500k Party (July 2026 update)
       await driveTo(6200, 3500); 
       if (!driveSequenceActive) return;
 
@@ -756,7 +761,7 @@
       setTimeout(startDriveSequence, 600);
     }
 
-    // New Visual Honk Feature (No Sound)
+    // New Visual Honk Feature
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
