@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vehicle Base Milestone Race</title>
+<!-- Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <style>
   /* 
-    1. THE VISUAL CONTRACT (TOKENS) 
-    Declare these once as custom properties and never hard-code a hex value anywhere else. 
+    1. THE VISUAL CONTRACT (TOKENS) & NIGHT RACE MODE
   */
   :root {
     --purple: #48286D; --purple-d: #38205A; --purple-l: #633988;
@@ -16,14 +18,28 @@
     --tint: #F6F2FA; --tint2: #F0EAF7;
     --line: #E8E6EC; --line-d: #D8D5DE;
     --grey: #54505C; --grey-l: #918A9C;
-
-    /* Typographic Roles (Using neutral sans as fallback per guide) */
+    --bg-color: #ffffff;
+    --card-bg: #ffffff;
+    
     --disp: "Helvetica Neue", Arial, sans-serif;
     --text: "Helvetica Neue", Arial, sans-serif;
     --micro: "Helvetica Neue", Arial, sans-serif;
-
-    /* Fluid Gutter */
     --gut: clamp(20px, 5vw, 72px);
+  }
+
+  /* Night Race (Dark Mode) Overrides */
+  [data-theme="dark"] {
+    --bg-color: #1a1a2e;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --ink: #F6F2FA;
+    --purple: #b288e8; /* Lighter purple for readability */
+    --purple-d: #f0c040; /* Accent swap */
+    --tint: #2A1A3E; 
+    --tint2: #38205A;
+    --line: #48286D; 
+    --line-d: #633988;
+    --grey: #D8D5DE; 
+    --grey-l: #b0aab8;
   }
 
   /* 
@@ -31,91 +47,144 @@
   */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { 
-    background: #fff; 
+    background: var(--bg-color); 
     font-family: var(--text); 
     color: var(--ink); 
     line-height: 1.5;
     overflow-x: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
   }
   
   .pad { padding-left: var(--gut); padding-right: var(--gut); }
-  
-  .sect { padding: clamp(50px, 6.5vw, 86px) 0; }
+  .sect { padding: clamp(50px, 6.5vw, 86px) 0; transition: background 0.4s ease; }
   .sect.tint { 
     background: var(--tint); 
     border-top: 1px solid var(--line); 
     border-bottom: 1px solid var(--line); 
   }
 
+  /* Theme Toggle Button */
+  .theme-toggle {
+    position: absolute;
+    top: 24px;
+    right: var(--gut);
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: var(--micro);
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.2s, background 0.2s;
+    z-index: 100;
+  }
+  .theme-toggle:hover { transform: translateY(-2px); background: var(--purple-l); }
+
   /* 
-    3. TYPOGRAPHY (FLUID SCALE) 
+    3. TYPOGRAPHY 
   */
-  h1 { font-family: var(--disp); font-size: clamp(31px, 4.8vw, 64px); font-weight: 900; letter-spacing: -0.028em; color: var(--purple); text-wrap: balance; }
-  h2 { font-family: var(--disp); font-size: clamp(23px, 2.7vw, 37px); font-weight: 750; letter-spacing: -0.024em; color: var(--purple); margin-bottom: 34px; }
-  h3 { font-family: var(--disp); font-size: clamp(17px, 2vw, 20px); font-weight: 750; letter-spacing: -0.018em; color: var(--ink); }
-  
-  p { font-size: clamp(15px, 1.5vw, 16px); font-weight: 400; color: var(--grey); max-width: 74ch; margin-bottom: 16px; }
-  
+  h1 { font-family: var(--disp); font-size: clamp(31px, 4.8vw, 64px); font-weight: 900; letter-spacing: -0.028em; color: var(--purple); text-wrap: balance; transition: color 0.4s ease; }
+  h2 { font-family: var(--disp); font-size: clamp(23px, 2.7vw, 37px); font-weight: 750; letter-spacing: -0.024em; color: var(--purple); margin-bottom: 34px; transition: color 0.4s ease; }
+  h3 { font-family: var(--disp); font-size: clamp(17px, 2vw, 20px); font-weight: 750; letter-spacing: -0.018em; color: var(--ink); transition: color 0.4s ease;}
+  p { font-size: clamp(15px, 1.5vw, 16px); font-weight: 400; color: var(--grey); max-width: 74ch; margin-bottom: 16px; transition: color 0.4s ease; }
   .micro { font-family: var(--micro); font-size: clamp(10px, 1vw, 11px); font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey); }
-  .big-figure { font-family: var(--disp); font-size: clamp(26px, 3vw, 38px); font-weight: 900; letter-spacing: -0.026em; color: var(--purple); }
+  .big-figure { font-family: var(--disp); font-size: clamp(26px, 3vw, 38px); font-weight: 900; letter-spacing: -0.026em; color: var(--purple); transition: color 0.4s ease; }
 
   /* 
-    4. COMPONENTS 
+    4. INTERACTIVE COMPONENTS 
   */
-  /* Status Badges */
-  .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-family: var(--micro); font-size: 10px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.1em; margin-bottom: 12px; }
-  .badge.positive { background: #EEF7E0; color: #488500; } /* Positive/retained */
-  .badge.caution { background: #FFF3CD; color: #856404; } /* Caution/revised */
-  .badge.neutral { background: var(--tint2); color: var(--purple); } /* Neutral/merged */
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-family: var(--micro); font-size: 10px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.1em; margin-bottom: 12px; cursor: pointer; transition: transform 0.1s; }
+  .badge:active { transform: scale(0.95); }
+  .badge.positive { background: #EEF7E0; color: #488500; } 
+  .badge.caution { background: #FFF3CD; color: #856404; } 
+  .badge.neutral { background: var(--tint2); color: var(--purple); } 
 
-  /* Flexible Grid */
+  /* Engine Idle Pulse */
+  @keyframes idlePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; text-shadow: 0 0 10px rgba(102, 204, 0, 0.4); }
+  }
+  .idle-pulse { animation: idlePulse 2.5s infinite ease-in-out; }
+
   .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .split-grid { display: grid; gap: 20px; grid-template-columns: 1.15fr 0.85fr; }
 
-  /* Cards */
+  /* Engine Rev Hover State */
+  @keyframes rev {
+    0% { transform: translateX(0) translateY(0); }
+    25% { transform: translateX(-2px) rotate(-1deg); }
+    50% { transform: translateX(2px) rotate(1deg); }
+    75% { transform: translateX(-2px) rotate(-1deg); }
+    100% { transform: translateY(-4px); } 
+  }
+
   .card { 
-    background: #fff; 
+    background: var(--card-bg); 
     border: 1px solid var(--line); 
     border-top: 3px solid var(--line-d); 
     border-radius: 10px; 
     padding: clamp(20px, 2.2vw, 30px); 
-    transition: border-top-color .2s, transform .2s, box-shadow .2s; 
-    cursor: pointer;
+    transition: border-top-color .2s, box-shadow .2s, background 0.4s; 
     position: relative;
   }
   .card:hover { 
+    animation: rev 0.3s ease-in-out forwards;
     border-top-color: var(--green); 
-    transform: translateY(-3px); 
-    box-shadow: 0 14px 32px rgba(75,40,109,.09); 
+    box-shadow: 0 14px 32px rgba(75,40,109,.15); 
   }
   
-  /* Stat Tiles */
   .stat-tile {
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--line); 
     border-left: 3px solid var(--purple);
     border-radius: 10px;
     padding: clamp(20px, 2.2vw, 30px); 
+    transition: background 0.4s, border-left-color 0.4s;
   }
 
-  /* Progress Bar (Interactive alternative to the race track) */
-  .progress-wrap { margin-top: 20px; background: var(--tint2); border-radius: 4px; height: 8px; overflow: hidden; position: relative; }
-  .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 1.2s cubic-bezier(.3,0,0,1); }
+  /* Progress Bar Racers */
+  .progress-wrap { 
+    margin-top: 20px; 
+    background: var(--tint2); 
+    border-radius: 8px; 
+    height: 14px; 
+    position: relative; 
+    /* Visible overflow so the racer emoji can hang off the edge */
+    overflow: visible; 
+  }
+  .progress-bar { 
+    position: relative;
+    height: 100%; 
+    background: var(--green); 
+    width: 0%; 
+    border-radius: 8px;
+    transition: width 2s cubic-bezier(.2,0,0,1); 
+  }
+  .racer {
+    position: absolute;
+    right: -14px; /* Hang slightly over the front edge */
+    top: -6px;
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
 
-  /* Focus Ring Accessibility */
-  button:focus, .card:focus { outline: 3px solid var(--green); outline-offset: 2px; }
-
-  /* Media Queries for Layout collapses */
   @media (max-width: 1024px) {
     .split-grid { grid-template-columns: 1fr; }
   }
 
-  /* Reveal Motion */
   .reveal { opacity: 0; transform: translateY(20px); transition: opacity 900ms cubic-bezier(.2,0,0,1), transform 900ms cubic-bezier(.2,0,0,1); }
   .reveal.visible { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
+
+  <!-- THEME TOGGLE -->
+  <button class="theme-toggle" onclick="toggleTheme()">🌙 Night Race</button>
 
   <!-- GREETER / HERO SECTION -->
   <section class="sect tint pad view">
@@ -134,52 +203,60 @@
         
         <!-- Interactive Cards Grid -->
         <div class="grid">
-          <div class="card" tabindex="0" aria-label="Open GM Details">
-            <span class="badge positive">Leading</span>
+          <div class="card">
+            <!-- Click the badge for Confetti! -->
+            <span class="badge positive" onclick="triggerConfetti(event, ['#48286D', '#66CC00'])">🥇 Leading (Click Me)</span>
             <h3>GM</h3>
             <p>Dominating the race with rapid expansion. Strong ramp-up since 2025.</p>
             <div class="progress-wrap">
-              <div class="progress-bar" data-target="87.59"></div>
+              <div class="progress-bar" data-target="87.59">
+                <span class="racer">🚗</span>
+              </div>
             </div>
-            <div class="micro" style="margin-top: 8px; color: var(--green-d);">87.59% to goal</div>
+            <div class="micro" style="margin-top: 12px; color: var(--green-d);">87.59% to goal</div>
           </div>
           
-          <div class="card" tabindex="0" aria-label="Open KDDI Details">
-            <span class="badge caution">Ramping Up</span>
+          <div class="card">
+            <span class="badge caution" onclick="triggerConfetti(event, ['#2288ee', '#f0c040'])">🥈 Ramping Up</span>
             <h3>KDDI</h3>
             <p>Strong growth since the initial 12K output in 2025. Over tripled in volume.</p>
             <div class="progress-wrap">
-              <div class="progress-bar" data-target="8.07"></div>
+              <div class="progress-bar" data-target="8.07">
+                <span class="racer">🚙</span>
+              </div>
             </div>
-            <div class="micro" style="margin-top: 8px;">8.07% to goal</div>
+            <div class="micro" style="margin-top: 12px;">8.07% to goal</div>
           </div>
 
-          <div class="card" tabindex="0" aria-label="Open Cherry Details">
-            <span class="badge neutral">Pre-Launch</span>
+          <div class="card">
+            <!-- Engine idle applied here -->
+            <span class="badge neutral idle-pulse" onclick="triggerConfetti(event, ['#ee2222', '#ffffff'])">🥉 Pre-Launch</span>
             <h3>Cherry</h3>
             <p>Program initiated, currently loading initial manufacturing waves.</p>
             <div class="progress-wrap">
-              <div class="progress-bar" data-target="0"></div>
+              <div class="progress-bar" data-target="0">
+                <span class="racer idle-pulse">🍒</span>
+              </div>
             </div>
-            <div class="micro" style="margin-top: 8px;">0% to goal</div>
+            <div class="micro" style="margin-top: 12px;">0% to goal</div>
           </div>
         </div>
 
-        <!-- Big Stat Tiles -->
+        <!-- Big Stat Tiles with Animated Counters -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
           <div class="stat-tile">
             <div class="micro">Global Target</div>
-            <div class="big-figure">500,000</div>
+            <div class="big-figure counter" data-val="500000">0</div>
             <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Total units needed for the 2026 milestone.</p>
           </div>
-          <div class="stat-tile">
+          <div class="stat-tile" style="border-left-color: var(--green);">
             <div class="micro">GM Current Volume</div>
-            <div class="big-figure" style="color: var(--green-d);">437,958</div>
+            <div class="big-figure counter" style="color: var(--green-d);" data-val="437958">0</div>
             <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Only 62,042 units away from securing the overall goal.</p>
           </div>
-          <div class="stat-tile">
+          <div class="stat-tile" style="border-left-color: #2288ee;">
             <div class="micro">KDDI Current Volume</div>
-            <div class="big-figure">40,339</div>
+            <div class="big-figure counter" data-val="40339">0</div>
             <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Up from 12K at the end of 2025.</p>
           </div>
         </div>
@@ -194,8 +271,7 @@
       <h2>Historical Milestones</h2>
       <p>Tracking the year-over-year growth from program inception to the current quarter.</p>
       
-      <!-- Tables must be wrapped in overflow-x:auto per the constraints -->
-      <div style="overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px;">
+      <div style="overflow-x: auto; background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px; padding: 20px; transition: background 0.4s;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr>
@@ -208,21 +284,21 @@
           <tbody style="font-size: 13.6px; font-family: var(--text);">
             <tr style="border-bottom: 1px solid var(--line);">
               <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">GM</td>
-              <td style="padding: 16px 8px;">25,000</td>
-              <td style="padding: 16px 8px;">198,000</td>
-              <td style="padding: 16px 8px; font-weight: bold;">437,958</td>
+              <td style="padding: 16px 8px;" class="counter" data-val="25000">0</td>
+              <td style="padding: 16px 8px;" class="counter" data-val="198000">0</td>
+              <td style="padding: 16px 8px; font-weight: bold;" class="counter" data-val="437958">0</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--line);">
               <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">KDDI</td>
               <td style="padding: 16px 8px;">0</td>
-              <td style="padding: 16px 8px;">12,000</td>
-              <td style="padding: 16px 8px; font-weight: bold;">40,339</td>
+              <td style="padding: 16px 8px;" class="counter" data-val="12000">0</td>
+              <td style="padding: 16px 8px; font-weight: bold;" class="counter" data-val="40339">0</td>
             </tr>
             <tr>
               <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">Cherry</td>
               <td style="padding: 16px 8px;">0</td>
               <td style="padding: 16px 8px;">0</td>
-              <td style="padding: 16px 8px; font-weight: bold; color: var(--grey-l);">Loading...</td>
+              <td style="padding: 16px 8px; font-weight: bold; color: var(--grey-l);" class="idle-pulse">Loading...</td>
             </tr>
           </tbody>
         </table>
@@ -231,32 +307,82 @@
   </section>
 
   <script>
-    // Reveal on scroll via IntersectionObserver
-    // Checks for prefers-reduced-motion to paint end states immediately if needed.
+    // 1. NIGHT RACE (DARK MODE) TOGGLE
+    function toggleTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      const btn = document.querySelector('.theme-toggle');
+      btn.textContent = isDark ? '🌙 Night Race' : '☀️ Day Shift';
+      
+      // Fun little extra confetti when switching to night mode
+      if (!isDark) triggerConfetti(null, ['#f0c040', '#e84393', '#4B286D']);
+    }
+
+    // 2. INTERACTIVE CONFETTI
+    function triggerConfetti(e, colors) {
+      // If triggered by click, originate from the mouse coordinates
+      let origin = { x: 0.5, y: 0.5 };
+      if (e) {
+        origin.x = e.clientX / window.innerWidth;
+        origin.y = e.clientY / window.innerHeight;
+      }
+      confetti({
+        particleCount: 75,
+        spread: 60,
+        origin: origin,
+        colors: colors,
+        disableForReducedMotion: true
+      });
+    }
+
+    // 3. NUMBER ANIMATION & PROGRESS BAR TRIGGERS
+    const animateValue = (obj, start, end, duration) => {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        // ease-out mathematical formula
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(easeOut * (end - start) + start);
+        obj.innerHTML = current.toLocaleString();
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
     const still = () => matchMedia('(prefers-reduced-motion:reduce)').matches || document.hidden;
 
     const observer = new IntersectionObserver((entries, obs) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           if (still()) {
-            // Paint end states immediately to prevent blank content
+            // Paint end states immediately
             entry.target.style.transition = 'none';
             entry.target.classList.add('visible');
             
-            const bars = entry.target.querySelectorAll('.progress-bar');
-            bars.forEach(bar => {
+            entry.target.querySelectorAll('.progress-bar').forEach(bar => {
               bar.style.transition = 'none';
               bar.style.width = bar.getAttribute('data-target') + '%';
             });
+            
+            entry.target.querySelectorAll('.counter').forEach(count => {
+              count.innerHTML = parseInt(count.getAttribute('data-val'), 10).toLocaleString();
+            });
           } else {
-            // Run standard 900ms entrance reveal and 1200ms chart draws
+            // Run animations
             entry.target.classList.add('visible');
             
-            const bars = entry.target.querySelectorAll('.progress-bar');
-            bars.forEach(bar => {
+            entry.target.querySelectorAll('.progress-bar').forEach(bar => {
               setTimeout(() => {
                 bar.style.width = bar.getAttribute('data-target') + '%';
-              }, 200); // slight stagger
+              }, 300); 
+            });
+
+            entry.target.querySelectorAll('.counter').forEach(count => {
+              const target = parseInt(count.getAttribute('data-val'), 10);
+              animateValue(count, 0, target, 2000);
             });
           }
           obs.unobserve(entry.target);
