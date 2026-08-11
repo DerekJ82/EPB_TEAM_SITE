@@ -3,394 +3,467 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Base Milestone Race</title>
-<!-- Confetti Library -->
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
+<title>Vehicle Base Milestone Race - Dashboard Edition</title>
 <style>
   /* 
-    1. THE VISUAL CONTRACT (TOKENS) & NIGHT RACE MODE
+    BRAND TOKENS (Preserved for cohesion)
   */
   :root {
-    --purple: #48286D; --purple-d: #38205A; --purple-l: #633988;
+    --purple: #48286D;
+    --purple-d: #38205A;
+    --green: #66CC00;
+    --green-d: #488500;
     --ink: #2A1A3E;
-    --green: #66CC00; --green-d: #488500; --lime: #8FDD3D;
-    --tint: #F6F2FA; --tint2: #F0EAF7;
-    --line: #E8E6EC; --line-d: #D8D5DE;
-    --grey: #54505C; --grey-l: #918A9C;
-    --bg-color: #ffffff;
-    --card-bg: #ffffff;
-    
-    --disp: "Helvetica Neue", Arial, sans-serif;
-    --text: "Helvetica Neue", Arial, sans-serif;
-    --micro: "Helvetica Neue", Arial, sans-serif;
-    --gut: clamp(20px, 5vw, 72px);
+    --dash-surface: #151515;
+    --dash-trim: #222;
   }
 
-  /* Night Race (Dark Mode) Overrides */
-  [data-theme="dark"] {
-    --bg-color: #1a1a2e;
-    --card-bg: rgba(255, 255, 255, 0.05);
-    --ink: #F6F2FA;
-    --purple: #b288e8; /* Lighter purple for readability */
-    --purple-d: #f0c040; /* Accent swap */
-    --tint: #2A1A3E; 
-    --tint2: #38205A;
-    --line: #48286D; 
-    --line-d: #633988;
-    --grey: #D8D5DE; 
-    --grey-l: #b0aab8;
-  }
-
-  /* 
-    2. RESET & BASE LAYOUT 
-  */
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    background: var(--bg-color); 
-    font-family: var(--text); 
-    color: var(--ink); 
-    line-height: 1.5;
-    overflow-x: hidden;
-    transition: background 0.4s ease, color 0.4s ease;
-  }
   
-  .pad { padding-left: var(--gut); padding-right: var(--gut); }
-  .sect { padding: clamp(50px, 6.5vw, 86px) 0; transition: background 0.4s ease; }
-  .sect.tint { 
-    background: var(--tint); 
-    border-top: 1px solid var(--line); 
-    border-bottom: 1px solid var(--line); 
-  }
-
-  /* Theme Toggle Button */
-  .theme-toggle {
-    position: absolute;
-    top: 24px;
-    right: var(--gut);
-    background: var(--purple);
+  body {
+    background: #000;
     color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-family: var(--micro);
-    font-size: 11px;
-    text-transform: uppercase;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    transition: transform 0.2s, background 0.2s;
-    z-index: 100;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden; /* Lock to a single viewport like a real dashboard */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
-  .theme-toggle:hover { transform: translateY(-2px); background: var(--purple-l); }
 
   /* 
-    3. TYPOGRAPHY 
+    1. THE WINDSHIELD (3D Road Animation)
   */
-  h1 { font-family: var(--disp); font-size: clamp(31px, 4.8vw, 64px); font-weight: 900; letter-spacing: -0.028em; color: var(--purple); text-wrap: balance; transition: color 0.4s ease; }
-  h2 { font-family: var(--disp); font-size: clamp(23px, 2.7vw, 37px); font-weight: 750; letter-spacing: -0.024em; color: var(--purple); margin-bottom: 34px; transition: color 0.4s ease; }
-  h3 { font-family: var(--disp); font-size: clamp(17px, 2vw, 20px); font-weight: 750; letter-spacing: -0.018em; color: var(--ink); transition: color 0.4s ease;}
-  p { font-size: clamp(15px, 1.5vw, 16px); font-weight: 400; color: var(--grey); max-width: 74ch; margin-bottom: 16px; transition: color 0.4s ease; }
-  .micro { font-family: var(--micro); font-size: clamp(10px, 1vw, 11px); font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--grey); }
-  .big-figure { font-family: var(--disp); font-size: clamp(26px, 3vw, 38px); font-weight: 900; letter-spacing: -0.026em; color: var(--purple); transition: color 0.4s ease; }
-
-  /* 
-    4. INTERACTIVE COMPONENTS 
-  */
-  .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-family: var(--micro); font-size: 10px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.1em; margin-bottom: 12px; cursor: pointer; transition: transform 0.1s; }
-  .badge:active { transform: scale(0.95); }
-  .badge.positive { background: #EEF7E0; color: #488500; } 
-  .badge.caution { background: #FFF3CD; color: #856404; } 
-  .badge.neutral { background: var(--tint2); color: var(--purple); } 
-
-  /* Engine Idle Pulse */
-  @keyframes idlePulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; text-shadow: 0 0 10px rgba(102, 204, 0, 0.4); }
-  }
-  .idle-pulse { animation: idlePulse 2.5s infinite ease-in-out; }
-
-  .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-  .split-grid { display: grid; gap: 20px; grid-template-columns: 1.15fr 0.85fr; }
-
-  /* Engine Rev Hover State */
-  @keyframes rev {
-    0% { transform: translateX(0) translateY(0); }
-    25% { transform: translateX(-2px) rotate(-1deg); }
-    50% { transform: translateX(2px) rotate(1deg); }
-    75% { transform: translateX(-2px) rotate(-1deg); }
-    100% { transform: translateY(-4px); } 
-  }
-
-  .card { 
-    background: var(--card-bg); 
-    border: 1px solid var(--line); 
-    border-top: 3px solid var(--line-d); 
-    border-radius: 10px; 
-    padding: clamp(20px, 2.2vw, 30px); 
-    transition: border-top-color .2s, box-shadow .2s, background 0.4s; 
+  .windshield {
+    flex: 1;
     position: relative;
-  }
-  .card:hover { 
-    animation: rev 0.3s ease-in-out forwards;
-    border-top-color: var(--green); 
-    box-shadow: 0 14px 32px rgba(75,40,109,.15); 
-  }
-  
-  .stat-tile {
-    background: var(--card-bg);
-    border: 1px solid var(--line); 
-    border-left: 3px solid var(--purple);
-    border-radius: 10px;
-    padding: clamp(20px, 2.2vw, 30px); 
-    transition: background 0.4s, border-left-color 0.4s;
+    perspective: 800px;
+    background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a3a 100%);
+    overflow: hidden;
+    border-bottom: 12px solid var(--ink);
+    box-shadow: inset 0 -20px 50px rgba(0,0,0,0.8);
   }
 
-  /* Progress Bar Racers */
-  .progress-wrap { 
-    margin-top: 20px; 
-    background: var(--tint2); 
-    border-radius: 8px; 
-    height: 14px; 
-    position: relative; 
-    /* Visible overflow so the racer emoji can hang off the edge */
-    overflow: visible; 
-  }
-  .progress-bar { 
-    position: relative;
-    height: 100%; 
-    background: var(--green); 
-    width: 0%; 
-    border-radius: 8px;
-    transition: width 2s cubic-bezier(.2,0,0,1); 
-  }
-  .racer {
+  /* Sky / Horizon Glow */
+  .windshield::after {
+    content: '';
     position: absolute;
-    right: -14px; /* Hang slightly over the front edge */
-    top: -6px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 150px;
+    background: linear-gradient(to top, rgba(102, 204, 0, 0.2), transparent);
+    pointer-events: none;
+  }
+
+  .road {
+    position: absolute;
+    bottom: -100px;
+    left: -50%;
+    width: 200%;
+    height: 300px;
+    background-color: #111;
+    transform: rotateX(75deg);
+    transform-origin: bottom center;
+    border-left: 5px solid var(--purple);
+    border-right: 5px solid var(--purple);
+  }
+
+  /* Animated Road Lines */
+  .road::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 8px;
+    height: 200%;
+    transform: translateX(-50%);
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--purple) 0,
+      var(--purple) 40px,
+      transparent 40px,
+      transparent 80px
+    );
+    animation: drive 0.8s linear infinite;
+  }
+
+  @keyframes drive {
+    from { transform: translateX(-50%) translateY(0); }
+    to { transform: translateX(-50%) translateY(80px); }
+  }
+
+  /* Floating Mission Text */
+  .hud-text {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 12px;
+    text-shadow: 0 0 10px var(--green);
+    font-weight: bold;
+  }
+
+  /* 
+    2. THE DASHBOARD CONSOLE
+  */
+  .dashboard {
+    height: 45vh;
+    background: linear-gradient(to bottom, var(--dash-trim) 0%, var(--dash-surface) 100%);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4vw;
+    padding: 20px;
+    border-top: 2px solid #444;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.9);
+  }
+
+  /* Dashboard Texture */
+  .dashboard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMTUxNTE1Ij48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxMTEiPjwvcmVjdD4KPC9zdmc+') repeat;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* 
+    3. THE GAUGES 
+  */
+  .gauge-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    background: #0a0a0a;
+    border-radius: 50%;
+    border: 8px solid var(--ink);
+    box-shadow: inset 0 0 20px rgba(0,0,0,1), 0 5px 15px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  /* Highlight on the glass */
+  .gauge-container::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 10%;
+    width: 80%;
+    height: 40%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
+  }
+
+  .gauge-label {
+    position: absolute;
+    top: 35px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--grey);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .gauge-value {
+    position: absolute;
+    bottom: 45px;
     font-size: 20px;
-    line-height: 1;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(255,255,255,0.4);
   }
 
-  @media (max-width: 1024px) {
-    .split-grid { grid-template-columns: 1fr; }
+  .gauge-pct {
+    position: absolute;
+    bottom: 25px;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 1px;
   }
 
-  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 900ms cubic-bezier(.2,0,0,1), transform 900ms cubic-bezier(.2,0,0,1); }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
+  svg.gauge-svg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: rotate(135deg); /* Start point of the arc */
+  }
+
+  .gauge-track {
+    fill: none;
+    stroke: #222;
+    stroke-width: 8;
+  }
+
+  .gauge-fill {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 8;
+    stroke-dasharray: 283; /* 2 * pi * r (r=45) */
+    stroke-dashoffset: 283;
+    transition: stroke-dashoffset 2s cubic-bezier(.2, 0, 0, 1);
+    stroke-linecap: round;
+  }
+
+  .needle-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-135deg); /* Zero position */
+    transition: transform 2s cubic-bezier(.2, 0, 0, 1);
+  }
+
+  .needle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 45%;
+    background: #ff3333;
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 0 5px rgba(255, 51, 51, 0.6);
+  }
+
+  .needle-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    background: #111;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* 
+    4. THE STEERING WHEEL HORN
+  */
+  .horn-wrapper {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 200px;
+    background: #111;
+    border-radius: 200px 200px 0 0;
+    border: 15px solid #050505;
+    border-bottom: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    z-index: 10;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+  }
+
+  .horn-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--purple-d), #1a0f2e);
+    border: 4px solid var(--purple);
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5);
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .horn-btn:active {
+    transform: scale(0.92) translateY(5px);
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .horn-btn svg {
+    width: 40px;
+    height: 40px;
+    fill: var(--green);
+  }
+
 </style>
 </head>
 <body>
 
-  <!-- THEME TOGGLE -->
-  <button class="theme-toggle" onclick="toggleTheme()">🌙 Night Race</button>
-
-  <!-- GREETER / HERO SECTION -->
-  <section class="sect tint pad view">
-    <div class="reveal">
-      <div class="micro" style="margin-bottom: 24px;">EPB Logistics &bull; June 2026</div>
-      <h1>Race to 500K Vehicles</h1>
-      <p style="margin-top: 24px;">Monitoring the ramp-up of deliveries across our three primary fleets. Target completion: 500,000 units.</p>
+  <!-- WINDSHIELD SCENE -->
+  <div class="windshield">
+    <div class="hud-text">
+      TARGET: 500,000 UNITS<br>
+      STATUS: IN TRANSIT
     </div>
-  </section>
+    <div class="road"></div>
+  </div>
 
-  <!-- SPLIT SECTION: OVERVIEW STATS & PROGRESS -->
-  <section class="sect pad">
-    <div class="reveal">
-      <h2>Current Standings</h2>
-      <div class="split-grid">
-        
-        <!-- Interactive Cards Grid -->
-        <div class="grid">
-          <div class="card">
-            <!-- Click the badge for Confetti! -->
-            <span class="badge positive" onclick="triggerConfetti(event, ['#48286D', '#66CC00'])">🥇 Leading (Click Me)</span>
-            <h3>GM</h3>
-            <p>Dominating the race with rapid expansion. Strong ramp-up since 2025.</p>
-            <div class="progress-wrap">
-              <div class="progress-bar" data-target="87.59">
-                <span class="racer">🚗</span>
-              </div>
-            </div>
-            <div class="micro" style="margin-top: 12px; color: var(--green-d);">87.59% to goal</div>
-          </div>
-          
-          <div class="card">
-            <span class="badge caution" onclick="triggerConfetti(event, ['#2288ee', '#f0c040'])">🥈 Ramping Up</span>
-            <h3>KDDI</h3>
-            <p>Strong growth since the initial 12K output in 2025. Over tripled in volume.</p>
-            <div class="progress-wrap">
-              <div class="progress-bar" data-target="8.07">
-                <span class="racer">🚙</span>
-              </div>
-            </div>
-            <div class="micro" style="margin-top: 12px;">8.07% to goal</div>
-          </div>
-
-          <div class="card">
-            <!-- Engine idle applied here -->
-            <span class="badge neutral idle-pulse" onclick="triggerConfetti(event, ['#ee2222', '#ffffff'])">🥉 Pre-Launch</span>
-            <h3>Cherry</h3>
-            <p>Program initiated, currently loading initial manufacturing waves.</p>
-            <div class="progress-wrap">
-              <div class="progress-bar" data-target="0">
-                <span class="racer idle-pulse">🍒</span>
-              </div>
-            </div>
-            <div class="micro" style="margin-top: 12px;">0% to goal</div>
-          </div>
-        </div>
-
-        <!-- Big Stat Tiles with Animated Counters -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          <div class="stat-tile">
-            <div class="micro">Global Target</div>
-            <div class="big-figure counter" data-val="500000">0</div>
-            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Total units needed for the 2026 milestone.</p>
-          </div>
-          <div class="stat-tile" style="border-left-color: var(--green);">
-            <div class="micro">GM Current Volume</div>
-            <div class="big-figure counter" style="color: var(--green-d);" data-val="437958">0</div>
-            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Only 62,042 units away from securing the overall goal.</p>
-          </div>
-          <div class="stat-tile" style="border-left-color: #2288ee;">
-            <div class="micro">KDDI Current Volume</div>
-            <div class="big-figure counter" data-val="40339">0</div>
-            <p style="margin-bottom: 0; margin-top: 8px; font-size: 14px;">Up from 12K at the end of 2025.</p>
-          </div>
-        </div>
-        
+  <!-- DASHBOARD UI -->
+  <div class="dashboard">
+    
+    <!-- GM GAUGE -->
+    <div class="gauge-container">
+      <div class="gauge-label">GM</div>
+      <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+        <!-- 212 is approx 75% of the circle (283 circumference) to leave a gap at bottom -->
+        <circle class="gauge-fill" id="fill-gm" cx="50" cy="50" r="45"></circle>
+      </svg>
+      <div class="needle-container" id="needle-gm">
+        <div class="needle"></div>
       </div>
+      <div class="needle-center"></div>
+      <div class="gauge-value" id="val-gm">0</div>
+      <div class="gauge-pct">87.59%</div>
     </div>
-  </section>
 
-  <!-- TABLE SECTION -->
-  <section class="sect tint pad">
-    <div class="reveal">
-      <h2>Historical Milestones</h2>
-      <p>Tracking the year-over-year growth from program inception to the current quarter.</p>
-      
-      <div style="overflow-x: auto; background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px; padding: 20px; transition: background 0.4s;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr>
-              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">Fleet</th>
-              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">2024 Vol</th>
-              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">2025 Vol</th>
-              <th class="micro" style="border-bottom: 2px solid var(--line); padding: 12px 8px;">Jun 2026 Status</th>
-            </tr>
-          </thead>
-          <tbody style="font-size: 13.6px; font-family: var(--text);">
-            <tr style="border-bottom: 1px solid var(--line);">
-              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">GM</td>
-              <td style="padding: 16px 8px;" class="counter" data-val="25000">0</td>
-              <td style="padding: 16px 8px;" class="counter" data-val="198000">0</td>
-              <td style="padding: 16px 8px; font-weight: bold;" class="counter" data-val="437958">0</td>
-            </tr>
-            <tr style="border-bottom: 1px solid var(--line);">
-              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">KDDI</td>
-              <td style="padding: 16px 8px;">0</td>
-              <td style="padding: 16px 8px;" class="counter" data-val="12000">0</td>
-              <td style="padding: 16px 8px; font-weight: bold;" class="counter" data-val="40339">0</td>
-            </tr>
-            <tr>
-              <td style="padding: 16px 8px; font-weight: 500; color: var(--purple);">Cherry</td>
-              <td style="padding: 16px 8px;">0</td>
-              <td style="padding: 16px 8px;">0</td>
-              <td style="padding: 16px 8px; font-weight: bold; color: var(--grey-l);" class="idle-pulse">Loading...</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- KDDI GAUGE -->
+    <div class="gauge-container">
+      <div class="gauge-label">KDDI</div>
+      <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+        <circle class="gauge-fill" id="fill-kddi" cx="50" cy="50" r="45" style="stroke: #2288ee;"></circle>
+      </svg>
+      <div class="needle-container" id="needle-kddi">
+        <div class="needle"></div>
       </div>
+      <div class="needle-center"></div>
+      <div class="gauge-value" id="val-kddi">0</div>
+      <div class="gauge-pct" style="color: #2288ee;">8.07%</div>
     </div>
-  </section>
+
+    <!-- CHERRY GAUGE -->
+    <div class="gauge-container">
+      <div class="gauge-label">CHERRY</div>
+      <svg class="gauge-svg" viewBox="0 0 100 100">
+        <circle class="gauge-track" cx="50" cy="50" r="45" stroke-dasharray="212" stroke-dashoffset="0"></circle>
+        <circle class="gauge-fill" id="fill-cherry" cx="50" cy="50" r="45" style="stroke: #ee2222;"></circle>
+      </svg>
+      <div class="needle-container" id="needle-cherry">
+        <div class="needle"></div>
+      </div>
+      <div class="needle-center"></div>
+      <div class="gauge-value" id="val-cherry">0</div>
+      <div class="gauge-pct" style="color: #ee2222;">0.00%</div>
+    </div>
+
+    <!-- STEERING WHEEL HORN -->
+    <div class="horn-wrapper">
+      <button class="horn-btn" onclick="honkHorn()">
+        <!-- SVG Horn Icon -->
+        <svg viewBox="0 0 24 24">
+          <path d="M12.89,3L14.85,3.4L11.11,21L9.15,20.6L12.89,3M19.59,12L16,8.41V5.58L22.42,12L16,18.41V15.58L19.59,12M1.58,12L8,5.58V8.41L4.41,12L8,15.58V18.41L1.58,12Z" />
+        </svg>
+      </button>
+    </div>
+
+  </div>
 
   <script>
-    // 1. NIGHT RACE (DARK MODE) TOGGLE
-    function toggleTheme() {
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      const btn = document.querySelector('.theme-toggle');
-      btn.textContent = isDark ? '🌙 Night Race' : '☀️ Day Shift';
-      
-      // Fun little extra confetti when switching to night mode
-      if (!isDark) triggerConfetti(null, ['#f0c040', '#e84393', '#4B286D']);
-    }
+    // --- GAUGE ANIMATION LOGIC ---
+    // Circumference of our gauge (r=45) is ~282.7. 
+    // We only use 75% of the circle for the gauge arc, which is ~212.
+    const MAX_DASH = 212; 
+    const DASH_OFFSET_START = 283; 
+    
+    // Degrees rotation for needle (Starts at -135deg, sweeps 270deg max)
+    const MAX_DEG = 270;
 
-    // 2. INTERACTIVE CONFETTI
-    function triggerConfetti(e, colors) {
-      // If triggered by click, originate from the mouse coordinates
-      let origin = { x: 0.5, y: 0.5 };
-      if (e) {
-        origin.x = e.clientX / window.innerWidth;
-        origin.y = e.clientY / window.innerHeight;
-      }
-      confetti({
-        particleCount: 75,
-        spread: 60,
-        origin: origin,
-        colors: colors,
-        disableForReducedMotion: true
-      });
-    }
+    const data = [
+      { id: 'gm', targetVal: 437958, pct: 87.59 },
+      { id: 'kddi', targetVal: 40339, pct: 8.07 },
+      { id: 'cherry', targetVal: 0, pct: 0.1 } // Give cherry a tiny bump so it's not dead zero visually
+    ];
 
-    // 3. NUMBER ANIMATION & PROGRESS BAR TRIGGERS
-    const animateValue = (obj, start, end, duration) => {
+    function animateValue(obj, start, end, duration) {
       let startTimestamp = null;
       const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        // ease-out mathematical formula
         const easeOut = 1 - Math.pow(1 - progress, 3);
         const current = Math.floor(easeOut * (end - start) + start);
         obj.innerHTML = current.toLocaleString();
-        if (progress < 1) {
-          window.requestAnimationFrame(step);
-        }
+        if (progress < 1) window.requestAnimationFrame(step);
       };
       window.requestAnimationFrame(step);
     }
 
-    const still = () => matchMedia('(prefers-reduced-motion:reduce)').matches || document.hidden;
+    // Trigger animations on load
+    window.onload = () => {
+      setTimeout(() => {
+        data.forEach(item => {
+          // 1. Animate SVGs
+          const fill = document.getElementById(`fill-${item.id}`);
+          const needle = document.getElementById(`needle-${item.id}`);
+          const valEl = document.getElementById(`val-${item.id}`);
 
-    const observer = new IntersectionObserver((entries, obs) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          if (still()) {
-            // Paint end states immediately
-            entry.target.style.transition = 'none';
-            entry.target.classList.add('visible');
-            
-            entry.target.querySelectorAll('.progress-bar').forEach(bar => {
-              bar.style.transition = 'none';
-              bar.style.width = bar.getAttribute('data-target') + '%';
-            });
-            
-            entry.target.querySelectorAll('.counter').forEach(count => {
-              count.innerHTML = parseInt(count.getAttribute('data-val'), 10).toLocaleString();
-            });
-          } else {
-            // Run animations
-            entry.target.classList.add('visible');
-            
-            entry.target.querySelectorAll('.progress-bar').forEach(bar => {
-              setTimeout(() => {
-                bar.style.width = bar.getAttribute('data-target') + '%';
-              }, 300); 
-            });
+          // Calculate offset based on percentage
+          // To fill it, we reduce the offset. 
+          const fillAmount = (item.pct / 100) * MAX_DASH; 
+          fill.style.strokeDashoffset = DASH_OFFSET_START - fillAmount;
 
-            entry.target.querySelectorAll('.counter').forEach(count => {
-              const target = parseInt(count.getAttribute('data-val'), 10);
-              animateValue(count, 0, target, 2000);
-            });
-          }
-          obs.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
+          // Calculate needle rotation
+          const rotDegree = -135 + ((item.pct / 100) * MAX_DEG);
+          needle.style.transform = `rotate(${rotDegree}deg)`;
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+          // 2. Animate Numbers
+          animateValue(valEl, 0, item.targetVal, 2000);
+        });
+      }, 300); // slight delay for effect
+    };
+
+    // --- WEB AUDIO API HORN LOGIC ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function honkHorn() {
+      // Initialize context on first click to bypass browser autoplay policies
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+
+      // Create oscillator (the sound source)
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      // Configure sound type to sound vaguely like a digital car horn
+      osc.type = 'sawtooth'; 
+      osc.frequency.setValueAtTime(350, audioCtx.currentTime); // 350Hz 
+      
+      // Envelope to make it punchy
+      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      // Play sound
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+
+      // Add a visual flash to the windshield
+      const windshield = document.querySelector('.windshield');
+      windshield.style.background = 'linear-gradient(to bottom, #2a0a0a 0%, #3a1a1a 100%)';
+      setTimeout(() => {
+        windshield.style.background = 'linear-gradient(to bottom, #0a0a1a 0%, #1a1a3a 100%)';
+      }, 150);
+    }
   </script>
 </body>
 </html>
