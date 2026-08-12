@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Base Race - 1 Million Edition (Responsive)</title>
+<title>Vehicle Base Race - Digital EV Edition (Responsive)</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
@@ -163,7 +163,6 @@
     backface-visibility: hidden;
   }
 
-  /* FLUID ROAD SIGNS */
   .sign {
     background: #007733;
     color: white;
@@ -194,7 +193,7 @@
   #party-500k {
     bottom: 6500px;
     font-size: clamp(40px, 6vw, 80px);
-    width: clamp(300px, 50vw, 600px);
+    width: clamp(300px, 50vw, 750px);
     text-shadow: 0 10px 25px rgba(0,0,0,0.7);
   }
   
@@ -338,6 +337,21 @@
   .info-top small { font-size: clamp(7px, 0.8vw, 9px); color: #888; margin-bottom: 2px; }
   .gear { color: #fff; font-weight: bold; }
   .gear.active { color: #00ff66; text-shadow: 0 0 5px #00ff66; }
+
+  .center-stats {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(5px, 1vw, 10px);
+    padding: 10px 15px;
+    z-index: 10;
+  }
+
+  .stat-row { display: flex; justify-content: space-between; align-items: flex-end; }
+  .stat-row span { font-size: clamp(8px, 0.9vw, 11px); color: #7a8b9a; font-weight: bold; letter-spacing: 1px; }
+  .stat-row strong { font-size: clamp(14px, 1.5vw, 20px); color: #fff; font-variant-numeric: tabular-nums; transition: color 0.5s; }
+  
+  .center-divider { height: 1px; background: #1a1d24; border: none; margin: 0; }
 
   .info-screen {
     flex: 1;
@@ -550,7 +564,7 @@
       height: auto;
       min-height: 60vh;
       padding-top: 30px;
-      padding-bottom: 120px; /* Make room for bottom steering wheel */
+      padding-bottom: 120px; 
       gap: 30px;
     }
     .dash-zone {
@@ -558,7 +572,7 @@
       width: 100%;
       justify-content: center;
     }
-    .ac-vent { display: none; } /* Hide vents to save space */
+    .ac-vent { display: none; } 
     .instrument-cluster {
       order: 2;
     }
@@ -613,12 +627,12 @@
           
           <div class="object-3d" id="party-500k">
             <div>🎊🎉🎈🚗💨</div>
-            <div class="party-banner">500K CRUSHED - JULY 2026</div>
+            <div class="party-banner">564,083 CRUSHED! - JULY 2026</div>
           </div>
 
           <div class="object-3d sign" id="sign-1m">
             <h4>TARGET</h4>
-            <p style="color: #00ff66;">1,000,000</p>
+            <p>1,000,000</p>
           </div>
         </div>
       </div>
@@ -631,17 +645,14 @@
   <!-- DASHBOARD UI -->
   <div class="dashboard">
     
-    <!-- LEFT ZONE -->
     <div class="dash-zone">
       <div class="ac-vent">
         <div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div><div class="vent-slat"></div>
       </div>
     </div>
 
-    <!-- CENTER ZONE (INSTRUMENT CLUSTER) -->
     <div class="instrument-cluster">
       
-      <!-- GM GAUGE -->
       <div class="gauge-container gm">
         <svg class="gauge-svg" viewBox="0 0 120 120">
           <circle class="gauge-outer-ticks" cx="60" cy="60" r="56" stroke-dasharray="212 351" stroke-dashoffset="0"></circle>
@@ -655,7 +666,6 @@
         </div>
       </div>
 
-      <!-- KDDI GAUGE -->
       <div class="gauge-container kddi">
         <svg class="gauge-svg" viewBox="0 0 120 120">
           <circle class="gauge-outer-ticks" cx="60" cy="60" r="56" stroke-dasharray="212 351" stroke-dashoffset="0"></circle>
@@ -669,7 +679,6 @@
         </div>
       </div>
 
-      <!-- CHERRY GAUGE -->
       <div class="gauge-container cherry">
         <svg class="gauge-svg" viewBox="0 0 120 120">
           <circle class="gauge-outer-ticks" cx="60" cy="60" r="56" stroke-dasharray="212 351" stroke-dashoffset="0"></circle>
@@ -683,7 +692,6 @@
         </div>
       </div>
 
-      <!-- STEERING COLUMN -->
       <div class="steering-column">
         <button class="wiper-stalk" onclick="triggerWipe()">Wipe</button>
         <div class="horn-wrapper">
@@ -695,22 +703,34 @@
 
     </div>
 
-    <!-- RIGHT ZONE (CENTER CONSOLE) -->
     <div class="dash-zone">
-      
-      <!-- INFOTAINMENT SCREEN -->
       <div class="infotainment">
         <div class="info-top">
           <span><small>TEMP</small>22°C</span>
           <span><small>GEAR</small><span class="gear" id="gear-indicator">P</span></span>
           <span><small>DATE</small>AUG 11 2026</span>
         </div>
+        
+        <div class="center-stats">
+          <div class="stat-row">
+            <span>TOTAL VOLUME</span>
+            <strong id="val-total">0</strong>
+          </div>
+          <div class="stat-row">
+            <span>OVERALL TARGET</span>
+            <strong id="console-target" style="color:#fbcc04">500,000</strong>
+          </div>
+        </div>
+
+        <hr class="center-divider">
+
         <div class="info-screen">
           <div class="radio-widget">
             <div class="radio-icon">🎵</div>
             <div class="radio-text">Now Playing<br><b>I Want It That Way</b><br><span>Backstreet Boys</span></div>
           </div>
         </div>
+        
         <div class="info-bottom">
           <button>NAV</button><button>MEDIA</button><button>CLIMATE</button>
         </div>
@@ -766,6 +786,8 @@
         { id: 'gm', val: gmVal },
         { id: 'kddi', val: kddiVal }
       ];
+
+      const totalVal = gmVal + kddiVal;
       
       targets.forEach(item => {
         const pct = (item.val / TARGET_1M) * 100; 
@@ -787,6 +809,13 @@
         }
         currentVals[item.id] = item.val;
       });
+
+      if (durationMs > 0) {
+          animateValue('total', currentVals.total, totalVal, durationMs);
+      } else {
+          document.getElementById('val-total').innerHTML = totalVal.toLocaleString();
+      }
+      currentVals.total = totalVal;
     }
 
     async function driveTo(distanceY, duration) {
@@ -809,6 +838,7 @@
     function toggleIgnition() {
       const btn = document.getElementById('ignitionBtn');
       const gear = document.getElementById('gear-indicator');
+      const consoleTarget = document.getElementById('console-target');
       
       if (!engineRunning) {
         engineRunning = true;
@@ -825,9 +855,12 @@
         
         document.getElementById('master-track').style.transform = `translateY(0)`;
         updateGauges(0, 0, 500);
+        
         const hud = document.getElementById('hud-target');
         hud.className = 'hud';
         hud.innerHTML = 'TARGET: 500,000';
+        consoleTarget.innerHTML = '500,000';
+        consoleTarget.style.color = '#fbcc04';
         
         document.getElementById('windshield-dirt').style.opacity = '1';
       }
@@ -840,8 +873,12 @@
       trackY = 0;
 
       const hud = document.getElementById('hud-target');
+      const consoleTarget = document.getElementById('console-target');
+      
       hud.className = 'hud';
       hud.innerHTML = 'TARGET: 500,000';
+      consoleTarget.innerHTML = '500,000';
+      consoleTarget.style.color = '#fbcc04';
 
       document.getElementById('master-track').style.transform = `translateY(0)`;
       updateGauges(0, 0, 0);
@@ -872,10 +909,13 @@
       
       hud.classList.add('upgraded');
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
+      consoleTarget.innerHTML = '1,000,000';
+      consoleTarget.style.color = '#00ff66';
+      
       await sleep(3500); 
 
-      // LEG 4: Toward 1 Million
-      await driveTo(9000, 4000); 
+      // LEG 4: Drive up to the final 1M wall
+      await driveTo(9800, 4000); 
     }
 
     function fireConfetti() {
