@@ -466,8 +466,8 @@
       pCtx.fillStyle = '#ffffff'; pCtx.fillRect(0, 0, 256, 128);
       pCtx.strokeStyle = '#333333'; pCtx.lineWidth = 8; pCtx.strokeRect(4, 4, 248, 120);
       pCtx.fillStyle = '#000000'; pCtx.textAlign = 'center';
-      pCtx.font = 'bold 36px Arial'; pCtx.fillText(company, 128, 52);
-      pCtx.font = 'bold 28px Arial'; pCtx.fillText(plateText, 128, 95);
+      pCtx.font = 'bold 36px Arial'; pCtx.fillText(company, 128, 52, 240);
+      pCtx.font = 'bold 28px Arial'; pCtx.fillText(plateText, 128, 95, 240);
       const plate = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(plateCanvas) }));
       plate.position.set(0, 3.5, 10.15); car.add(plate);
 
@@ -484,7 +484,7 @@
     // --- PLACING THE WORLD ASSETS ---
     addWarehouse('GM', '#00d2ff', -40, -50, Math.PI / 2);
 
-    gmCar = addVehicle('GM GAIN', 'GM-LEAD', 0x00d2ff, -6, -CamFollowDistance, driverUrl || tomHeadshot);
+    gmCar = addVehicle('BE', 'GM-LEAD', 0x00d2ff, -6, -CamFollowDistance, driverUrl || tomHeadshot);
 
     addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
 
@@ -554,7 +554,7 @@
     }
 
     async function mergeKDDI() {
-      kddiCar = addVehicle('KDDI JOIN', 'KDDI-JOIN', 0x39ff14, -60, camera.position.z - CamFollowDistance, dancer1Url || tomHeadshot);
+      kddiCar = addVehicle('THE DIFFERENCE', 'KDDI-JOIN', 0x39ff14, 60, camera.position.z - CamFollowDistance, dancer1Url || tomHeadshot);
       return new Promise(resolve => {
         const startTime = performance.now();
         const duration = 2000;
@@ -562,8 +562,8 @@
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);
           const ease = progress * progress * (3 - 2 * progress);
-          kddiCar.position.x = -60 + (66 * ease); // merges to x=6 (right lane)
-          kddiCar.rotation.y = -Math.PI / 2 + (Math.PI / 2 * ease);
+          kddiCar.position.x = 60 - (54 * ease); // merges from warehouse side (x=60) to right lane (x=6)
+          kddiCar.rotation.y = Math.PI / 2 - (Math.PI / 2 * ease);
           kddiCar.position.z = camera.position.z - CamFollowDistance;
           if (progress < 1) requestAnimationFrame(step);
           else resolve();
