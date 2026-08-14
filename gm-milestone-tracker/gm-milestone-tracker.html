@@ -523,7 +523,7 @@
     const wPoleL = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleL.position.set(-24, 15, -1050.5); scene.add(wPoleL);
     const wPoleR = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleR.position.set(24, 15, -1050.5); scene.add(wPoleR);
 
-    addWarehouse('CHERRY', '#b026ff', 0, -1100, 0, 5);
+    addWarehouse('CHERRY', '#b026ff', 0, -1200, 0, 5);
 
     const camTarget = new THREE.Vector3();
 
@@ -567,7 +567,12 @@
     }
 
     async function mergeKDDI() {
-      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, 60, camera.position.z - CamFollowDistance, dancer1Url || tomHeadshot);
+      const startX = 45;
+      const startZ = -390;
+      const targetX = 6;
+      const targetZ = camera.position.z - CamFollowDistance;
+      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, startX, startZ, dancer1Url || tomHeadshot);
+      kddiCar.rotation.y = Math.PI / 2;
       return new Promise(resolve => {
         const startTime = performance.now();
         const duration = 2000;
@@ -575,9 +580,9 @@
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);
           const ease = progress * progress * (3 - 2 * progress);
-          kddiCar.position.x = 60 - (54 * ease); // merges from warehouse side (x=60) to right lane (x=6)
+          kddiCar.position.x = startX + (targetX - startX) * ease;
+          kddiCar.position.z = startZ + (targetZ - startZ) * ease;
           kddiCar.rotation.y = Math.PI / 2 - (Math.PI / 2 * ease);
-          kddiCar.position.z = camera.position.z - CamFollowDistance;
           if (progress < 1) requestAnimationFrame(step);
           else resolve();
         }
