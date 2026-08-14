@@ -586,54 +586,15 @@
       scene.add(s);
     }
 
-    // balloon helper
-    function addBalloon(bx, by, bz, color) {
-      const g = new THREE.Group();
-      const ball = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 6), new THREE.MeshLambertMaterial({color}));
-      ball.scale.y = 1.4; g.add(ball);
-      const str = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3), new THREE.MeshLambertMaterial({color: 0xffffff}));
-      str.position.y = -2.1; g.add(str);
-      g.position.set(bx, by, bz); scene.add(g);
-    }
-    [-21, -19, -17].forEach((x, i) => addBalloon(x, 24 + i, partyZ, streamerCols[i]));
-    [17, 19, 21].forEach((x, i) => addBalloon(x, 24 + i, partyZ, streamerCols[i + 3]));
-    addBalloon(-6, 27, partyZ, 0xff3333);
-    addBalloon(0,  29, partyZ, 0xfbcc04);
-    addBalloon(6,  27, partyZ, 0x39ff14);
-
-    // confetti scatter
-    const confCols = [0xff3333, 0xfbcc04, 0x39ff14, 0xb026ff, 0x00d2ff];
-    [[-18,8,-8],[10,12,4],[-5,5,0],[22,10,-4],[0,14,8],[-12,7,4],[15,4,-8],
-     [8,11,0],[-20,9,8],[3,6,-4],[-9,13,0],[18,3,4],[-6,8,-8],[12,15,8],
-     [-15,5,-4],[7,10,0],[-22,12,4],[20,7,-8],[-2,4,8],[16,9,-4],[-8,11,0],
-     [9,6,4],[-17,14,-8],[14,3,8],[-1,8,-4],[11,13,0],[-13,5,4],[19,10,-8],
-     [-4,7,8],[6,12,-4]
-    ].forEach(([cx, cy, cz], i) => {
-      const conf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.2), new THREE.MeshLambertMaterial({color: confCols[i % 5]}));
-      conf.position.set(cx, cy, partyZ + cz);
-      conf.rotation.set(i * 0.7, i * 0.5, i * 0.3);
-      scene.add(conf);
-    });
-
-    // flag bunting leading into the party zone
+    // flag bunting leading into the July arch
     const flagCols = [0xff3333, 0xfbcc04, 0x39ff14, 0xb026ff, 0x00d2ff];
     for (let fi = 0; fi < 5; fi++) {
-      const fz = -585 - fi * 8;
+      const fz = -590 - fi * 7;
       const flagL = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 3), new THREE.MeshLambertMaterial({color: flagCols[fi]}));
       flagL.rotation.z = Math.PI; flagL.position.set(-22, 14, fz); scene.add(flagL);
       const flagR = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 3), new THREE.MeshLambertMaterial({color: flagCols[fi]}));
       flagR.rotation.z = Math.PI; flagR.position.set(22, 14, fz); scene.add(flagR);
     }
-
-    // dancers + extra parade spectators
-    addDancer(dancer3Url, '🕺', '#00ff66', -60, partyZ, 0);
-    addDancer(dancer4Url, '💃', '#b026ff', -44, partyZ, 2);
-    addDancer(dancer1Url, '🕺', '#ff3333', 44, partyZ, 0.5);
-    addDancer(dancer2Url, '💃', '#888888', 60, partyZ, 1.5);
-    addDancer('', '🕺', '#ff9900', -76, partyZ - 8, 0.8);
-    addDancer('', '💃', '#00d2ff', 76, partyZ - 8, 1.2);
-    addDancer('', '🕺', '#fbcc04', -54, partyZ + 8, 1.6);
-    addDancer('', '💃', '#ff3333', 54, partyZ + 8, 0.4);
 
     // roadside animals
     addAnimal('cow',   -28, -110);
@@ -658,6 +619,45 @@
     const wPoleGeo = new THREE.CylinderGeometry(1, 1, 30);
     const wPoleL = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleL.position.set(-24, 15, -1050.5); scene.add(wPoleL);
     const wPoleR = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleR.position.set(24, 15, -1050.5); scene.add(wPoleR);
+
+    // ----- PARTY ZONE behind 1M sign -----
+    const partyBehindZ = -1090;
+    const bCols = [0xff3333, 0xfbcc04, 0x39ff14, 0xb026ff, 0x00d2ff, 0xff9900];
+
+    function addBalloon(bx, by, bz, color) {
+      const g = new THREE.Group();
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 6), new THREE.MeshLambertMaterial({color}));
+      ball.scale.y = 1.4; g.add(ball);
+      const str = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3), new THREE.MeshLambertMaterial({color: 0xffffff}));
+      str.position.y = -2.1; g.add(str);
+      g.position.set(bx, by, bz); scene.add(g);
+    }
+
+    // dancers flanking the sign (outside x=±25 so they're visible)
+    addDancer(dancer1Url, '🕺', '#ff3333', -56, partyBehindZ,      0.5);
+    addDancer(dancer2Url, '💃', '#888888', -42, partyBehindZ,      1.5);
+    addDancer(dancer3Url, '🕺', '#00ff66',  42, partyBehindZ,      0);
+    addDancer(dancer4Url, '💃', '#b026ff',  56, partyBehindZ,      2);
+    addDancer('', '🕺', '#ff9900', -70, partyBehindZ - 10, 0.8);
+    addDancer('', '💃', '#00d2ff',  70, partyBehindZ - 10, 1.2);
+    addDancer('', '🕺', '#fbcc04', -44, partyBehindZ + 10, 1.6);
+    addDancer('', '💃', '#ff3333',  44, partyBehindZ + 10, 0.4);
+
+    // balloons — beside and above the sign (sign top is y≈29.5, so y=36+ clears it)
+    [-52,-38,-28,28,38,52].forEach((bx, i) => addBalloon(bx, 34, partyBehindZ, bCols[i]));
+    addBalloon(-14, 42, partyBehindZ, 0xff3333);
+    addBalloon(0,   46, partyBehindZ, 0xfbcc04);
+    addBalloon(14,  42, partyBehindZ, 0x39ff14);
+
+    // confetti
+    [[-42,8,5],[32,12,-3],[-22,15,8],[47,10,-6],[0,19,0],[-36,7,-5],[26,14,6],
+     [-52,11,3],[36,9,-8],[-12,16,5],[-32,13,-3],[42,8,8],[-46,10,-6],[22,15,3],[0,12,-8]
+    ].forEach(([cx, cy, cz], i) => {
+      const conf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.2), new THREE.MeshLambertMaterial({color: bCols[i % 6]}));
+      conf.position.set(cx, cy, partyBehindZ + cz);
+      conf.rotation.set(i * 0.7, i * 0.5, i * 0.3);
+      scene.add(conf);
+    });
 
     addWarehouse('CHERRY', '#b026ff', 0, -1200, 0, 5);
 
@@ -806,6 +806,85 @@
       }
     }
 
+    function crossParade() {
+      const pz = -630;
+      const startX = -72;
+      const endX = 90;
+      const duration = 6000;
+      const marchers = [];
+
+      function makeStick(color, sx, sz) {
+        const g = new THREE.Group();
+        const mat = new THREE.MeshLambertMaterial({color});
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 4), mat); body.position.y = 4; g.add(body);
+        const arms = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 5), mat);
+        arms.rotation.z = Math.PI / 4; arms.position.y = 5.5; g.add(arms);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), mat); head.position.y = 7.5; g.add(head);
+        const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3), mat); leg1.position.set(0, 1.5, 0); g.add(leg1);
+        const leg2 = leg1.clone(); g.add(leg2);
+        g.userData.leg1 = leg1; g.userData.leg2 = leg2; g.userData.initialX = sx;
+        g.position.set(sx, 0, sz); g.rotation.y = -Math.PI / 2;
+        scene.add(g); marchers.push(g);
+      }
+
+      function makeCow(sx, sz) {
+        const g = new THREE.Group();
+        const bm = new THREE.MeshLambertMaterial({color: 0xf5f5f5});
+        const sm = new THREE.MeshLambertMaterial({color: 0x222222});
+        const body = new THREE.Mesh(new THREE.BoxGeometry(4, 2.5, 7), bm); body.position.y = 2.5; g.add(body);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2, 2.5), bm); head.position.set(0, 3.5, -4.5); g.add(head);
+        [[-1.3, -2.5], [-1.3, 2.5], [1.3, -2.5], [1.3, 2.5]].forEach(([lx, lz]) => {
+          const l = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2.2), sm); l.position.set(lx, 1.1, lz); g.add(l);
+        });
+        g.userData.initialX = sx;
+        g.position.set(sx, 0, sz); g.rotation.y = -Math.PI / 2;
+        scene.add(g); marchers.push(g);
+      }
+
+      function makeSheep(sx, sz) {
+        const g = new THREE.Group();
+        const wm = new THREE.MeshLambertMaterial({color: 0xeeeeee});
+        const fm = new THREE.MeshLambertMaterial({color: 0x999999});
+        const body = new THREE.Mesh(new THREE.SphereGeometry(2, 8, 6), wm); body.scale.set(1.3, 0.9, 1); body.position.y = 2.5; g.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), fm); head.position.set(0, 3.2, -2.8); g.add(head);
+        [[-0.9, -0.7], [-0.9, 0.7], [0.9, -0.7], [0.9, 0.7]].forEach(([lx, lz]) => {
+          const l = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8), fm); l.position.set(lx, 0.9, lz); g.add(l);
+        });
+        g.userData.initialX = sx;
+        g.position.set(sx, 0, sz); g.rotation.y = -Math.PI / 2;
+        scene.add(g); marchers.push(g);
+      }
+
+      makeStick(0xff3333, startX,       pz - 5);
+      makeStick(0xfbcc04, startX - 10,  pz + 3);
+      makeStick(0x39ff14, startX - 20,  pz - 2);
+      makeCow(             startX - 32,  pz + 5);
+      makeStick(0xb026ff, startX - 44,  pz - 4);
+      makeSheep(           startX - 55,  pz + 2);
+      makeStick(0x00d2ff, startX - 66,  pz - 3);
+      makeStick(0xff9900, startX - 78,  pz + 4);
+
+      const dist = endX - startX;
+      return new Promise(resolve => {
+        const t0 = performance.now();
+        function step(now) {
+          const t = Math.min((now - t0) / duration, 1);
+          marchers.forEach((m, i) => {
+            m.position.x = m.userData.initialX + dist * t;
+            m.position.y = Math.abs(Math.sin(t * Math.PI * 10 + i * 1.3)) * 0.5;
+            if (m.userData.leg1) {
+              const a = Math.sin(t * Math.PI * 10 + i * 1.3) * 0.5;
+              m.userData.leg1.rotation.z = a;
+              m.userData.leg2.rotation.z = -a;
+            }
+          });
+          if (t < 1) requestAnimationFrame(step);
+          else { marchers.forEach(m => scene.remove(m)); resolve(); }
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
     async function startDriveSequence() {
       driveSequenceActive = false;
       await sleep(50);
@@ -835,8 +914,16 @@
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      updateGauges(523028, 41055, 7000);
-      await driveConvoy(-590, 7000);
+      updateGauges(523028, 41055, 6000);
+      await driveConvoy(-565, 6000);   // stop in front of July arch
+      if (!driveSequenceActive) return;
+      await sleep(500);
+
+      await crossParade();              // parade of figures + animals crosses
+      if (!driveSequenceActive) return;
+      await sleep(600);
+
+      await driveConvoy(-920, 8000);   // drive through arch, on to 1M sign
       if (!driveSequenceActive) return;
       fireConfetti();
       await sleep(800);
@@ -845,9 +932,6 @@
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
       consoleTarget.innerHTML = '1,000,000';
       consoleTarget.style.color = '#00ff66';
-      await sleep(3500);
-
-      await driveConvoy(-920, 8000);
     }
 
     function fireConfetti() {
