@@ -263,10 +263,10 @@
     // 1. FIREBASE IMAGE URLS (Paste your links here!)
     // ==========================================
     const driverUrl  = ''; // e.g. 'https://firebasestorage.googleapis.com/.../driver.jpg'
-    const dancer1Url = '';
-    const dancer2Url = '';
-    const dancer3Url = '';
-    const dancer4Url = '';
+    const dancer1Url = 'images/tom-henry.jpg'; // Tom
+    const dancer2Url = 'images/Greg.jpg';       // Greg
+    const dancer3Url = 'images/David.jpg';      // David
+    const dancer4Url = 'images/Jodi.jpg';       // Jodi
 
     const tomHeadshot = 'images/tom-henry.jpg';
 
@@ -571,7 +571,7 @@
       const startZ = -390;
       const targetX = 6;
       const targetZ = camera.position.z - CamFollowDistance;
-      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, startX, startZ, dancer1Url || tomHeadshot);
+      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, startX, startZ, 'images/Brian.jpg');
       kddiCar.rotation.y = Math.PI / 2;
       return new Promise(resolve => {
         const startTime = performance.now();
