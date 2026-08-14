@@ -776,9 +776,11 @@
         btn.classList.replace('off', 'on');
         gear.innerHTML = 'D';
         gear.classList.add('active');
+        playIgnitionStart();
         startDriveSequence();
       } else {
         engineRunning = false;
+        playIgnitionStop();
         driveSequenceActive = false;
         btn.classList.replace('on', 'off');
         gear.innerHTML = 'P';
@@ -939,6 +941,128 @@
       });
     }
 
+    // ==========================================
+    // SOUND ENGINE (Web Audio API — no files needed)
+    // ==========================================
+    let _audioCtx = null;
+    function getAudioCtx() {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+      return _audioCtx;
+    }
+
+    function playHorn() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Classic dual-tone car horn: ~392 Hz (G4) and ~494 Hz (B4)
+      [[392, 0.55], [494, 0.45]].forEach(([freq, gain]) => {
+        const osc = ctx.createOscillator();
+        const env = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now);
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(gain, now + 0.02);
+        env.gain.setValueAtTime(gain, now + 0.25);
+        env.gain.linearRampToValueAtTime(0, now + 0.38);
+        osc.connect(env);
+        env.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      });
+    }
+
+    function playWiper() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Two swishes — one per wiper arm
+      [0, 0.35].forEach(offset => {
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5) * 0.6;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 2200;
+        filter.Q.value = 0.8;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0, now + offset);
+        env.gain.linearRampToValueAtTime(0.7, now + offset + 0.04);
+        env.gain.linearRampToValueAtTime(0, now + offset + 0.28);
+        src.connect(filter);
+        filter.connect(env);
+        env.connect(ctx.destination);
+        src.start(now + offset);
+      });
+    }
+
+    function playIgnitionStart() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Starter crank: rising noise burst + engine catch
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.8, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / ctx.sampleRate;
+        // Crank rumble + ignition catch
+        const crank = Math.sin(2 * Math.PI * 28 * t + Math.sin(2 * Math.PI * 14 * t) * 3);
+        data[i] = (Math.random() * 0.3 + crank * 0.5) * Math.min(t * 4, 1) * Math.max(1 - (t - 0.5) * 3, 0.1);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 400;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.8, now);
+      env.gain.linearRampToValueAtTime(0, now + 0.8);
+      src.connect(filter);
+      filter.connect(env);
+      env.connect(ctx.destination);
+      src.start(now);
+      // Engine idle settling in after crank
+      const idle = ctx.createOscillator();
+      const idleEnv = ctx.createGain();
+      idle.type = 'sawtooth';
+      idle.frequency.setValueAtTime(35, now + 0.5);
+      idle.frequency.linearRampToValueAtTime(22, now + 1.6);
+      idleEnv.gain.setValueAtTime(0, now + 0.5);
+      idleEnv.gain.linearRampToValueAtTime(0.18, now + 0.7);
+      idleEnv.gain.linearRampToValueAtTime(0.08, now + 1.8);
+      idleEnv.gain.linearRampToValueAtTime(0, now + 2.2);
+      const idleFilter = ctx.createBiquadFilter();
+      idleFilter.type = 'lowpass';
+      idleFilter.frequency.value = 180;
+      idle.connect(idleFilter);
+      idleFilter.connect(idleEnv);
+      idleEnv.connect(ctx.destination);
+      idle.start(now + 0.5);
+      idle.stop(now + 2.2);
+    }
+
+    function playIgnitionStop() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Engine wind-down: falling pitch
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(22, now);
+      osc.frequency.linearRampToValueAtTime(6, now + 0.9);
+      env.gain.setValueAtTime(0.12, now);
+      env.gain.linearRampToValueAtTime(0, now + 0.9);
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 160;
+      osc.connect(filt);
+      filt.connect(env);
+      env.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.9);
+    }
+
     function triggerWipe() {
       const leftWiper = document.getElementById('wiperLeft');
       const rightWiper = document.getElementById('wiperRight');
@@ -947,12 +1071,14 @@
       void leftWiper.offsetWidth;
       leftWiper.classList.add('is-wiping');
       rightWiper.classList.add('is-wiping');
+      playWiper();
       setTimeout(() => document.getElementById('windshield-dirt').style.opacity = '0', 600);
     }
 
     function honkHorn() {
       const honk = document.getElementById('honkGraphic');
       honk.classList.add('show');
+      playHorn();
       setTimeout(() => honk.classList.remove('show'), 350);
     }
 
