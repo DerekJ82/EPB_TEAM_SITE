@@ -511,8 +511,8 @@
     const pPoleR = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleR.position.set(19, 10, -630.5); scene.add(pPoleR);
 
     addDancer(dancer3Url, '🕺', '#00ff66', -20, -630, 0);
-    addDancer(dancer4Url, '💃', '#b026ff', -8, -630, 2);
-    addDancer(dancer1Url, '🕺', '#ff3333', 8, -630, 0.5);
+    addDancer(dancer4Url, '💃', '#b026ff', -10, -630, 2);
+    addDancer(dancer1Url, '🕺', '#ff3333', 10, -630, 0.5);
     addDancer(dancer2Url, '💃', '#888888', 20, -630, 1.5);
 
     const wallMat = new THREE.MeshLambertMaterial({ map: createSignTexture('TARGET', '1,000,000', false, true) });
@@ -523,7 +523,7 @@
     const wPoleL = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleL.position.set(-24, 15, -1050.5); scene.add(wPoleL);
     const wPoleR = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleR.position.set(24, 15, -1050.5); scene.add(wPoleR);
 
-    addWarehouse('CHERRY', '#b026ff', 0, -1250, 0, 1.5);
+    addWarehouse('CHERRY', '#b026ff', 0, -1250, 0, 4);
 
     const camTarget = new THREE.Vector3();
 
