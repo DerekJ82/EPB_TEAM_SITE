@@ -729,13 +729,13 @@
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      updateGauges(25000, 0, 3000);
-      await driveConvoy(-190, 3000);
+      updateGauges(25000, 0, 6000);
+      await driveConvoy(-190, 6000);
       if (!driveSequenceActive) return;
       await sleep(800);
 
-      updateGauges(198000, 12000, 3500);
-      await driveConvoy(-390, 3500);
+      updateGauges(198000, 12000, 7000);
+      await driveConvoy(-390, 7000);
       if (!driveSequenceActive) return;
       await sleep(800);
 
@@ -743,8 +743,8 @@
       await sleep(1500);
       if (!driveSequenceActive) return;
 
-      updateGauges(523028, 41055, 3500);
-      await driveConvoy(-590, 3500);
+      updateGauges(523028, 41055, 7000);
+      await driveConvoy(-590, 7000);
       if (!driveSequenceActive) return;
       fireConfetti();
       await sleep(800);
@@ -755,7 +755,7 @@
       consoleTarget.style.color = '#00ff66';
       await sleep(3500);
 
-      await driveConvoy(-920, 4000);
+      await driveConvoy(-920, 8000);
     }
 
     function fireConfetti() {
