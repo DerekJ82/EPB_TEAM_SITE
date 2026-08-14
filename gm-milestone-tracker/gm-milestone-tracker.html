@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Base Race - True 3D WebGL Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #050608;
+    color: #fff;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    overflow-x: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /*
+    1. THE WINDSHIELD
+  */
+  .windshield {
+    flex: 1;
+    min-height: 60vh;
+    position: relative;
+    border-top: clamp(10px, 3vh, 30px) solid #0a0a0c;
+    border-left: clamp(15px, 4vw, 50px) solid #0a0a0c;
+    border-right: clamp(15px, 4vw, 50px) solid #0a0a0c;
+    border-bottom: clamp(4px, 1vh, 8px) solid #0a0a0c;
+    border-radius: clamp(20px, 5vw, 60px) clamp(20px, 5vw, 60px) 0 0;
+    box-shadow: inset 0 30px 80px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.8);
+    background: linear-gradient(to bottom, #4ba3e3 0%, #b5e1ff 50%, #7bb558 50%, #7bb558 100%);
+    overflow: hidden;
+  }
+
+  .windshield-reflection {
+    position: absolute;
+    top: -20%; left: -10%; width: 120%; height: 100%;
+    background: radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 40%, transparent 60%);
+    border-radius: 50%; transform: rotate(-10deg); pointer-events: none; z-index: 15;
+  }
+
+  #three-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+  /* 2D HUD Overlays */
+  .hud {
+    position: absolute; top: clamp(15px, 3vh, 30px); left: clamp(15px, 3vw, 30px); z-index: 20;
+    color: #cc0000; font-weight: 900; font-size: clamp(12px, 1.5vw, 16px);
+    letter-spacing: 3px; text-shadow: 0 2px 4px rgba(255,255,255,0.8); transition: color 0.5s;
+  }
+  .hud.upgraded { color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.8); animation: hudPulse 1s infinite alternate; }
+  @keyframes hudPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+  .mountains {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 250px; transform: translateY(-100%);
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,250 L80,120 L200,250 L450,30 L650,250 L850,110 L1000,250 Z" fill="%23558c3f"/></svg>') repeat-x bottom;
+    background-size: 800px 250px; z-index: 0;
+  }
+
+  #windshield-dirt {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 45; pointer-events: none; transition: opacity 0.3s ease-out;
+  }
+  .smudge { position: absolute; background: rgba(200, 190, 170, 0.15); filter: blur(12px); border-radius: 50%; }
+
+  .wiper-arm {
+    position: absolute; bottom: -30px; width: clamp(8px, 1.5vw, 14px); height: 65vh; background: #111;
+    transform-origin: bottom center; transform: rotate(-85deg); border-radius: 8px; z-index: 50; box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+  }
+  .wiper-arm::before { content: ''; position: absolute; top: 5%; left: -70%; width: 250%; height: 90%; background: #2a2a2a; border-radius: 4px; border-right: 3px solid #555; }
+  .wiper-arm.left { left: 25%; } .wiper-arm.right { left: 65%; }
+  .wiper-arm.is-wiping { animation: wipeAction 1.2s ease-in-out; }
+  @keyframes wipeAction { 0% { transform: rotate(-85deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-85deg); } }
+
+  #honkGraphic {
+    position: absolute; top: 40%; left: 50%; font-size: clamp(50px, 8vw, 110px); font-weight: 900; font-style: italic; color: #fbcc04;
+    text-transform: uppercase; text-shadow: 4px 4px 0 #cc0000, -4px -4px 0 #cc0000, 4px -4px 0 #cc0000, -4px 4px 0 #cc0000, 0 10px 20px rgba(0,0,0,0.6);
+    opacity: 0; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%) scale(0) rotate(-15deg); transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  #honkGraphic.show { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-5deg); }
+
+  /*
+    2. RESPONSIVE DASHBOARD CONSOLE
+  */
+  .dashboard {
+    height: 30vh; min-height: 280px; background: radial-gradient(circle at top, #141720 0%, #050608 80%); position: relative;
+    display: flex; justify-content: center; align-items: center; gap: clamp(15px, 2.5vw, 30px); padding: 0 clamp(10px, 4vw, 30px);
+    border-top: 2px solid #1f232b; box-shadow: inset 0 20px 40px rgba(0,0,0,0.8); z-index: 100;
+  }
+
+  .dash-controls { display: flex; flex-direction: column; gap: clamp(8px, 1.5vw, 15px); align-items: center; justify-content: center; position: absolute; bottom: 20px; }
+  .dash-controls.left { left: 4vw; } .dash-controls.right { right: 4vw; }
+
+  .driver-bubble {
+    width: clamp(50px, 6vw, 70px);
+    height: clamp(50px, 6vw, 70px);
+    background: #1f232b;
+    border: 3px solid #3a414e;
+    overflow: hidden;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  }
+  .driver-bubble span { font-size: clamp(20px, 2.5vw, 28px); }
+  .driver-bubble img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+  .touch-btn {
+    background: #0f1116; border: 1px solid #1f2329; color: #7a8b9a; padding: clamp(8px, 1vw, 12px) clamp(12px, 2vw, 24px); border-radius: 6px;
+    font-size: clamp(9px, 0.8vw, 11px); font-weight: bold; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.5); width: 100%;
+  }
+  .touch-btn:hover { color: #fff; background: #16191e; } .touch-btn:active { transform: scale(0.95); }
+
+  .ignition-btn {
+    width: clamp(55px, 6.5vw, 80px); height: clamp(55px, 6.5vw, 80px); border-radius: 50%; background: radial-gradient(circle, #1a1c21, #08090b); border: clamp(2px, 0.5vw, 4px) solid #333;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
+  }
+  .ignition-btn.off { box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,0,0,0.3); border-color: #aa2222; }
+  .ignition-btn.on { box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,255,102,0.4); border-color: #00ff66; }
+  .ignition-btn:active { transform: scale(0.92); }
+  .ignition-btn span { font-size: clamp(6px, 0.7vw, 9px); font-weight: bold; color: #fff; text-align: center; line-height: 1.3; letter-spacing: 1px; }
+  .ignition-btn .status-light { width: clamp(8px, 0.8vw, 12px); height: clamp(2px, 0.4vw, 4px); background: #ff3333; border-radius: 2px; margin-top: 6px; box-shadow: 0 0 5px #ff3333; transition: background 0.3s, box-shadow 0.3s; }
+  .ignition-btn.on .status-light { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+
+  /* DIGITAL GAUGES */
+  .gauge-container { position: relative; width: clamp(140px, 18vw, 240px); height: clamp(140px, 18vw, 240px); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge-svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: rotate(135deg); }
+  .gauge-outer-ticks { fill: none; stroke: #1f2329; stroke-width: 2; stroke-dasharray: 2 10.5; }
+  .gauge-track { fill: none; stroke: #16191e; stroke-width: 8; stroke-linecap: round; }
+  .gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 216; stroke-dashoffset: 216; transition: stroke-dashoffset 2s ease-in-out; }
+  #fill-gm { stroke: #00d2ff; filter: drop-shadow(0 0 6px rgba(0,210,255,0.6)); }
+  #fill-kddi { stroke: #39ff14; filter: drop-shadow(0 0 6px rgba(57,255,20,0.6)); }
+
+  .gauge-center-content { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 10; }
+  .gauge-value { font-size: clamp(24px, 3vw, 42px); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -1px; color: #fff; line-height: 1; }
+  .gauge-label { font-size: clamp(9px, 1vw, 12px); color: #7a8b9a; font-weight: bold; letter-spacing: 2px; margin-bottom: 4px; }
+  .gauge-subtext { font-size: clamp(8px, 0.9vw, 10px); color: #4a5462; margin-top: 4px; }
+
+  /* CENTER INFO PANEL */
+  .center-panel { width: clamp(200px, 26vw, 320px); height: clamp(140px, 18vw, 240px); display: flex; flex-direction: column; justify-content: space-between; position: relative; background: #0b0c10; border: 2px solid #1a1d24; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.5); }
+  .top-icons { display: flex; justify-content: center; gap: clamp(8px, 1vw, 15px); padding: clamp(4px, 0.8vw, 8px) 0; border-bottom: 1px solid #1a1d24; color: #7a8b9a; font-size: clamp(9px, 1vw, 12px); }
+  .center-stats { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: clamp(6px, 1vw, 12px); padding: 0 clamp(10px, 1.5vw, 20px); z-index: 10; }
+  .stat-row { display: flex; justify-content: space-between; align-items: flex-end; }
+  .stat-row span { font-size: clamp(7px, 0.8vw, 10px); color: #7a8b9a; font-weight: bold; letter-spacing: 1px; }
+  .stat-row strong { font-size: clamp(14px, 1.8vw, 20px); color: #fff; font-variant-numeric: tabular-nums; transition: color 0.5s; }
+  .center-divider { height: 1px; background: #1a1d24; border: none; margin: 0; }
+  .radio-widget { display: flex; align-items: center; gap: clamp(6px, 0.8vw, 12px); padding: clamp(4px, 0.8vw, 8px) clamp(10px, 1.5vw, 20px); background: rgba(255,255,255,0.02); z-index: 10; }
+  .radio-icon { font-size: clamp(16px, 2vw, 26px); background: linear-gradient(135deg, #00d2ff, #39ff14); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .radio-text { font-size: clamp(8px, 0.9vw, 11px); color: #aaa; line-height: 1.3; }
+  .radio-text b { font-size: clamp(10px, 1vw, 14px); color: #fff; }
+  .radio-text span { font-size: clamp(8px, 0.8vw, 10px); color: #888; }
+  .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: clamp(6px, 0.8vw, 8px) clamp(10px, 1.5vw, 15px); border-top: 1px solid #1a1d24; background: #08090b; border-radius: 0 0 10px 10px; }
+  .bottom-bar span { font-size: clamp(8px, 0.9vw, 11px); color: #7a8b9a; font-weight: bold; letter-spacing: 1px; }
+  .gear-display { font-size: clamp(16px, 1.5vw, 22px) !important; color: #fff !important; }
+  .gear-display.active { color: #00ff66 !important; text-shadow: 0 0 8px rgba(0,255,102,0.6); }
+
+  @media (max-width: 950px) {
+    .dashboard { flex-direction: row; flex-wrap: wrap; height: auto; padding: 20px 10px; gap: 15px; }
+    .gauge-container { width: 40vw; height: 40vw; }
+    .center-panel { width: 85vw; order: -1; margin: 0 auto; height: 30vw; }
+    .dash-controls { position: static; width: 100%; flex-direction: row; justify-content: space-around; margin-top: 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- WINDSHIELD SCENE -->
+  <div class="windshield" id="windshield-container">
+    <div class="windshield-reflection"></div>
+    <canvas id="three-canvas"></canvas>
+    <div class="mountains"></div>
+
+    <div class="hud" id="hud-target">TARGET: 500,000</div>
+    <div id="honkGraphic">HONK!!!</div>
+
+    <div id="windshield-dirt">
+      <div class="smudge" style="top: 15%; left: 20%; width: 220px; height: 140px; transform: rotate(15deg);"></div>
+      <div class="smudge" style="top: 35%; left: 55%; width: 250px; height: 120px; transform: rotate(-10deg);"></div>
+      <div class="smudge" style="top: 10%; left: 75%; width: 190px; height: 150px; transform: rotate(45deg);"></div>
+      <div class="smudge" style="top: 50%; left: 10%; width: 180px; height: 100px; transform: rotate(-25deg);"></div>
+      <div class="smudge" style="top: 40%; left: 80%; width: 200px; height: 110px; transform: rotate(5deg);"></div>
+    </div>
+
+    <div class="wiper-arm left" id="wiperLeft"></div>
+    <div class="wiper-arm right" id="wiperRight"></div>
+  </div>
+
+  <!-- DASHBOARD UI -->
+  <div class="dashboard">
+    <div class="dash-controls left">
+
+      <div class="driver-bubble">
+        <span id="gmDrPh">⏳</span>
+        <img id="gmDrImg" src="" style="display:none;" crossorigin="anonymous" alt=""/>
+      </div>
+
+      <button class="touch-btn" onclick="triggerWipe()">WIPE</button>
+      <button class="touch-btn" onclick="honkHorn()">HORN</button>
+    </div>
+
+    <div class="gauge-container">
+      <svg class="gauge-svg" viewBox="0 0 120 120">
+        <circle class="gauge-outer-ticks" cx="60" cy="60" r="56" stroke-dasharray="212 351" stroke-dashoffset="0"></circle>
+        <circle class="gauge-track" cx="60" cy="60" r="46" stroke-dasharray="216 289" stroke-dashoffset="0"></circle>
+        <circle class="gauge-fill" id="fill-gm" cx="60" cy="60" r="46" stroke-dasharray="216 289" stroke-dashoffset="216"></circle>
+      </svg>
+      <div class="gauge-center-content">
+        <div class="gauge-label">GM</div>
+        <div class="gauge-value" id="val-gm">0</div>
+        <div class="gauge-subtext" id="pct-gm" style="color: #00d2ff;">0.00%</div>
+      </div>
+    </div>
+
+    <div class="center-panel">
+      <div class="top-icons">
+        <span>📍</span><span>⏱</span><span>/!\</span><span>🔋</span>
+      </div>
+
+      <div class="center-stats">
+        <div class="stat-row">
+          <span>TOTAL VOLUME</span>
+          <strong id="val-total">0</strong>
+        </div>
+        <div class="stat-row">
+          <span>OVERALL TARGET</span>
+          <strong id="console-target" style="color:#fbcc04">500,000</strong>
+        </div>
+      </div>
+      <hr class="center-divider">
+      <div class="radio-widget">
+        <div class="radio-icon">🎵</div>
+        <div class="radio-text">Now Playing<br><b>I Want It That Way</b><br><span>Backstreet Boys</span></div>
+      </div>
+      <div class="bottom-bar">
+        <span>AUG 11 2026</span>
+        <span class="gear-display" id="gear-indicator">P</span>
+        <span>2:20 PM</span>
+      </div>
+    </div>
+
+    <div class="gauge-container">
+      <svg class="gauge-svg" viewBox="0 0 120 120">
+        <circle class="gauge-outer-ticks" cx="60" cy="60" r="56" stroke-dasharray="212 351" stroke-dashoffset="0"></circle>
+        <circle class="gauge-track" cx="60" cy="60" r="46" stroke-dasharray="216 289" stroke-dashoffset="0"></circle>
+        <circle class="gauge-fill" id="fill-kddi" cx="60" cy="60" r="46" stroke-dasharray="216 289" stroke-dashoffset="216"></circle>
+      </svg>
+      <div class="gauge-center-content">
+        <div class="gauge-label">KDDI</div>
+        <div class="gauge-value" id="val-kddi">0</div>
+        <div class="gauge-subtext" id="pct-kddi" style="color: #39ff14;">0.00%</div>
+      </div>
+    </div>
+
+    <div class="dash-controls right">
+      <div class="ignition-btn off" id="ignitionBtn" onclick="toggleIgnition()">
+        <span>ENGINE<br>START<br>STOP</span>
+        <div class="status-light"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. FIREBASE IMAGE URLS (Paste your links here!)
+    // ==========================================
+    const driverUrl  = ''; // e.g. 'https://firebasestorage.googleapis.com/.../driver.jpg'
+    const dancer1Url = '';
+    const dancer2Url = '';
+    const dancer3Url = '';
+    const dancer4Url = '';
+
+    const tomHeadshot = 'images/tom-henry.jpg';
+
+    // ==========================================
+    // 2. 2D HTML IMAGE LOADER
+    // ==========================================
+    function loadImg(imgId, phId, url, fallback) {
+      const img = document.getElementById(imgId);
+      const ph = document.getElementById(phId);
+      ph.innerText = fallback;
+      if (!url || url.trim() === '') return;
+      img.onload = () => { ph.style.display = 'none'; img.style.display = 'block'; };
+      img.onerror = () => { ph.style.display = 'block'; img.style.display = 'none'; };
+      img.src = url;
+    }
+
+    loadImg('gmDrImg', 'gmDrPh', driverUrl || tomHeadshot, '⏳');
+
+    // ==========================================
+    // 3. 3D WEBGL ENGINE SETUP
+    // ==========================================
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const TARGET_1M = 1000000;
+    const ARC_LENGTH = 216;
+    let reqFrames = {};
+    let currentVals = { gm: 0, kddi: 0, total: 0 };
+    let driveSequenceActive = false;
+    let engineRunning = false;
+    let stickDancers = [];
+
+    const canvas = document.getElementById('three-canvas');
+    const container = document.getElementById('windshield-container');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog('#b5e1ff', 50, 1000);
+
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 3000);
+    camera.position.set(0, 10, 0);
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const width = entry.contentRect.width;
+        const height = entry.contentRect.height;
+        if (width > 0 && height > 0) {
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+          renderer.setSize(width, height, false);
+        }
+      }
+    });
+    resizeObserver.observe(container);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const sunLight = new THREE.DirectionalLight(0xfff9d6, 0.8);
+    sunLight.position.set(100, 200, 50);
+    scene.add(sunLight);
+
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x558c3f });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 20000), groundMat);
+    ground.rotation.x = -Math.PI / 2; ground.position.z = -5000; scene.add(ground);
+
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(30, 20000), roadMat);
+    road.rotation.x = -Math.PI / 2; road.position.y = 0.1; road.position.z = -5000; scene.add(road);
+
+    function createDashTexture() {
+      const c = document.createElement('canvas'); c.width = 64; c.height = 256; const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fbcc04'; ctx.fillRect(16, 0, 32, 128);
+      const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1, 20000 / 10); tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); return tex;
+    }
+    const lineMat = new THREE.MeshBasicMaterial({ map: createDashTexture(), transparent: true });
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(1, 20000), lineMat);
+    line.rotation.x = -Math.PI / 2; line.position.y = 0.2; line.position.z = -5000; scene.add(line);
+
+    function addWarehouse(name, color, x, z, rotationY, scale = 1) {
+      const group = new THREE.Group();
+      const baseMat = new THREE.MeshLambertMaterial({ color: 0xd0d0d0 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 40), baseMat); base.position.y = 10; group.add(base);
+      const roofMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(26, 12, 4), roofMat);
+      roof.rotation.y = Math.PI / 4; roof.position.y = 26; group.add(roof);
+      const doorMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), doorMat); door.position.set(0, 6, 20.1); group.add(door);
+      const texCanvas = document.createElement('canvas'); texCanvas.width = 512; texCanvas.height = 256; const ctx = texCanvas.getContext('2d');
+      ctx.fillStyle = color; ctx.fillRect(0,0,512,256); ctx.strokeStyle = '#fff'; ctx.lineWidth = 12; ctx.strokeRect(6,6,500,244);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = 'bold 80px Arial'; ctx.fillText(name, 256, 110);
+      ctx.font = 'bold 50px Arial'; ctx.fillText('WAREHOUSE', 256, 190);
+      const signTex = new THREE.CanvasTexture(texCanvas); signTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(24, 12), new THREE.MeshLambertMaterial({ map: signTex }));
+      sign.position.set(0, 15, 20.2); group.add(sign);
+      group.position.set(x, 0, z); group.rotation.y = rotationY; group.scale.set(scale, scale, scale); scene.add(group);
+    }
+
+    function createSignTexture(title, sub, isParty, isWall) {
+      const texCanvas = document.createElement('canvas'); texCanvas.width = isWall || isParty ? 1024 : 512; texCanvas.height = isWall ? 512 : 256; const ctx = texCanvas.getContext('2d');
+      if (isWall) {
+        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, 1024, 512); ctx.strokeStyle = '#00ff66'; ctx.lineWidth = 20; ctx.strokeRect(10, 10, 1004, 492);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 120px Arial'; ctx.fillText(title, 512, 220);
+        ctx.fillStyle = '#00ff66'; ctx.font = 'bold 100px Arial'; ctx.shadowColor = '#00ff66'; ctx.shadowBlur = 20; ctx.fillText(sub, 512, 380);
+      } else if (isParty) {
+        ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 1024, 256); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 12; ctx.strokeRect(6, 6, 1012, 244);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 60px Arial'; ctx.fillText(title, 512, 110); ctx.fillText(sub, 512, 190);
+      } else {
+        ctx.fillStyle = '#007733'; ctx.fillRect(0, 0, 512, 256); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 16; ctx.strokeRect(8, 8, 496, 240);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px Arial'; ctx.fillText(title, 256, 110);
+        ctx.fillStyle = '#fbcc04'; ctx.font = 'bold 60px Arial'; ctx.fillText(sub, 256, 200);
+      }
+      return new THREE.CanvasTexture(texCanvas);
+    }
+
+    function addMilestoneSign(title, sub, x, z) {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(20, 10), new THREE.MeshLambertMaterial({ map: createSignTexture(title, sub, false, false) }));
+      sign.position.set(x, 10, z); scene.add(sign);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 10), new THREE.MeshLambertMaterial({color: 0x666666}));
+      pole.position.set(x, 5, z - 0.6); scene.add(pole);
+    }
+
+    // ==========================================
+    // 4. ROBUST 3D TEXTURE LOADER (With Fallback)
+    // ==========================================
+    function createEmojiTexture(emoji, bgColor) {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128; const ctx = c.getContext('2d');
+      ctx.fillStyle = bgColor; ctx.beginPath(); ctx.arc(64, 64, 64, 0, Math.PI * 2); ctx.fill();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.font = '60px Arial'; ctx.fillText(emoji, 64, 68);
+      return new THREE.CanvasTexture(c);
+    }
+
+    function loadFaceTexture(url, fallbackEmoji, bgColor, materialToUpdate) {
+      materialToUpdate.map = createEmojiTexture('⏳', bgColor);
+      materialToUpdate.needsUpdate = true;
+      if (!url || url.trim() === '') {
+        materialToUpdate.map = createEmojiTexture(fallbackEmoji, bgColor);
+        materialToUpdate.needsUpdate = true;
+        return;
+      }
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      loader.load(
+        url,
+        function (texture) {
+          const imageAspect = texture.image.width / texture.image.height;
+          if (imageAspect > 1) {
+            texture.repeat.set(1 / imageAspect, 1);
+            texture.offset.set((1 - 1 / imageAspect) / 2, 0);
+          } else {
+            texture.repeat.set(1, imageAspect);
+            texture.offset.set(0, (1 - imageAspect) / 2);
+          }
+          materialToUpdate.map = texture;
+          materialToUpdate.needsUpdate = true;
+        },
+        undefined,
+        function (err) {
+          console.error('Network Error loading 3D Face:', err);
+          materialToUpdate.map = createEmojiTexture(fallbackEmoji, bgColor);
+          materialToUpdate.needsUpdate = true;
+        }
+      );
+    }
+
+    function addDancer(url, fallbackEmoji, bgColor, x, z, delayPhase) {
+      const group = new THREE.Group();
+      const whiteMat = new THREE.MeshLambertMaterial({color: 0xffffff});
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 4), whiteMat); body.position.y = 4; group.add(body);
+      const arms = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 5), whiteMat); arms.rotation.z = Math.PI / 4; arms.position.y = 5; group.add(arms);
+      const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3), whiteMat); leg1.rotation.z = Math.PI / 8; leg1.position.set(-0.6, 1.5, 0); group.add(leg1);
+      const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3), whiteMat); leg2.rotation.z = -Math.PI / 8; leg2.position.set(0.6, 1.5, 0); group.add(leg2);
+      const headMat = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide });
+      loadFaceTexture(url, fallbackEmoji, bgColor, headMat);
+      const head = new THREE.Mesh(new THREE.CircleGeometry(2.5, 32), headMat);
+      head.position.y = 7.5; group.add(head);
+      group.position.set(x, 0.5, z);
+      group.userData = { phase: delayPhase, speed: 8 };
+      scene.add(group);
+      stickDancers.push(group);
+    }
+
+    // --- PLACING THE WORLD ASSETS ---
+    addWarehouse('GM', '#00d2ff', -40, -50, Math.PI / 2);
+
+    addMilestoneSign('2024', '25,000', -20, -230);
+    addDancer(dancer1Url || tomHeadshot, '🕺', '#fbcc04', 20, -230, 0);
+
+    addMilestoneSign('2025', '210,000', 20, -430);
+    addDancer(dancer2Url || tomHeadshot, '💃', '#4ba3e3', -20, -430, 1);
+    addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
+
+    const partyMat = new THREE.MeshLambertMaterial({ map: createSignTexture('564,083 CRUSHED!', 'JULY 2026', true, false) });
+    const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), partyMat);
+    partyBanner.position.set(0, 15, -630); scene.add(partyBanner);
+
+    const partyPoleGeo = new THREE.CylinderGeometry(0.8, 0.8, 20);
+    const partyPoleMat = new THREE.MeshLambertMaterial({color: 0x333333});
+    const pPoleL = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleL.position.set(-19, 10, -630.5); scene.add(pPoleL);
+    const pPoleR = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleR.position.set(19, 10, -630.5); scene.add(pPoleR);
+
+    addDancer(dancer3Url, '🕺', '#00ff66', -20, -630, 0);
+    addDancer(dancer4Url, '💃', '#b026ff', -8, -630, 2);
+    addDancer(dancer1Url, '🕺', '#ff3333', 8, -630, 0.5);
+    addDancer(dancer2Url, '💃', '#888888', 20, -630, 1.5);
+
+    const wallMat = new THREE.MeshLambertMaterial({ map: createSignTexture('TARGET', '1,000,000', false, true) });
+    const wallBanner = new THREE.Mesh(new THREE.PlaneGeometry(50, 15), wallMat);
+    wallBanner.position.set(0, 22, -1050); scene.add(wallBanner);
+
+    const wPoleGeo = new THREE.CylinderGeometry(1, 1, 30);
+    const wPoleL = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleL.position.set(-24, 15, -1050.5); scene.add(wPoleL);
+    const wPoleR = new THREE.Mesh(wPoleGeo, partyPoleMat); wPoleR.position.set(24, 15, -1050.5); scene.add(wPoleR);
+
+    addWarehouse('CHERRY', '#b026ff', 0, -1250, 0, 1.5);
+
+    const camTarget = new THREE.Vector3();
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      const time = performance.now() * 0.001;
+      stickDancers.forEach(dancer => {
+        const t = time * dancer.userData.speed + dancer.userData.phase;
+        dancer.position.y = 0.5 + Math.abs(Math.sin(t)) * 2;
+        dancer.rotation.z = Math.sin(t) * 0.2;
+      });
+      camTarget.set(0, 4, camera.position.z - 100);
+      camera.lookAt(camTarget);
+      renderer.render(scene, camera);
+    }
+    animate3D();
+
+    function driveTo(absoluteTargetZ, duration) {
+      return new Promise(resolve => {
+        const startZ = camera.position.z;
+        const distanceToTravel = absoluteTargetZ - startZ;
+        let startTime = null;
+        function step(currentTime) {
+          if (!driveSequenceActive) return resolve();
+          if (!startTime) startTime = currentTime;
+          let elapsed = currentTime - startTime;
+          let progress = Math.min(elapsed / duration, 1);
+          let ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+          camera.position.z = startZ + (distanceToTravel * ease);
+          if (progress < 1) requestAnimationFrame(step);
+          else resolve();
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    function animateValue(id, start, end, duration) {
+      if (reqFrames[id]) cancelAnimationFrame(reqFrames[id]);
+      const obj = document.getElementById(`val-${id}`);
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const easeOut = 0.5 - Math.cos(progress * Math.PI) / 2;
+        const current = Math.floor(easeOut * (end - start) + start);
+        obj.innerHTML = current.toLocaleString();
+        if (progress < 1) reqFrames[id] = window.requestAnimationFrame(step);
+      };
+      reqFrames[id] = window.requestAnimationFrame(step);
+    }
+
+    function updateGauges(gmVal, kddiVal, durationMs) {
+      const targets = [{ id: 'gm', val: gmVal }, { id: 'kddi', val: kddiVal }];
+      const totalVal = gmVal + kddiVal;
+      targets.forEach(item => {
+        const pct = (item.val / TARGET_1M) * 100;
+        const fill = document.getElementById(`fill-${item.id}`);
+        const pctEl = document.getElementById(`pct-${item.id}`);
+        fill.style.transition = `stroke-dashoffset ${durationMs}ms ease-in-out`;
+        const displayPct = Math.max(pct, 0.5);
+        const fillAmount = (displayPct / 100) * ARC_LENGTH;
+        fill.style.strokeDashoffset = ARC_LENGTH - fillAmount;
+        pctEl.innerHTML = pct.toFixed(2) + "% of 1M";
+        if (durationMs > 0) animateValue(item.id, currentVals[item.id], item.val, durationMs);
+        else document.getElementById(`val-${item.id}`).innerHTML = item.val.toLocaleString();
+        currentVals[item.id] = item.val;
+      });
+      if (durationMs > 0) animateValue('total', currentVals.total, totalVal, durationMs);
+      else document.getElementById('val-total').innerHTML = totalVal.toLocaleString();
+      currentVals.total = totalVal;
+    }
+
+    function toggleIgnition() {
+      const btn = document.getElementById('ignitionBtn');
+      const gear = document.getElementById('gear-indicator');
+      const consoleTarget = document.getElementById('console-target');
+      if (!engineRunning) {
+        engineRunning = true;
+        btn.classList.replace('off', 'on');
+        gear.innerHTML = 'D';
+        gear.classList.add('active');
+        startDriveSequence();
+      } else {
+        engineRunning = false;
+        driveSequenceActive = false;
+        btn.classList.replace('on', 'off');
+        gear.innerHTML = 'P';
+        gear.classList.remove('active');
+        camera.position.z = 0;
+        updateGauges(0, 0, 500);
+        const hud = document.getElementById('hud-target');
+        hud.className = 'hud';
+        hud.innerHTML = 'TARGET: 500,000';
+        consoleTarget.innerHTML = '500,000';
+        consoleTarget.style.color = '#fbcc04';
+        document.getElementById('windshield-dirt').style.opacity = '1';
+      }
+    }
+
+    async function startDriveSequence() {
+      driveSequenceActive = false;
+      await sleep(50);
+      driveSequenceActive = true;
+      const hud = document.getElementById('hud-target');
+      const consoleTarget = document.getElementById('console-target');
+      hud.className = 'hud';
+      hud.innerHTML = 'TARGET: 500,000';
+      consoleTarget.innerHTML = '500,000';
+      consoleTarget.style.color = '#fbcc04';
+      camera.position.z = 0;
+      updateGauges(0, 0, 0);
+      await sleep(1000);
+      if (!driveSequenceActive) return;
+      updateGauges(25000, 0, 3000);
+      await driveTo(-190, 3000);
+      if (!driveSequenceActive) return;
+      await sleep(800);
+      updateGauges(198000, 12000, 3500);
+      await driveTo(-390, 3500);
+      if (!driveSequenceActive) return;
+      await sleep(800);
+      updateGauges(523028, 41055, 3500);
+      await driveTo(-590, 3500);
+      if (!driveSequenceActive) return;
+      fireConfetti();
+      await sleep(800);
+      fireConfetti();
+      hud.classList.add('upgraded');
+      hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
+      consoleTarget.innerHTML = '1,000,000';
+      consoleTarget.style.color = '#00ff66';
+      await sleep(3500);
+      await driveTo(-1010, 4000);
+    }
+
+    function fireConfetti() {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.4 },
+        colors: ['#4ba3e3', '#00ff66', '#fbcc04', '#cc0000', '#ffffff']
+      });
+    }
+
+    function triggerWipe() {
+      const leftWiper = document.getElementById('wiperLeft');
+      const rightWiper = document.getElementById('wiperRight');
+      leftWiper.classList.remove('is-wiping');
+      rightWiper.classList.remove('is-wiping');
+      void leftWiper.offsetWidth;
+      leftWiper.classList.add('is-wiping');
+      rightWiper.classList.add('is-wiping');
+      setTimeout(() => document.getElementById('windshield-dirt').style.opacity = '0', 600);
+    }
+
+    function honkHorn() {
+      const honk = document.getElementById('honkGraphic');
+      honk.classList.add('show');
+      setTimeout(() => honk.classList.remove('show'), 350);
+    }
+
+    window.onload = () => updateGauges(0, 0, 0);
+  </script>
+</body>
+</html>
