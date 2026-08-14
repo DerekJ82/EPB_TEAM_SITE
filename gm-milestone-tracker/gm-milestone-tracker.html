@@ -510,10 +510,10 @@
     const pPoleL = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleL.position.set(-19, 10, -630.5); scene.add(pPoleL);
     const pPoleR = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleR.position.set(19, 10, -630.5); scene.add(pPoleR);
 
-    addDancer(dancer3Url, '🕺', '#00ff66', -30, -630, 0);
-    addDancer(dancer4Url, '💃', '#b026ff', -22, -630, 2);
-    addDancer(dancer1Url, '🕺', '#ff3333', 22, -630, 0.5);
-    addDancer(dancer2Url, '💃', '#888888', 30, -630, 1.5);
+    addDancer(dancer3Url, '🕺', '#00ff66', -60, -630, 0);
+    addDancer(dancer4Url, '💃', '#b026ff', -44, -630, 2);
+    addDancer(dancer1Url, '🕺', '#ff3333', 44, -630, 0.5);
+    addDancer(dancer2Url, '💃', '#888888', 60, -630, 1.5);
 
     const wallMat = new THREE.MeshLambertMaterial({ map: createSignTexture('TARGET', '1,000,000', false, true) });
     const wallBanner = new THREE.Mesh(new THREE.PlaneGeometry(50, 15), wallMat);
