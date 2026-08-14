@@ -749,13 +749,13 @@
       if (!driveSequenceActive) return;
       await sleep(800);
 
-      updateGauges(198000, 12000, 7000);
-      await driveConvoy(-390, 7000);
+      updateGauges(198000, 12000, 6000);
+      await driveConvoy(-340, 6000);
       if (!driveSequenceActive) return;
-      await sleep(800);
+      await sleep(600);
 
       await mergeKDDI();
-      await sleep(1500);
+      await sleep(1000);
       if (!driveSequenceActive) return;
 
       updateGauges(523028, 41055, 7000);
