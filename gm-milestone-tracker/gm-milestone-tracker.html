@@ -302,6 +302,11 @@
     let engineRunning = false;
     let stickDancers = [];
 
+    const CamFollowDistance = 160;
+    const CarLeadDistance = 180;
+    let gmCar = null;
+    let kddiCar = null;
+
     const canvas = document.getElementById('three-canvas');
     const container = document.getElementById('windshield-container');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -386,13 +391,6 @@
       return new THREE.CanvasTexture(texCanvas);
     }
 
-    function addMilestoneSign(title, sub, x, z) {
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(20, 10), new THREE.MeshLambertMaterial({ map: createSignTexture(title, sub, false, false) }));
-      sign.position.set(x, 10, z); scene.add(sign);
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 10), new THREE.MeshLambertMaterial({color: 0x666666}));
-      pole.position.set(x, 5, z - 0.6); scene.add(pole);
-    }
-
     // ==========================================
     // 4. ROBUST 3D TEXTURE LOADER (With Fallback)
     // ==========================================
@@ -453,14 +451,47 @@
       stickDancers.push(group);
     }
 
+    function addVehicle(company, plateText, mainColor, initialX, initialZ, faceUrl) {
+      const car = new THREE.Group();
+      const bodyMat = new THREE.MeshLambertMaterial({ color: mainColor });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 20), bodyMat);
+      body.position.y = 3.5; car.add(body);
+
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 10), bodyMat);
+      cab.position.y = 7.5; car.add(cab);
+
+      const tailMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xcc0000, emissiveIntensity: 1 });
+      const tailL = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 0.2), tailMat);
+      tailL.position.set(-3.5, 3.5, 10.1); car.add(tailL);
+      const tailR = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 0.2), tailMat);
+      tailR.position.set(3.5, 3.5, 10.1); car.add(tailR);
+
+      const plateCanvas = document.createElement('canvas'); plateCanvas.width = 256; plateCanvas.height = 128;
+      const pCtx = plateCanvas.getContext('2d');
+      pCtx.fillStyle = '#ffffff'; pCtx.fillRect(0, 0, 256, 128);
+      pCtx.strokeStyle = '#333333'; pCtx.lineWidth = 8; pCtx.strokeRect(4, 4, 248, 120);
+      pCtx.fillStyle = '#000000'; pCtx.textAlign = 'center';
+      pCtx.font = 'bold 36px Arial'; pCtx.fillText(company, 128, 52);
+      pCtx.font = 'bold 28px Arial'; pCtx.fillText(plateText, 128, 95);
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(plateCanvas) }));
+      plate.position.set(0, 3.5, 10.15); car.add(plate);
+
+      const headMat = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide });
+      loadFaceTexture(faceUrl, '👤', '#ffffff', headMat);
+      const head = new THREE.Mesh(new THREE.CircleGeometry(1.5, 32), headMat);
+      head.position.set(0, 7.5, 5.05); car.add(head);
+
+      car.position.set(initialX, 0, initialZ);
+      scene.add(car);
+      return car;
+    }
+
     // --- PLACING THE WORLD ASSETS ---
     addWarehouse('GM', '#00d2ff', -40, -50, Math.PI / 2);
 
-    addMilestoneSign('2024', '25,000', -20, -230);
-    addDancer(dancer1Url || tomHeadshot, '🕺', '#fbcc04', 20, -230, 0);
+    gmCar = addVehicle('GM GAIN', 'GM-LEAD', 0x00d2ff, 0, -CamFollowDistance, driverUrl || tomHeadshot);
 
-    addMilestoneSign('2025', '210,000', 20, -430);
-    addDancer(dancer2Url || tomHeadshot, '💃', '#4ba3e3', -20, -430, 1);
     addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
 
     const partyMat = new THREE.MeshLambertMaterial({ map: createSignTexture('564,083 CRUSHED!', 'JULY 2026', true, false) });
@@ -503,7 +534,7 @@
     }
     animate3D();
 
-    function driveTo(absoluteTargetZ, duration) {
+    function driveConvoy(absoluteTargetZ, duration) {
       return new Promise(resolve => {
         const startZ = camera.position.z;
         const distanceToTravel = absoluteTargetZ - startZ;
@@ -515,6 +546,31 @@
           let progress = Math.min(elapsed / duration, 1);
           let ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
           camera.position.z = startZ + (distanceToTravel * ease);
+          if (kddiCar) {
+            kddiCar.position.z = camera.position.z - CamFollowDistance;
+            gmCar.position.z = kddiCar.position.z - CarLeadDistance;
+          } else if (gmCar) {
+            gmCar.position.z = camera.position.z - CamFollowDistance;
+          }
+          if (progress < 1) requestAnimationFrame(step);
+          else resolve();
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    async function mergeKDDI() {
+      kddiCar = addVehicle('KDDI JOIN', 'KDDI-JOIN', 0x39ff14, -60, camera.position.z - CamFollowDistance, dancer1Url || tomHeadshot);
+      return new Promise(resolve => {
+        const startTime = performance.now();
+        const duration = 2000;
+        function step(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = progress * progress * (3 - 2 * progress);
+          kddiCar.position.x = -60 + (60 * ease);
+          kddiCar.rotation.y = -Math.PI / 2 + (Math.PI / 2 * ease);
+          kddiCar.position.z = camera.position.z - CamFollowDistance;
           if (progress < 1) requestAnimationFrame(step);
           else resolve();
         }
@@ -574,6 +630,8 @@
         btn.classList.replace('on', 'off');
         gear.innerHTML = 'P';
         gear.classList.remove('active');
+        if (kddiCar) { scene.remove(kddiCar); kddiCar = null; }
+        if (gmCar) gmCar.position.set(0, 0, -CamFollowDistance);
         camera.position.z = 0;
         updateGauges(0, 0, 500);
         const hud = document.getElementById('hud-target');
@@ -599,16 +657,23 @@
       updateGauges(0, 0, 0);
       await sleep(1000);
       if (!driveSequenceActive) return;
+
       updateGauges(25000, 0, 3000);
-      await driveTo(-190, 3000);
+      await driveConvoy(-190, 3000);
       if (!driveSequenceActive) return;
       await sleep(800);
+
       updateGauges(198000, 12000, 3500);
-      await driveTo(-390, 3500);
+      await driveConvoy(-390, 3500);
       if (!driveSequenceActive) return;
       await sleep(800);
+
+      await mergeKDDI();
+      await sleep(1500);
+      if (!driveSequenceActive) return;
+
       updateGauges(523028, 41055, 3500);
-      await driveTo(-590, 3500);
+      await driveConvoy(-590, 3500);
       if (!driveSequenceActive) return;
       fireConfetti();
       await sleep(800);
@@ -618,7 +683,8 @@
       consoleTarget.innerHTML = '1,000,000';
       consoleTarget.style.color = '#00ff66';
       await sleep(3500);
-      await driveTo(-1010, 4000);
+
+      await driveConvoy(-1010, 4000);
     }
 
     function fireConfetti() {
