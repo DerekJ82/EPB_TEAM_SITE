@@ -569,8 +569,8 @@
       bCtx.fillStyle = grad; bCtx.fillRect(0, 0, 1024, 256);
       bCtx.strokeStyle = '#ffffff'; bCtx.lineWidth = 12; bCtx.strokeRect(6, 6, 1012, 244);
       bCtx.textAlign = 'center'; bCtx.fillStyle = '#ffffff';
-      bCtx.font = 'bold 80px Arial'; bCtx.fillText('JULY 2026 PARADE', 512, 108);
-      bCtx.font = 'bold 56px Arial'; bCtx.fillText('TO 1,000,000!', 512, 196);
+      bCtx.font = 'bold 80px Arial'; bCtx.fillText('JULY PARADE AT 500,000', 512, 108);
+      bCtx.font = 'bold 56px Arial'; bCtx.fillText('JULY 2026', 512, 196);
       const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(bc) }));
       partyBanner.position.set(0, 18, partyZ); scene.add(partyBanner);
     }
@@ -811,7 +811,7 @@
         arms.rotation.z = Math.PI / 4; arms.position.y = 5.5; g.add(arms);
         const headMat = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide });
         loadFaceTexture(faceUrl, '😀', '#ffffff', headMat);
-        const head = new THREE.Mesh(new THREE.CircleGeometry(1.2, 32), headMat);
+        const head = new THREE.Mesh(new THREE.CircleGeometry(2.5, 32), headMat);
         // rotation.y = -π/2 cancels the group's -π/2, so face ends up pointing at camera
         head.rotation.y = -Math.PI / 2;
         head.position.set(0, 7.5, 0); g.add(head);
