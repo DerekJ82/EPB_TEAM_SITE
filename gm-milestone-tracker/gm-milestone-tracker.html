@@ -626,26 +626,41 @@
     }
 
     async function mergeKDDI() {
-      const startX = 45;
-      const startZ = -390;
+      const warehouseX = 45;
+      const warehouseZ = -390;
+      const exitX = 22;       // where the car clears the warehouse door
       const targetX = 6;
       const targetZ = camera.position.z - CamFollowDistance;
-      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, startX, startZ, 'images/Brian.jpg');
-      kddiCar.rotation.y = Math.PI / 2;
+
+      // spawn inside the warehouse, out of sight
+      kddiCar = addVehicle('THE DIFFERENCE', '', 0x39ff14, warehouseX + 18, warehouseZ, 'images/Brian.jpg');
+      kddiCar.rotation.y = Math.PI / 2; // facing -X (toward road)
+
       return new Promise(resolve => {
-        const startTime = performance.now();
-        const duration = 2000;
-        function step(currentTime) {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const ease = progress * progress * (3 - 2 * progress);
-          kddiCar.position.x = startX + (targetX - startX) * ease;
-          kddiCar.position.z = startZ + (targetZ - startZ) * ease;
-          kddiCar.rotation.y = Math.PI / 2 - (Math.PI / 2 * ease);
-          if (progress < 1) requestAnimationFrame(step);
-          else resolve();
+        // Phase 1: slide out of the warehouse door along -X
+        const p1Start = performance.now();
+        const p1Duration = 1200;
+        function phase1(now) {
+          const t = Math.min((now - p1Start) / p1Duration, 1);
+          const ease = t * t * (3 - 2 * t);
+          kddiCar.position.x = (warehouseX + 18) + (exitX - (warehouseX + 18)) * ease;
+          if (t < 1) { requestAnimationFrame(phase1); return; }
+
+          // Phase 2: curve onto the road and align with convoy
+          const p2Start = performance.now();
+          const p2Duration = 1500;
+          function phase2(now2) {
+            const t2 = Math.min((now2 - p2Start) / p2Duration, 1);
+            const ease2 = t2 * t2 * (3 - 2 * t2);
+            kddiCar.position.x = exitX + (targetX - exitX) * ease2;
+            kddiCar.position.z = warehouseZ + (targetZ - warehouseZ) * ease2;
+            kddiCar.rotation.y = (Math.PI / 2) * (1 - ease2);
+            if (t2 < 1) requestAnimationFrame(phase2);
+            else resolve();
+          }
+          requestAnimationFrame(phase2);
         }
-        requestAnimationFrame(step);
+        requestAnimationFrame(phase1);
       });
     }
 
