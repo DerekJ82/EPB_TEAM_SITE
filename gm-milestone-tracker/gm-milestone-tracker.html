@@ -569,21 +569,10 @@
       bCtx.fillStyle = grad; bCtx.fillRect(0, 0, 1024, 256);
       bCtx.strokeStyle = '#ffffff'; bCtx.lineWidth = 12; bCtx.strokeRect(6, 6, 1012, 244);
       bCtx.textAlign = 'center'; bCtx.fillStyle = '#ffffff';
-      bCtx.font = 'bold 72px Arial'; bCtx.fillText('PARTY AT 1,000,000!', 512, 108);
-      bCtx.font = 'bold 56px Arial'; bCtx.fillText('JULY 2026', 512, 196);
+      bCtx.font = 'bold 80px Arial'; bCtx.fillText('JULY 2026 PARADE', 512, 108);
+      bCtx.font = 'bold 56px Arial'; bCtx.fillText('TO 1,000,000!', 512, 196);
       const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(bc) }));
       partyBanner.position.set(0, 18, partyZ); scene.add(partyBanner);
-    }
-
-    // hanging streamers from crossbeam
-    const streamerCols = [0xff3333, 0x39ff14, 0xfbcc04, 0xb026ff, 0x00d2ff, 0xff9900];
-    for (let si = 0; si < 12; si++) {
-      const sx = -16.5 + si * 3;
-      const sLen = 4 + (si % 3);
-      const s = new THREE.Mesh(new THREE.BoxGeometry(0.6, sLen, 0.3), new THREE.MeshLambertMaterial({ color: streamerCols[si % 6] }));
-      s.position.set(sx, 21 - sLen / 2, partyZ);
-      s.rotation.z = (si % 2 === 0 ? 0.15 : -0.15);
-      scene.add(s);
     }
 
     // flag bunting leading into the July arch
@@ -756,18 +745,19 @@
       reqFrames[id] = window.requestAnimationFrame(step);
     }
 
-    function updateGauges(gmVal, kddiVal, durationMs) {
+    function updateGauges(gmVal, kddiVal, durationMs, gaugeTarget = TARGET_1M) {
       const targets = [{ id: 'gm', val: gmVal }, { id: 'kddi', val: kddiVal }];
       const totalVal = gmVal + kddiVal;
       targets.forEach(item => {
-        const pct = (item.val / TARGET_1M) * 100;
+        const pct = (item.val / gaugeTarget) * 100;
         const fill = document.getElementById(`fill-${item.id}`);
         const pctEl = document.getElementById(`pct-${item.id}`);
         fill.style.transition = `stroke-dashoffset ${durationMs}ms ease-in-out`;
         const displayPct = Math.max(pct, 0.5);
         const fillAmount = (displayPct / 100) * ARC_LENGTH;
         fill.style.strokeDashoffset = ARC_LENGTH - fillAmount;
-        pctEl.innerHTML = pct.toFixed(2) + "% of 1M";
+        const label = gaugeTarget === 500000 ? '500K' : '1M';
+        pctEl.innerHTML = pct.toFixed(2) + `% of ${label}`;
         if (durationMs > 0) animateValue(item.id, currentVals[item.id], item.val, durationMs);
         else document.getElementById(`val-${item.id}`).innerHTML = item.val.toLocaleString();
         currentVals[item.id] = item.val;
@@ -813,13 +803,18 @@
       const duration = 6000;
       const marchers = [];
 
-      function makeStick(color, sx, sz) {
+      function makeStick(color, sx, sz, faceUrl) {
         const g = new THREE.Group();
         const mat = new THREE.MeshLambertMaterial({color});
         const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 4), mat); body.position.y = 4; g.add(body);
         const arms = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 5), mat);
         arms.rotation.z = Math.PI / 4; arms.position.y = 5.5; g.add(arms);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), mat); head.position.y = 7.5; g.add(head);
+        const headMat = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide });
+        loadFaceTexture(faceUrl, '😀', '#ffffff', headMat);
+        const head = new THREE.Mesh(new THREE.CircleGeometry(1.2, 32), headMat);
+        // rotation.y = -π/2 cancels the group's -π/2, so face ends up pointing at camera
+        head.rotation.y = -Math.PI / 2;
+        head.position.set(0, 7.5, 0); g.add(head);
         const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3), mat); leg1.position.set(0, 1.5, 0); g.add(leg1);
         const leg2 = leg1.clone(); g.add(leg2);
         g.userData.leg1 = leg1; g.userData.leg2 = leg2; g.userData.initialX = sx;
@@ -855,14 +850,14 @@
         scene.add(g); marchers.push(g);
       }
 
-      makeStick(0xff3333, startX,       pz - 5);
-      makeStick(0xfbcc04, startX - 10,  pz + 3);
-      makeStick(0x39ff14, startX - 20,  pz - 2);
+      makeStick(0xff3333, startX,       pz - 5, 'images/tom-henry.jpg');
+      makeStick(0xfbcc04, startX - 10,  pz + 3, 'images/David.jpg');
+      makeStick(0x39ff14, startX - 20,  pz - 2, 'images/Jodi.jpg');
       makeCow(             startX - 32,  pz + 5);
-      makeStick(0xb026ff, startX - 44,  pz - 4);
+      makeStick(0xb026ff, startX - 44,  pz - 4, 'images/Brian.jpg');
       makeSheep(           startX - 55,  pz + 2);
-      makeStick(0x00d2ff, startX - 66,  pz - 3);
-      makeStick(0xff9900, startX - 78,  pz + 4);
+      makeStick(0x00d2ff, startX - 66,  pz - 3, 'images/Greg.jpg');
+      makeStick(0xff9900, startX - 78,  pz + 4, 'images/tom-henry.jpg');
 
       const dist = endX - startX;
       return new Promise(resolve => {
@@ -896,16 +891,16 @@
       consoleTarget.innerHTML = '500,000';
       consoleTarget.style.color = '#fbcc04';
       camera.position.z = 0;
-      updateGauges(0, 0, 0);
+      updateGauges(0, 0, 0, 500000);
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      updateGauges(25000, 0, 6000);
+      updateGauges(25000, 0, 6000, 500000);
       await driveConvoy(-190, 6000);
       if (!driveSequenceActive) return;
       await sleep(800);
 
-      updateGauges(198000, 12000, 6000);
+      updateGauges(198000, 12000, 6000, 500000);
       await driveConvoy(-340, 6000);
       if (!driveSequenceActive) return;
       await sleep(600);
@@ -914,7 +909,7 @@
       await sleep(1000);
       if (!driveSequenceActive) return;
 
-      updateGauges(523028, 41055, 6000);
+      updateGauges(523028, 41055, 6000, 500000);
       await driveConvoy(-565, 6000);   // stop in front of July arch
       if (!driveSequenceActive) return;
       await sleep(500);
@@ -923,6 +918,7 @@
       if (!driveSequenceActive) return;
       await sleep(600);
 
+      updateGauges(523028, 41055, 2000, 1000000); // switch to % of 1M
       await driveConvoy(-920, 8000);   // drive through arch, on to 1M sign
       if (!driveSequenceActive) return;
       fireConfetti();
