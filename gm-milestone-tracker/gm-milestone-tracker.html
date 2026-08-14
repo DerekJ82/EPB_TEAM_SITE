@@ -544,19 +544,96 @@
     addMilestoneSign('2025', '210,000', 20, -430);
     addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
 
-    const partyMat = new THREE.MeshLambertMaterial({ map: createSignTexture('564,083 CRUSHED!', 'JULY 2026', true, false) });
-    const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), partyMat);
-    partyBanner.position.set(0, 15, -630); scene.add(partyBanner);
-
+    // ----- JULY 2026 PARADE ZONE -----
+    const partyZ = -630;
     const partyPoleGeo = new THREE.CylinderGeometry(0.8, 0.8, 20);
-    const partyPoleMat = new THREE.MeshLambertMaterial({color: 0x333333});
-    const pPoleL = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleL.position.set(-19, 10, -630.5); scene.add(pPoleL);
-    const pPoleR = new THREE.Mesh(partyPoleGeo, partyPoleMat); pPoleR.position.set(19, 10, -630.5); scene.add(pPoleR);
+    const partyPoleMat = new THREE.MeshLambertMaterial({color: 0x333333}); // reused by 1M wall poles
 
-    addDancer(dancer3Url, '🕺', '#00ff66', -60, -630, 0);
-    addDancer(dancer4Url, '💃', '#b026ff', -44, -630, 2);
-    addDancer(dancer1Url, '🕺', '#ff3333', 44, -630, 0.5);
-    addDancer(dancer2Url, '💃', '#888888', 60, -630, 1.5);
+    // colorful gantry poles
+    const pPoleL = new THREE.Mesh(partyPoleGeo, new THREE.MeshLambertMaterial({color: 0xff3333}));
+    pPoleL.position.set(-19, 10, partyZ - 0.5); scene.add(pPoleL);
+    const pPoleR = new THREE.Mesh(partyPoleGeo, new THREE.MeshLambertMaterial({color: 0x39ff14}));
+    pPoleR.position.set(19, 10, partyZ - 0.5); scene.add(pPoleR);
+
+    // gold crossbeam
+    const partyBeam = new THREE.Mesh(new THREE.BoxGeometry(38, 1.5, 1.5), new THREE.MeshLambertMaterial({color: 0xfbcc04}));
+    partyBeam.position.set(0, 21, partyZ - 0.5); scene.add(partyBeam);
+
+    // festive gradient banner
+    {
+      const bc = document.createElement('canvas'); bc.width = 1024; bc.height = 256;
+      const bCtx = bc.getContext('2d');
+      const grad = bCtx.createLinearGradient(0, 0, 1024, 0);
+      grad.addColorStop(0, '#cc0000'); grad.addColorStop(0.25, '#ff6600');
+      grad.addColorStop(0.5, '#ffcc00'); grad.addColorStop(0.75, '#ff6600'); grad.addColorStop(1, '#cc0000');
+      bCtx.fillStyle = grad; bCtx.fillRect(0, 0, 1024, 256);
+      bCtx.strokeStyle = '#ffffff'; bCtx.lineWidth = 12; bCtx.strokeRect(6, 6, 1012, 244);
+      bCtx.textAlign = 'center'; bCtx.fillStyle = '#ffffff';
+      bCtx.font = 'bold 72px Arial'; bCtx.fillText('PARTY AT 1,000,000!', 512, 108);
+      bCtx.font = 'bold 56px Arial'; bCtx.fillText('JULY 2026', 512, 196);
+      const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(bc) }));
+      partyBanner.position.set(0, 18, partyZ); scene.add(partyBanner);
+    }
+
+    // hanging streamers from crossbeam
+    const streamerCols = [0xff3333, 0x39ff14, 0xfbcc04, 0xb026ff, 0x00d2ff, 0xff9900];
+    for (let si = 0; si < 12; si++) {
+      const sx = -16.5 + si * 3;
+      const sLen = 4 + (si % 3);
+      const s = new THREE.Mesh(new THREE.BoxGeometry(0.6, sLen, 0.3), new THREE.MeshLambertMaterial({ color: streamerCols[si % 6] }));
+      s.position.set(sx, 21 - sLen / 2, partyZ);
+      s.rotation.z = (si % 2 === 0 ? 0.15 : -0.15);
+      scene.add(s);
+    }
+
+    // balloon helper
+    function addBalloon(bx, by, bz, color) {
+      const g = new THREE.Group();
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 6), new THREE.MeshLambertMaterial({color}));
+      ball.scale.y = 1.4; g.add(ball);
+      const str = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3), new THREE.MeshLambertMaterial({color: 0xffffff}));
+      str.position.y = -2.1; g.add(str);
+      g.position.set(bx, by, bz); scene.add(g);
+    }
+    [-21, -19, -17].forEach((x, i) => addBalloon(x, 24 + i, partyZ, streamerCols[i]));
+    [17, 19, 21].forEach((x, i) => addBalloon(x, 24 + i, partyZ, streamerCols[i + 3]));
+    addBalloon(-6, 27, partyZ, 0xff3333);
+    addBalloon(0,  29, partyZ, 0xfbcc04);
+    addBalloon(6,  27, partyZ, 0x39ff14);
+
+    // confetti scatter
+    const confCols = [0xff3333, 0xfbcc04, 0x39ff14, 0xb026ff, 0x00d2ff];
+    [[-18,8,-8],[10,12,4],[-5,5,0],[22,10,-4],[0,14,8],[-12,7,4],[15,4,-8],
+     [8,11,0],[-20,9,8],[3,6,-4],[-9,13,0],[18,3,4],[-6,8,-8],[12,15,8],
+     [-15,5,-4],[7,10,0],[-22,12,4],[20,7,-8],[-2,4,8],[16,9,-4],[-8,11,0],
+     [9,6,4],[-17,14,-8],[14,3,8],[-1,8,-4],[11,13,0],[-13,5,4],[19,10,-8],
+     [-4,7,8],[6,12,-4]
+    ].forEach(([cx, cy, cz], i) => {
+      const conf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.2), new THREE.MeshLambertMaterial({color: confCols[i % 5]}));
+      conf.position.set(cx, cy, partyZ + cz);
+      conf.rotation.set(i * 0.7, i * 0.5, i * 0.3);
+      scene.add(conf);
+    });
+
+    // flag bunting leading into the party zone
+    const flagCols = [0xff3333, 0xfbcc04, 0x39ff14, 0xb026ff, 0x00d2ff];
+    for (let fi = 0; fi < 5; fi++) {
+      const fz = -585 - fi * 8;
+      const flagL = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 3), new THREE.MeshLambertMaterial({color: flagCols[fi]}));
+      flagL.rotation.z = Math.PI; flagL.position.set(-22, 14, fz); scene.add(flagL);
+      const flagR = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 3), new THREE.MeshLambertMaterial({color: flagCols[fi]}));
+      flagR.rotation.z = Math.PI; flagR.position.set(22, 14, fz); scene.add(flagR);
+    }
+
+    // dancers + extra parade spectators
+    addDancer(dancer3Url, '🕺', '#00ff66', -60, partyZ, 0);
+    addDancer(dancer4Url, '💃', '#b026ff', -44, partyZ, 2);
+    addDancer(dancer1Url, '🕺', '#ff3333', 44, partyZ, 0.5);
+    addDancer(dancer2Url, '💃', '#888888', 60, partyZ, 1.5);
+    addDancer('', '🕺', '#ff9900', -76, partyZ - 8, 0.8);
+    addDancer('', '💃', '#00d2ff', 76, partyZ - 8, 1.2);
+    addDancer('', '🕺', '#fbcc04', -54, partyZ + 8, 1.6);
+    addDancer('', '💃', '#ff3333', 54, partyZ + 8, 0.4);
 
     // roadside animals
     addAnimal('cow',   -28, -110);
