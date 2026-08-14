@@ -193,11 +193,6 @@
   <div class="dashboard">
     <div class="dash-controls left">
 
-      <div class="driver-bubble">
-        <span id="gmDrPh">⏳</span>
-        <img id="gmDrImg" src="" style="display:none;" crossorigin="anonymous" alt=""/>
-      </div>
-
       <button class="touch-btn" onclick="triggerWipe()">WIPE</button>
       <button class="touch-btn" onclick="honkHorn()">HORN</button>
     </div>
@@ -288,7 +283,6 @@
       img.src = url;
     }
 
-    loadImg('gmDrImg', 'gmDrPh', driverUrl || tomHeadshot, '⏳');
 
     // ==========================================
     // 3. 3D WEBGL ENGINE SETUP
@@ -302,7 +296,7 @@
     let engineRunning = false;
     let stickDancers = [];
 
-    const CamFollowDistance = 160;
+    const CamFollowDistance = 40;
     const CarLeadDistance = 180;
     let gmCar = null;
     let kddiCar = null;
@@ -490,7 +484,7 @@
     // --- PLACING THE WORLD ASSETS ---
     addWarehouse('GM', '#00d2ff', -40, -50, Math.PI / 2);
 
-    gmCar = addVehicle('GM GAIN', 'GM-LEAD', 0x00d2ff, 0, -CamFollowDistance, driverUrl || tomHeadshot);
+    gmCar = addVehicle('GM GAIN', 'GM-LEAD', 0x00d2ff, -6, -CamFollowDistance, driverUrl || tomHeadshot);
 
     addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
 
@@ -547,8 +541,8 @@
           let ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
           camera.position.z = startZ + (distanceToTravel * ease);
           if (kddiCar) {
+            gmCar.position.z = camera.position.z - CamFollowDistance;
             kddiCar.position.z = camera.position.z - CamFollowDistance;
-            gmCar.position.z = kddiCar.position.z - CarLeadDistance;
           } else if (gmCar) {
             gmCar.position.z = camera.position.z - CamFollowDistance;
           }
@@ -568,7 +562,7 @@
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);
           const ease = progress * progress * (3 - 2 * progress);
-          kddiCar.position.x = -60 + (60 * ease);
+          kddiCar.position.x = -60 + (66 * ease); // merges to x=6 (right lane)
           kddiCar.rotation.y = -Math.PI / 2 + (Math.PI / 2 * ease);
           kddiCar.position.z = camera.position.z - CamFollowDistance;
           if (progress < 1) requestAnimationFrame(step);
@@ -631,7 +625,7 @@
         gear.innerHTML = 'P';
         gear.classList.remove('active');
         if (kddiCar) { scene.remove(kddiCar); kddiCar = null; }
-        if (gmCar) gmCar.position.set(0, 0, -CamFollowDistance);
+        if (gmCar) gmCar.position.set(-6, 0, -CamFollowDistance);
         camera.position.z = 0;
         updateGauges(0, 0, 500);
         const hud = document.getElementById('hud-target');
