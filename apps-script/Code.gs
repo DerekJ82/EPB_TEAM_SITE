@@ -37,7 +37,7 @@ var ACCESS_COLUMN_MAP = {
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Dashboard')
-    .setTitle('EPB Pipeline Hub')
+    .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
