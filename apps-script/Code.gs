@@ -36,10 +36,16 @@ var ACCESS_COLUMN_MAP = {
 // ─── Entry Point ─────────────────────────────────────────────────────────────
 
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Dashboard')
+  var tmpl = HtmlService.createTemplateFromFile('index');
+  tmpl.isAdmin = _isAdminUser();
+  return tmpl.evaluate()
     .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 

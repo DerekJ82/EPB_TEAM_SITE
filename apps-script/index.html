@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EPB Team Site</title>
+<?!= include('styles') ?>
+</head>
+<body>
+
+<script>window.IS_ADMIN = <?= isAdmin ?>;</script>
+
+<!-- ============================== GREETER ============================== -->
+<div id="greeter">
+
+  <!-- Panel 1 — wordmark -->
+  <section class="gr-panel gr-one">
+    <span class="gr-logo">EPB S&amp;P</span>
+    <h1 class="gr-word">TEAM SITE</h1>
+    <p class="gr-place">EPB Strategy &amp; Planning</p>
+    <button class="gr-chev" id="grChev" aria-label="Scroll to sections">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 8l8 8 8-8" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- Panel 2 — section picker -->
+  <section class="gr-panel gr-two" id="grStart">
+    <h2 class="gr-kicker">Welcome to the EPB Strategy and Planning Team Site</h2>
+    <p class="gr-lede">Your hub for team information, meeting cadences,
+    pipeline tracking, and links to everything EPB.</p>
+
+    <div class="ws-cards">
+      <button class="ws-card" data-section="team">
+        <span class="ws-num">Section 01</span>
+        <span class="ws-title">Team</span>
+        <span class="ws-blurb">Roster, contacts, and org chart for the EPB S&amp;P team.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="calendar">
+        <span class="ws-num">Section 02</span>
+        <span class="ws-title">Calendar</span>
+        <span class="ws-blurb">Meeting cadence, recurring ceremonies, and key reporting dates.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="pipelines">
+        <span class="ws-num">Section 03</span>
+        <span class="ws-title">Pipelines</span>
+        <span class="ws-blurb">Live status for PSO One Pager, Consolidated BR, and BR Queries pipelines.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="playground">
+        <span class="ws-num">Section 04</span>
+        <span class="ws-title">Playground</span>
+        <span class="ws-blurb">Links to dashboards, tools, and team resources.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+    </div>
+  </section>
+</div>
+
+
+<!-- ========================= TAB DECLARATIONS ========================= -->
+<div id="tabData" hidden>
+  <!-- Team -->
+  <i data-section="team"      data-tab="roster"    data-label="Roster"></i>
+  <i data-section="team"      data-tab="org-chart" data-label="Org Chart"></i>
+  <!-- Calendar -->
+  <i data-section="calendar"  data-tab="cadence"   data-label="Meeting Cadence"></i>
+  <i data-section="calendar"  data-tab="key-dates" data-label="Key Dates"></i>
+  <!-- Pipelines -->
+  <i data-section="pipelines" data-tab="pso"       data-label="PSO One Pager"></i>
+  <i data-section="pipelines" data-tab="cbr"       data-label="Consolidated BR"></i>
+  <i data-section="pipelines" data-tab="queries"   data-label="BR Queries"></i>
+  <i data-section="pipelines" data-tab="admin"     data-label="Admin" data-admin="true"></i>
+  <!-- Playground -->
+  <i data-section="playground" data-tab="links"    data-label="Links &amp; Resources"></i>
+</div>
+
+
+<!-- =============================== PORTAL ============================== -->
+<div id="portal" hidden>
+
+  <!-- Sticky nav bar -->
+  <nav class="nav">
+    <div class="nav-mobile">
+      <button class="nav-home" id="navHomeM" aria-label="Back to all sections">
+        <i>&larr;</i></button>
+      <span class="nav-current" id="navCurrent">Tab</span>
+      <button class="nav-burger" id="navBurger" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-shell">
+      <button class="nav-home" id="navHome" aria-label="Back to all sections">
+        <i>&larr;</i> <span>All sections</span></button>
+      <div class="nav-row" id="navRow"></div>
+    </div>
+  </nav>
+
+
+  <!-- ═══════════════════ TEAM: ROSTER ═══════════════════ -->
+  <div class="tabview" id="view-roster">
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Team &middot; Roster</span>
+        <h1 class="hero-t">The EPB S&amp;P team.</h1>
+        <p class="hero-l">Everyone working in EPB Strategy &amp; Planning — who they are and how to reach them.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Leadership</h3>
+        </div>
+        <div class="team-grid reveal">
+          <div class="team-card">
+            <div class="team-init">EP</div>
+            <p class="team-name">[Director Name]</p>
+            <p class="team-role">Director, EPB Strategy &amp; Planning</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Managers</h3>
+        </div>
+        <div class="team-grid reveal">
+          <div class="team-card">
+            <div class="team-init">AB</div>
+            <p class="team-name">[Manager Name]</p>
+            <p class="team-role">Manager, Strategy</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">CD</div>
+            <p class="team-name">[Manager Name]</p>
+            <p class="team-role">Manager, Planning</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">EF</div>
+            <p class="team-name">[Manager Name]</p>
+            <p class="team-role">Manager, Analytics</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Team</h3>
+        </div>
+        <div class="team-grid reveal">
+          <div class="team-card">
+            <div class="team-init">GH</div>
+            <p class="team-name">[Team Member]</p>
+            <p class="team-role">Senior Analyst, Strategic Planning</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">IJ</div>
+            <p class="team-name">[Team Member]</p>
+            <p class="team-role">Analyst, Strategy</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">KL</div>
+            <p class="team-name">[Team Member]</p>
+            <p class="team-role">Analyst, Planning</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">MN</div>
+            <p class="team-name">[Team Member]</p>
+            <p class="team-role">Analyst, Analytics</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+          <div class="team-card">
+            <div class="team-init">OP</div>
+            <p class="team-name">[Team Member]</p>
+            <p class="team-role">Coordinator, Strategy &amp; Planning</p>
+            <a class="team-email" href="mailto:name@telus.com">name@telus.com</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ TEAM: ORG CHART ═══════════════════ -->
+  <div class="tabview" id="view-org-chart" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Team &middot; Org Chart</span>
+        <h1 class="hero-t">How we're structured.</h1>
+        <p class="hero-l">The reporting structure of EPB Strategy &amp; Planning.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="org-wrap reveal">
+          <div class="org-tree org-root">
+            <!-- Root -->
+            <div class="org-node">
+              <div class="org-card">
+                <strong>[Director Name]</strong>
+                <span>Director, EPB S&amp;P</span>
+              </div>
+            </div>
+            <div class="org-spacer org-line"></div>
+            <!-- Children -->
+            <div class="org-children">
+              <div class="org-node">
+                <div class="org-card">
+                  <strong>[Manager Name]</strong>
+                  <span>Manager, Strategy</span>
+                </div>
+              </div>
+              <div class="org-node">
+                <div class="org-card">
+                  <strong>[Manager Name]</strong>
+                  <span>Manager, Planning</span>
+                </div>
+              </div>
+              <div class="org-node">
+                <div class="org-card">
+                  <strong>[Manager Name]</strong>
+                  <span>Manager, Analytics</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect tint">
+      <div class="pad">
+        <div class="gnote reveal">
+          <span class="dsr-icon" aria-hidden="true">i</span>
+          <div>
+            <h4 class="gnote-h">Update this chart in index.html</h4>
+            <p class="gnote-p">Replace the placeholder names and add additional
+            levels (analysts, coordinators) by nesting <code>.org-children</code>
+            blocks under each manager node.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ CALENDAR: CADENCE ═══════════════════ -->
+  <div class="tabview" id="view-cadence" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Calendar &middot; Meeting Cadence</span>
+        <h1 class="hero-t">Recurring ceremonies.</h1>
+        <p class="hero-l">The standing meetings that keep EPB S&amp;P aligned week to week and month to month.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Weekly</h3></div>
+        <ol class="steps reveal">
+          <li class="step">
+            <span class="step-n">MON</span>
+            <div>
+              <h4>EPB S&amp;P Stand-Up</h4>
+              <p>15-minute team sync. Blockers, priorities, and anything cross-functional that needs a fast decision.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-n">THU</span>
+            <div>
+              <h4>Pipeline Review</h4>
+              <p>30-minute review of PSO, CBR, and BR Queries pipeline status. Flags any at-risk deliverables before the weekend close.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Monthly</h3></div>
+        <ol class="steps reveal">
+          <li class="step">
+            <span class="step-n">WK 1</span>
+            <div>
+              <h4>EPB Monthly Business Review</h4>
+              <p>2-hour deep-dive on results vs. plan. Includes revenue, margin, and pipeline health across all LOBs.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-n">WK 2</span>
+            <div>
+              <h4>Consolidated BR Signoff</h4>
+              <p>Final sign-off on the Consolidated Billed Revenue workbook before distribution to business partners.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-n">WK 3</span>
+            <div>
+              <h4>Flash Preparation</h4>
+              <p>Flash Weekly Report and Newsletter prep session. Aligns messaging and confirms data sources before publication.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Quarterly</h3></div>
+        <ol class="steps reveal">
+          <li class="step">
+            <span class="step-n">Q+1</span>
+            <div>
+              <h4>Quarterly Planning Review (QPR)</h4>
+              <p>Full-day planning session aligning strategy, resourcing, and roadmap for the coming quarter. Key deliverable: updated EPB S&amp;P priority stack.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-n">Q+2</span>
+            <div>
+              <h4>StratCheck</h4>
+              <p>Mid-quarter strategy check. Reviews progress against QPR commitments and flags any pivots needed.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ CALENDAR: KEY DATES ═══════════════════ -->
+  <div class="tabview" id="view-key-dates" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Calendar &middot; Key Dates</span>
+        <h1 class="hero-t">Upcoming milestones.</h1>
+        <p class="hero-l">Reporting deadlines, planning events, and hard commitments for the team.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Key dates</h3></div>
+        <div class="gt-wrap reveal">
+          <table class="gt">
+            <thead>
+              <tr><th>Date</th><th>Event</th><th>Owner</th><th class="gt-prose">Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>— Add date —</td>
+                <td>Monthly Close</td>
+                <td>Analytics</td>
+                <td class="gt-prose">CBR and BR Queries pipelines must complete by EOD.</td>
+              </tr>
+              <tr>
+                <td>— Add date —</td>
+                <td>PSO One Pager Due</td>
+                <td>Planning</td>
+                <td class="gt-prose">Final deck delivered to VP for review.</td>
+              </tr>
+              <tr>
+                <td>— Add date —</td>
+                <td>QPR</td>
+                <td>All</td>
+                <td class="gt-prose">Full-day session. Location TBD.</td>
+              </tr>
+              <tr>
+                <td>— Add date —</td>
+                <td>Flash Newsletter</td>
+                <td>Strategy</td>
+                <td class="gt-prose">Distribution to exec leadership list.</td>
+              </tr>
+              <tr>
+                <td>— Add date —</td>
+                <td>StratCheck</td>
+                <td>All</td>
+                <td class="gt-prose">Mid-quarter review of QPR commitments.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="gnote reveal" style="margin-top:24px">
+          <span class="dsr-icon" aria-hidden="true">i</span>
+          <div>
+            <h4 class="gnote-h">Keep this table updated in index.html</h4>
+            <p class="gnote-p">Replace placeholder rows with actual dates. Add a row for each hard commitment the team needs to track. Remove past dates as they pass.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ PIPELINES: PSO ═══════════════════ -->
+  <div class="tabview" id="view-pso" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Pipelines &middot; PSO One Pager</span>
+        <h1 class="hero-t">PSO pipeline status.</h1>
+        <p class="hero-l">Live stage-by-stage progress for the PSO One Pager build pipeline.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="pso-body">
+          <p class="pipe-loading">Loading pipeline data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ PIPELINES: CBR ═══════════════════ -->
+  <div class="tabview" id="view-cbr" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Pipelines &middot; Consolidated BR</span>
+        <h1 class="hero-t">CBR pipeline status.</h1>
+        <p class="hero-l">Segment-by-segment load status for the Consolidated Billed Revenue workbook.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="cbr-body">
+          <p class="pipe-loading">Loading pipeline data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ PIPELINES: QUERIES ═══════════════════ -->
+  <div class="tabview" id="view-queries" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Pipelines &middot; BR Queries</span>
+        <h1 class="hero-t">BR Queries pipeline status.</h1>
+        <p class="hero-l">Stage and table-level status for the BR Queries processing pipeline.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="queries-body">
+          <p class="pipe-loading">Loading pipeline data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ PIPELINES: ADMIN ═══════════════════ -->
+  <div class="tabview" id="view-admin" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Pipelines &middot; Admin</span>
+        <h1 class="hero-t">Access requests.</h1>
+        <p class="hero-l">Pending EPB Hub access requests. Approve or deny without opening the spreadsheet.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="admin-body">
+          <p class="pipe-loading">Loading access requests&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ PLAYGROUND: LINKS ═══════════════════ -->
+  <div class="tabview" id="view-links" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Playground &middot; Links &amp; Resources</span>
+        <h1 class="hero-t">Everything in one place.</h1>
+        <p class="hero-l">Quick links to EPB dashboards, data tools, and team resources.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+
+        <div class="links-section reveal">
+          <span class="eyebrow">EPB Dashboards</span>
+          <div class="links-grid">
+            <a class="link-card" href="https://script.google.com/a/macros/telus.com/s/AKfycbxlHK0LUEkfQkGfBlOyO_3PakfA-eMO4N0B6MIMk75xz28u9NmSJt9rfpNgbXyQGFg/exec" target="_blank" rel="noopener">
+              <div class="link-icon">&#128202;</div>
+              <div class="link-body">
+                <span class="link-title">EPB Hub</span>
+                <p class="link-desc">Central dashboard for EPB revenue, margin, and KPI reporting across all LOBs.</p>
+              </div>
+            </a>
+            <a class="link-card" href="https://script.google.com/a/macros/telus.com/s/AKfycbzQ3kGQP-P7n6Y_PgkF5rFzv7vCbfBbr0ZOt6Vd4dUkPv6A7LM/exec" target="_blank" rel="noopener">
+              <div class="link-icon">&#128203;</div>
+              <div class="link-body">
+                <span class="link-title">PSO One Pager Tracker</span>
+                <p class="link-desc">Full pipeline tracker for the PSO One Pager build process.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="links-section reveal">
+          <span class="eyebrow">Data &amp; Analytics</span>
+          <div class="links-grid">
+            <a class="link-card" href="https://docs.google.com/spreadsheets/d/1_Pv9gOxUesAmgMlyngyIFIzQFVtlJktaHMU36vAZg7g" target="_blank" rel="noopener">
+              <div class="link-icon">&#128200;</div>
+              <div class="link-body">
+                <span class="link-title">CBR Workbook</span>
+                <p class="link-desc">Consolidated Billed Revenue master workbook with segment-level data and CONFIG tab.</p>
+              </div>
+            </a>
+            <a class="link-card" href="https://docs.google.com/spreadsheets/d/19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw" target="_blank" rel="noopener">
+              <div class="link-icon">&#128196;</div>
+              <div class="link-body">
+                <span class="link-title">BR Queries Config</span>
+                <p class="link-desc">BR Queries pipeline configuration and status tracking sheet.</p>
+              </div>
+            </a>
+            <a class="link-card" href="#" target="_blank" rel="noopener">
+              <div class="link-icon">&#128201;</div>
+              <div class="link-body">
+                <span class="link-title">[Add tool]</span>
+                <p class="link-desc">Update href and description in index.html to add more data tools.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="links-section reveal">
+          <span class="eyebrow">Team Resources</span>
+          <div class="links-grid">
+            <a class="link-card" href="#" target="_blank" rel="noopener">
+              <div class="link-icon">&#128194;</div>
+              <div class="link-body">
+                <span class="link-title">Team SharePoint</span>
+                <p class="link-desc">EPB S&amp;P SharePoint — decks, process docs, and shared reference files.</p>
+              </div>
+            </a>
+            <a class="link-card" href="#" target="_blank" rel="noopener">
+              <div class="link-icon">&#128221;</div>
+              <div class="link-body">
+                <span class="link-title">Process Guides</span>
+                <p class="link-desc">Step-by-step guides for monthly close, pipeline execution, and reporting workflows.</p>
+              </div>
+            </a>
+            <a class="link-card" href="#" target="_blank" rel="noopener">
+              <div class="link-icon">&#128172;</div>
+              <div class="link-body">
+                <span class="link-title">EPB S&amp;P Teams Channel</span>
+                <p class="link-desc">Primary team channel for announcements, questions, and async coordination.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+
+  <button class="scroll-btn" id="scrollBtn" aria-label="Back to top">
+    <i>&uarr;</i> Back to top
+  </button>
+
+</div><!-- /#portal -->
+
+
+<!-- ========================== APPROVE MODAL =========================== -->
+<div class="modal-overlay" id="approveModal" onclick="window._epbOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-title">Approve Access Request</div>
+    <p>Grant <strong id="am-email"></strong> access to <strong id="am-dash"></strong>?</p>
+    <p class="modal-note">They will receive an email confirmation and can
+    refresh EPB Hub immediately to access their dashboard.</p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="window._epbCloseModal()">Cancel</button>
+      <button class="btn-primary" id="am-submit" onclick="window._epbSubmitApprove()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== TOAST ============================== -->
+<div class="epb-toast" id="epbToast"></div>
+
+<?!= include('client') ?>
+</body>
+</html>

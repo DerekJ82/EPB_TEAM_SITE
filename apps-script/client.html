@@ -1,0 +1,514 @@
+<script>
+/* ===========================================================================
+   MICROSITE UI - behaviour (verbatim from Basic Microsite UI/app.js)
+   =========================================================================== */
+(function () {
+  'use strict';
+
+  var SECTION = null;
+  var TAB = null;
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function still() {
+    return window.matchMedia('(prefers-reduced-motion:reduce)').matches ||
+           document.hidden;
+  }
+
+  function openSection(key, tab) {
+    SECTION = key;
+    $('#greeter').hidden = true;
+    $('#portal').hidden = false;
+
+    var row = $('#navRow');
+    var tabs = $$('[data-section="' + key + '"]', $('#tabData'));
+    row.innerHTML = tabs.map(function (t) {
+      return '<button class="nav-tab" data-tab="' + t.getAttribute('data-tab') +
+             '">' + t.getAttribute('data-label') + '</button>';
+    }).join('');
+    $$('.nav-tab', row).forEach(function (b) {
+      b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
+    });
+
+    markNavWrap();
+    showTab(tab || tabs[0].getAttribute('data-tab'));
+    window.scrollTo(0, 0);
+  }
+
+  function goHome() {
+    $('#portal').hidden = true;
+    $('#greeter').hidden = false;
+    $('.nav').classList.remove('open');
+    window.scrollTo(0, 0);
+  }
+
+  function showTab(tab) {
+    TAB = tab;
+
+    $$('.nav-tab').forEach(function (b) {
+      var on = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('active', on);
+      if (on) { var c = $('#navCurrent'); if (c) c.textContent = b.textContent; }
+    });
+
+    $$('.tabview').forEach(function (v) { v.hidden = true; });
+    var view = $('#view-' + tab);
+    if (view) {
+      view.hidden = false;
+      initReveal(view);
+    }
+
+    $('.nav').classList.remove('open');
+    window.scrollTo(0, 0);
+    if (onScroll) onScroll();
+  }
+
+  function markNavWrap() {
+    var row = $('#navRow');
+    if (!row) return;
+    var tabs = $$('.nav-tab', row);
+    var wrapped = false;
+    if (tabs.length > 1) {
+      var top0 = tabs[0].offsetTop;
+      for (var i = 1; i < tabs.length; i++) {
+        if (Math.abs(tabs[i].offsetTop - top0) > 2) { wrapped = true; break; }
+      }
+    }
+    row.classList.toggle('wrapped', wrapped);
+    var shell = $('.nav-shell');
+    if (shell) shell.classList.toggle('wrapped', wrapped);
+
+    var nav = $('.nav');
+    var h = Math.round(nav.getBoundingClientRect().height) || 72;
+    document.documentElement.style.setProperty('--navh', h + 'px');
+    if (onScroll) onScroll();
+  }
+
+  function initReveal(root) {
+    var els = $$('.reveal', root);
+    if (still() || !('IntersectionObserver' in window)) {
+      els.forEach(function (e) { e.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    els.forEach(function (e) {
+      if (!e.classList.contains('in')) io.observe(e);
+    });
+  }
+
+  function swapTo(wrapId, index, btn) {
+    var wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    $$('.swap-b', wrap).forEach(function (b) { b.classList.toggle('on', b === btn); });
+    $$('.swap-p', wrap).forEach(function (p) {
+      p.classList.toggle('on', Number(p.getAttribute('data-i')) === index);
+    });
+    if (onScroll) onScroll();
+  }
+
+  function expandTo(id) {
+    var card = document.getElementById(id);
+    if (!card) return;
+    var btn = $('.gexp-hd', card), pane = $('.gexp-p', card);
+    var open = card.classList.toggle('on');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (pane) pane.style.maxHeight = open ? (pane.scrollHeight + 'px') : '';
+    if (onScroll) onScroll();
+  }
+
+  var onScroll = null;
+
+  function initScrollBtn() {
+    var btn = $('#scrollBtn');
+    if (!btn) return;
+
+    onScroll = function () {
+      if ($('#portal').hidden) { btn.classList.remove('on'); return; }
+
+      var y = window.scrollY || document.documentElement.scrollTop;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var next = nextTab();
+
+      var noScroll = max <= 10;
+      var shortPage = max < window.innerHeight;
+      var atEnd = noScroll || shortPage || (max - y) < 120;
+
+      btn.classList.toggle('on', (noScroll || shortPage) ? !!next : (y > 260));
+
+      if (atEnd && next) {
+        btn.classList.add('next');
+        btn.innerHTML = 'Next section <i>&rarr;</i>';
+        btn.setAttribute('aria-label', 'Go to the next section');
+      } else {
+        btn.classList.remove('next');
+        btn.innerHTML = '<i>&uarr;</i> Back to top';
+        btn.setAttribute('aria-label', 'Back to top');
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    btn.addEventListener('click', function () {
+      if (btn.classList.contains('next')) {
+        var n = nextTab();
+        if (n) showTab(n);
+      } else {
+        window.scrollTo(still() ? { top: 0 } : { top: 0, behavior: 'smooth' });
+      }
+    });
+    onScroll();
+  }
+
+  function nextTab() {
+    var list = $$('.nav-tab').map(function (b) { return b.getAttribute('data-tab'); });
+    var i = list.indexOf(TAB);
+    return (i > -1 && i < list.length - 1) ? list[i + 1] : null;
+  }
+
+  function boot() {
+    $$('.ws-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        openSection(card.getAttribute('data-section'));
+      });
+    });
+
+    var chev = $('#grChev');
+    if (chev) chev.addEventListener('click', function () {
+      var t = $('#grStart');
+      if (t) t.scrollIntoView(still() ? undefined : { behavior: 'smooth', block: 'start' });
+    });
+
+    ['#navHome', '#navHomeM'].forEach(function (sel) {
+      var el = $(sel);
+      if (el) el.addEventListener('click', goHome);
+    });
+
+    var burger = $('#navBurger');
+    if (burger) burger.addEventListener('click', function () {
+      $('.nav').classList.toggle('open');
+    });
+
+    $$('.swap-b').forEach(function (b) {
+      b.addEventListener('click', function () {
+        swapTo(b.getAttribute('data-wrap'), Number(b.getAttribute('data-i')), b);
+      });
+    });
+
+    $$('.gexp-hd').forEach(function (b) {
+      b.addEventListener('click', function () {
+        expandTo(b.closest('.gexp').id);
+      });
+    });
+
+    window.addEventListener('scroll', function () {
+      $('.nav').classList.toggle('solid', (window.scrollY || 0) > 12);
+    }, { passive: true });
+
+    window.addEventListener('resize', markNavWrap);
+
+    initScrollBtn();
+    initReveal(document);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+
+/* ===========================================================================
+   EPB Team Site — pipeline tabs + admin section
+   =========================================================================== */
+(function () {
+  'use strict';
+
+  /* --- Admin tab removal -------------------------------------------------- */
+  if (!window.IS_ADMIN) {
+    var adminEl = document.querySelector('#tabData i[data-admin]');
+    if (adminEl) adminEl.parentNode.removeChild(adminEl);
+  }
+
+  /* --- Helpers ------------------------------------------------------------ */
+  function _esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function _badge(status) {
+    var cls = { COMPLETE:'ok', PASS:'ok', IN_PROGRESS:'warn', WAITING:'warn',
+                PENDING:'pend', NOT_STARTED:'pend', FAILED:'fail', DENIED:'fail' };
+    var key = String(status).toUpperCase();
+    return '<span class="pbadge ' + (cls[key] || 'pend') + '">' + _esc(status) + '</span>';
+  }
+
+  function _err(id, msg) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '<p class="pipe-error">' + _esc(String(msg)) + '</p>';
+  }
+
+  /* --- Tab observer ------------------------------------------------------- */
+  function observeTab(id, fn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var done = false;
+    new MutationObserver(function () {
+      if (!el.hidden && !done) { done = true; fn(); }
+    }).observe(el, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
+  /* --- Pipeline data (shared across PSO / CBR / Queries) ----------------- */
+  var _pipeData    = null;
+  var _pipeLoading = false;
+  var _pipeCbs     = [];
+
+  function _loadPipeData(cb) {
+    if (_pipeData) { cb(_pipeData); return; }
+    _pipeCbs.push(cb);
+    if (_pipeLoading) return;
+    _pipeLoading = true;
+    google.script.run
+      .withSuccessHandler(function (d) {
+        _pipeData    = d;
+        _pipeLoading = false;
+        var cbs = _pipeCbs.slice(); _pipeCbs = [];
+        cbs.forEach(function (fn) { fn(d); });
+      })
+      .withFailureHandler(function (e) {
+        _pipeLoading = false;
+        var cbs = _pipeCbs.slice(); _pipeCbs = [];
+        var msg = 'Error loading pipeline data: ' + String(e);
+        cbs.forEach(function (fn) { fn({ _error: msg }); });
+      })
+      .getDashboardData();
+  }
+
+  /* --- PSO tab ------------------------------------------------------------ */
+  observeTab('view-pso', function () {
+    var el = document.getElementById('pso-body');
+    if (el) el.innerHTML = '<p class="pipe-loading">Loading pipeline data&hellip;</p>';
+    _loadPipeData(renderPSO);
+  });
+
+  function renderPSO(data) {
+    var el = document.getElementById('pso-body');
+    if (!el) return;
+    if (data._error) { el.innerHTML = '<p class="pipe-error">' + _esc(data._error) + '</p>'; return; }
+    var d = data.pso;
+    if (!d || d.error) { el.innerHTML = '<p class="pipe-error">' + _esc(d ? d.error : 'No PSO data') + '</p>'; return; }
+
+    var stages = (d.stages || []).map(function (s) {
+      return '<tr><td>' + _esc(s.name) + '</td><td>' + _badge(s.status) + '</td>' +
+             '<td class="gt-prose">' + _esc(s.notes || '') + '</td></tr>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="gstats reveal">' +
+        '<div class="gstat"><b>' + d.currentStage + '&thinsp;/&thinsp;' + d.totalStages + '</b><span>Stages complete</span></div>' +
+        '<div class="gstat"><b>' + d.pct + '%</b><span>Progress</span></div>' +
+        '<div class="gstat">' + _badge(d.status) + '<span>Status</span></div>' +
+      '</div>' +
+      '<div class="pipe-progress reveal"><div class="pipe-bar" style="width:' + d.pct + '%"></div></div>' +
+      (d.blocker ? '<div class="gnote reveal"><span class="dsr-icon" aria-hidden="true">!</span><div><h4 class="gnote-h">Current blocker</h4><p class="gnote-p">' + _esc(d.blocker) + '</p></div></div>' : '') +
+      (stages ? '<div class="gt-wrap reveal"><table class="gt"><thead><tr><th>Stage</th><th>Status</th><th class="gt-prose">Notes</th></tr></thead><tbody>' + stages + '</tbody></table></div>' : '') +
+      '<p class="pipe-link"><a href="' + _esc(d.trackerUrl || '#') + '" target="_blank" rel="noopener">Open full tracker &rarr;</a></p>';
+  }
+
+  /* --- CBR tab ------------------------------------------------------------ */
+  observeTab('view-cbr', function () {
+    var el = document.getElementById('cbr-body');
+    if (el && !_pipeData) el.innerHTML = '<p class="pipe-loading">Loading pipeline data&hellip;</p>';
+    _loadPipeData(renderCBR);
+  });
+
+  function renderCBR(data) {
+    var el = document.getElementById('cbr-body');
+    if (!el) return;
+    if (data._error) { el.innerHTML = '<p class="pipe-error">' + _esc(data._error) + '</p>'; return; }
+    var d = data.cbr;
+    if (!d || d.error) { el.innerHTML = '<p class="pipe-error">' + _esc(d ? d.error : 'No CBR data') + '</p>'; return; }
+
+    var segs = (d.segments || []).map(function (s) {
+      return '<div class="gcard"><h4>' + _esc(s.name) + '</h4>' + _badge(s.status) + '</div>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="gstats reveal">' +
+        '<div class="gstat"><b>' + _esc(d.currentPeriod || '—') + '</b><span>Current period</span></div>' +
+        '<div class="gstat"><b>' + d.completeCount + '&thinsp;/&thinsp;' + d.totalCount + '</b><span>Segments loaded</span></div>' +
+        '<div class="gstat">' + _badge(d.status) + '<span>Overall status</span></div>' +
+      '</div>' +
+      (segs ? '<div class="gcards reveal">' + segs + '</div>' : '<p class="pipe-empty">No segment data found.</p>');
+  }
+
+  /* --- Queries tab -------------------------------------------------------- */
+  observeTab('view-queries', function () {
+    var el = document.getElementById('queries-body');
+    if (el && !_pipeData) el.innerHTML = '<p class="pipe-loading">Loading pipeline data&hellip;</p>';
+    _loadPipeData(renderQueries);
+  });
+
+  function renderQueries(data) {
+    var el = document.getElementById('queries-body');
+    if (!el) return;
+    if (data._error) { el.innerHTML = '<p class="pipe-error">' + _esc(data._error) + '</p>'; return; }
+    var d = data.queries;
+    if (!d || d.error) { el.innerHTML = '<p class="pipe-error">' + _esc(d ? d.error : 'No queries data') + '</p>'; return; }
+
+    var tables = (d.tables || []).map(function (t) {
+      return '<tr><td>' + _esc(t.name) + '</td><td>' + _badge(t.pass ? 'PASS' : 'PENDING') + '</td></tr>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="gstats reveal">' +
+        '<div class="gstat"><b>' + _esc(d.currentPeriod || '—') + '</b><span>Current period</span></div>' +
+        '<div class="gstat"><b>Stage ' + (d.stage || 0) + '&thinsp;/&thinsp;' + (d.totalStages || 4) + '</b><span>Pipeline stage</span></div>' +
+        '<div class="gstat">' + _badge(d.pipelineStatus || 'PENDING') + '<span>Status</span></div>' +
+      '</div>' +
+      (tables ? '<div class="gt-wrap reveal"><table class="gt"><thead><tr><th>Table</th><th>Status</th></tr></thead><tbody>' + tables + '</tbody></table></div>' : '<p class="pipe-empty">No table data found.</p>') +
+      '<p class="pipe-link"><a href="' + _esc(d.trackerUrl || '#') + '" target="_blank" rel="noopener">Open config sheet &rarr;</a></p>';
+  }
+
+  /* --- Admin tab ---------------------------------------------------------- */
+  if (window.IS_ADMIN) {
+    observeTab('view-admin', loadAdmin);
+  }
+
+  function loadAdmin() {
+    var el = document.getElementById('admin-body');
+    if (el) el.innerHTML = '<p class="pipe-loading">Loading access requests&hellip;</p>';
+    google.script.run
+      .withSuccessHandler(renderAdmin)
+      .withFailureHandler(function (e) {
+        _err('admin-body', 'Error loading access requests: ' + String(e));
+      })
+      .getPendingAccessRequests();
+  }
+
+  function renderAdmin(result) {
+    var el = document.getElementById('admin-body');
+    if (!el) return;
+    if (result.error) { el.innerHTML = '<p class="pipe-error">' + _esc(result.error) + '</p>'; return; }
+    if (!result.requests || result.requests.length === 0) {
+      el.innerHTML = '<p class="pipe-empty">No pending access requests.</p>';
+      return;
+    }
+    var rows = result.requests.map(function (r) {
+      var safe = JSON.stringify(r)
+        .replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026').replace(/'/g, '\\u0027');
+      return '<tr>' +
+        '<td>' + _esc(r.email) + '</td>' +
+        '<td>' + _esc(r.dashboard) + '</td>' +
+        '<td>' + _esc(r.requestedAt || '') + '</td>' +
+        '<td class="action-cell">' +
+          '<button class="action-btn" onclick="window._epbApprove(' + safe + ')">Approve</button>' +
+          '<button class="action-btn deny" data-row="' + r.rowIndex + '" data-email="' + _esc(r.email) + '" onclick="window._epbDeny(this)">Deny</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+    el.innerHTML =
+      '<div class="gt-wrap">' +
+        '<table class="gt"><thead><tr>' +
+          '<th>Email</th><th>Dashboard</th><th>Requested</th><th>Action</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div>';
+  }
+
+  /* --- Approve modal ------------------------------------------------------ */
+  var _pending = null;
+
+  window._epbApprove = function (req) {
+    _pending = req;
+    document.getElementById('am-email').textContent = req.email;
+    document.getElementById('am-dash').textContent  = req.dashboard;
+    var btn = document.getElementById('am-submit');
+    btn.disabled = false;
+    btn.textContent = 'Approve';
+    document.getElementById('approveModal').classList.add('open');
+  };
+
+  window._epbCloseModal = function () {
+    document.getElementById('approveModal').classList.remove('open');
+    _pending = null;
+  };
+
+  window._epbSubmitApprove = function () {
+    if (!_pending) return;
+    var btn = document.getElementById('am-submit');
+    btn.disabled = true;
+    btn.textContent = 'Approving…';
+    var req = _pending;
+    google.script.run
+      .withSuccessHandler(function (res) {
+        window._epbCloseModal();
+        if (res.success) {
+          _epbToast(req.email + ' approved for ' + req.dashboard + '.');
+          loadAdmin();
+        } else {
+          _epbToast('Error: ' + (res.error || 'Unknown error'));
+        }
+      })
+      .withFailureHandler(function () {
+        window._epbCloseModal();
+        _epbToast('Approval failed — check Apps Script logs.');
+      })
+      .approveAccessRequest(req.rowIndex, req.email, req.accessColumn);
+  };
+
+  window._epbDeny = function (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Denying…';
+    var rowIndex = Number(btn.getAttribute('data-row'));
+    var email    = btn.getAttribute('data-email');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res.success) {
+          _epbToast(email + ' denied.');
+          loadAdmin();
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Deny';
+          _epbToast('Error: ' + (res.error || 'Unknown error'));
+        }
+      })
+      .withFailureHandler(function () {
+        btn.disabled = false;
+        btn.textContent = 'Deny';
+        _epbToast('Denial failed — check Apps Script logs.');
+      })
+      .denyAccessRequest(rowIndex);
+  };
+
+  window._epbOverlayClick = function (e) {
+    if (e.target === document.getElementById('approveModal')) {
+      window._epbCloseModal();
+    }
+  };
+
+  /* --- Toast -------------------------------------------------------------- */
+  function _epbToast(msg) {
+    var t = document.getElementById('epbToast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('on');
+    setTimeout(function () { t.classList.remove('on'); }, 3500);
+  }
+
+  window._epbToast = _epbToast;
+})();
+</script>
