@@ -1,70 +1,16 @@
-# EPB Pipeline Hub — Unified Dashboard Plan
+# EPB Team Site — Build Plan
 
 ## Overview
 
-A single web application that aggregates the status of all EPB pipeline trackers into one place for the team. Instead of opening three separate dashboards, the team sees one page with a top-level "all clear / action required" hero banner and a card for each pipeline — styled to match the IPP Portal.
+A Google Apps Script web application that serves as the EPB Strategy and Planning team's central hub. Built on the **Basic Microsite UI** reference kit (`Basic Microsite UI/`) — a presentation-first, token-driven, dependency-free design system. Launched with one section (Pipeline Hub); additional sections slot in by adding a card to the greeter and new tab declarations in HTML.
 
 ---
 
-## Current State (Three Separate Trackers)
+## Design Foundation
 
-| Tracker | Purpose | Access |
-|---------|---------|--------|
-| **PSO One Pager Pipeline** | 13-stage approval workflow (slide creation → SVP sign-off) | Via epb-hub |
-| **Consolidated Billed Revenue** | Monthly data submission tracking (EPB, TAC, TH, TDX, TPS) | tracker.bat → web app |
-| **Consolidated BR Queries** | BQ query + consolidation workflow execution monitoring | tracker.bat → Google Sheet |
+All visual decisions inherit from `Basic Microsite UI/styles.css` and `Basic Microsite UI/app.js`. Do not deviate from these patterns — the entire value of the kit is that every block follows the same rules.
 
-Each tracker has its own Google Chat space, its own bat file, and its own web UI. The team has to check three places to understand whether anything is blocked.
-
----
-
-## Architecture
-
-### Recommended Approach: Unified Apps Script reading all CONFIG sheets directly
-
-A new standalone Apps Script project reads the CONFIG/STATUS tabs from each tracker's Google Sheet and renders a single aggregated dashboard.
-
-**Why this approach:**
-- No cross-script API calls (each script is isolated by design)
-- Google Sheets are already the source of truth for all three trackers
-- Easy to add more pipelines later — add one new `_get*Status()` function and one new card
-- Single deploy URL — one bat file, one bookmark for the team
-
-**Not recommended:** iFraming the individual trackers — iframes can't be aggregated into a unified status banner and behave poorly in Apps Script web apps.
-
----
-
-## Data Sources
-
-| Tracker | Google Sheet ID | Tab to Read |
-|---------|-----------------|-------------|
-| PSO One Pager | `1wt1DgVwHxkDkTTFbJiFY6UQ_bEvs_sof_FNqDMl3pXA` | `PIPELINE_STATUS` (13 stage rows) |
-| Consolidated BR | `1_Pv9gOxUesAmgMlyngyIFIzQFVtlJktaHMU36vAZg7g` | `CONFIG` + `DATA_STATUS` |
-| Queries Pipeline | `19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw` | `CONFIG` |
-
----
-
-## New Files to Create
-
-```
-G:\Shared drives\EPB Planning Drive\1 - Consolidated\11 - Claude Code Projects\
-  Projects\
-    EPB Pipeline Hub\
-      apps-script\
-        Code.gs          ← aggregates data from all three tracker sheets
-        Dashboard.html   ← unified web UI (IPP Portal design)
-      tracker.bat        ← opens the deployed web app URL
-```
-
-No changes required to any existing tracker code.
-
----
-
-## Design System — Match IPP Portal Exactly
-
-All styling is taken directly from `Projects/IPP/apps-script/Tracker.html`.
-
-### CSS Design Tokens
+### Design Tokens (copy exactly from reference)
 
 ```css
 :root {
@@ -72,340 +18,342 @@ All styling is taken directly from `Projects/IPP/apps-script/Tracker.html`.
   --purple-d: #38205A;
   --purple-l: #63398B;
   --ink:      #2A1A3E;
+  --green:    #66CC00;
+  --lime:     #8FDD3D;
   --tint:     #F6F2FA;
   --tint2:    #F0EAF7;
   --line:     #E8E6EC;
   --line-d:   #D8D5DE;
   --grey:     #54505C;
   --grey-l:   #918A9C;
-  --green:    #4B8500;
-  --amber:    #856404;
-  --red:      #721C24;
+  --disp:     "Helvetica Neue", Arial, sans-serif;
+  --text:     "Helvetica Neue", Arial, sans-serif;
+  --micro:    "Helvetica Neue", Arial, sans-serif;
   --gut:      clamp(20px, 5vw, 72px);
-  --ease:     cubic-bezier(0.16, 1, 0.3, 1);
-  --disp:     "TELUS SA Display", Inter, "Helvetica Neue", Arial, sans-serif;
-  --text:     "TELUS SA Text",    Inter, "Helvetica Neue", Arial, sans-serif;
-  --micro:    "TELUS SA Micro",   Inter, "Helvetica Neue", Arial, sans-serif;
+  --navh:     72px;  /* overwritten by app.js on each render */
 }
 ```
 
-### Font Loading
+No external font loading. No CDN dependencies. The site must work on a projector with a locked-down TELUS laptop.
 
-Load Inter from Google Fonts as fallback (same as IPP Portal):
+### Green usage rule
+
+Green (`--green`) signals "this one" — the active tab underline, the hover accent on section cards. Use it **at most twice per screen**. Green everywhere signals nothing.
+
+---
+
+## Architecture
+
+```
+Greeter
+  Panel 1 — Wordmark + context                (full viewport)
+  Panel 2 — Section picker cards              (full viewport, dark bg)
+      │
+      └─→ Section: Pipeline Hub
+              Tab: PSO One Pager
+              Tab: Consolidated Billed Revenue
+              Tab: BR Queries Pipeline
+              Tab: Admin — Access Requests     (admin-only, hidden otherwise)
+```
+
+Three levels maximum. Future sections (e.g. GM Tracker, R&O Dashboard) add a card to Panel 2 and new tab declarations — no structural changes.
+
+---
+
+## Greeter
+
+### Panel 1
+
+| Element | Content |
+|---------|---------|
+| Wordmark | **EPB Team Site** (massive display type, clamp 96px → 24vw → 320px) |
+| Sub-label | EPB Strategy & Planning |
+| Context | Evergreen — no specific date or event |
+| Chevron | Smooth-scrolls to Panel 2 |
+
+Animates in with staggered `.up` keyframes (wordmark → sub-label → chevron). Must fit **1366×768 without scrolling** — check this first when editing Panel 1.
+
+### Panel 2 — Section Picker
+
+Dark background (`var(--ink)`). One section card to start; grid is fixed 5-column, responsive to 3-up then 1-up.
+
+| # | Title | Blurb |
+|---|-------|-------|
+| 1 | Pipeline Hub | Live status across PSO One Pager, Consolidated Billed Revenue, and BR Queries pipelines |
+
+Future sections slot into positions 2–5. Add a `<div class="ws-card" data-section="KEY">` and corresponding `#tabData` entries.
+
+---
+
+## Section 1 — Pipeline Hub
+
+### Tab declarations (`#tabData`)
+
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-```
-
-### Page Structure
-
-Mirrors the IPP Portal layout exactly:
-
-```
-┌─────────────────────────────────────────────────────┐
-│  NAV  — frosted glass, fixed, 68px, EPB Pipeline Hub│
-├─────────────────────────────────────────────────────┤
-│  HERO — gradient bg, overall status, key metrics    │
-│  "All Clear" / "Action Required" / "Pipeline Issue" │
-├──────────────┬──────────────┬───────────────────────┤
-│  CARD: PSO   │  CARD: CBR   │  CARD: BR Queries     │
-│  Pipeline    │  Billed Rev  │  Queries Pipeline     │
-├──────────────┴──────────────┴───────────────────────┤
-│  FOOTER — purple background, white text             │
-└─────────────────────────────────────────────────────┘
+<i data-section="pipeline" data-tab="pso"     data-label="PSO One Pager"></i>
+<i data-section="pipeline" data-tab="cbr"     data-label="Billed Revenue"></i>
+<i data-section="pipeline" data-tab="queries" data-label="BR Queries"></i>
+<!-- Admin tab — removed from DOM by app.js if window.IS_ADMIN is false -->
+<i data-section="pipeline" data-tab="admin"   data-label="Access Requests" data-admin="true"></i>
 ```
 
 ---
 
-## Dashboard UI Design
+### Tab 1 — PSO One Pager
 
-### Navigation Bar (`.nav`)
-- Fixed top, 68px height, frosted glass: `rgba(255,255,255,0.96)` + `backdrop-filter: blur(8px)`
-- Left: "EPB Pipeline Hub" brand name
-- Right: last-updated timestamp + refresh button
-- Matches IPP Portal nav exactly
+**Source:** `1wt1DgVwHxkDkTTFbJiFY6UQ_bEvs_sof_FNqDMl3pXA` → `PIPELINE_STATUS` tab
 
-### Hero Section (`.hero`)
-- Gradient background: `linear-gradient(180deg, rgba(75,40,109,0.04) 0%, #fff 100%)`
-- Padding: 80px top, 56px bottom
-- **Eyebrow**: "EPB COMMERCIAL PLANNING" (uppercase, 11px, purple, letter-spacing .18em)
-- **Title**: "Pipeline Hub" — `clamp(31px, 4.8vw, 64px)`, weight 900, `--ink`
-- **Hero stats row** (3 metrics, same style as IPP Portal):
-  - Total Pipelines Active
-  - Pipelines On Track
-  - Action Required
+**Hero header:** dark background, eyebrow "PSO ONE PAGER", heading "Approval Pipeline", lede: current stage + percentage.
 
-Overall status drives the hero background tint:
-- All clear → subtle green tint
-- Action required → subtle amber tint
-- Issue → subtle red tint
+**Components used:**
 
-### Status Badge System (matches IPP Portal exactly)
+| Block | Purpose |
+|-------|---------|
+| `.gstats` | Three stat tiles: Current Stage / Total Stages / % Complete |
+| `.steps` ordered list | One step per pipeline stage — solid numbered square, status pill (`.pbadge`) per stage |
+| `.gnote` callout | Shown only when status is WAITING or FAILED — blocker text. Hidden otherwise. At most one per page. |
+| `.gcards` | "Open PSO Tracker →" link card |
 
-```css
-.badge               { font: 700 10px var(--micro); padding: 3px 9px; border-radius: 20px; }
-.badge-complete      { background: #EEF7E0; color: var(--green); }
-.badge-progress      { background: rgba(75,40,109,0.15); color: var(--purple); }
-.badge-pending       { background: var(--tint2); color: var(--purple); }
-.badge-at-risk       { background: #FFF3CD; color: var(--amber); }
-.badge-overdue       { background: #F8D7DA; color: var(--red); }
-```
+**Status pill mapping (`.pbadge`):**
 
-### Pipeline Cards (`.card`)
-
-Same card style as IPP Portal:
-- `border: 1px solid var(--line)`, `border-top: 3px solid var(--purple)`
-- `border-radius: 12px`, padding 22px
-- Hover: `transform: translateY(-3px)`, `box-shadow: 0 14px 32px rgba(75,40,109,0.09)`
-
-Card layout — three columns on desktop, stacked on mobile:
-```css
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-}
-```
+| Pipeline status | Pill class |
+|----------------|-----------|
+| COMPLETE | `.ok` (green) |
+| IN_PROGRESS | `.info` (purple) |
+| WAITING | `.warn` (yellow) |
+| FAILED | `.bad` (red) |
+| NOT_STARTED | `.todo` (dashed) |
 
 ---
 
-### Card 1 — PSO One Pager Pipeline
+### Tab 2 — Consolidated Billed Revenue
 
-```
-┌───────────────────────────────────────────────────┐
-│ PSO ONE PAGER                        [IN PROGRESS]│
-│ Stage 9 of 13 — CoS Review                        │
-│                                                   │
-│ ████████████░░░░░░░░░░  69%                       │
-│                                                   │
-│ ⚠ WAITING — Christine Gallant, Erynn Hunter,      │
-│             John Karazivan                        │
-│                                                   │
-│                           [Open PSO Tracker →]   │
-└───────────────────────────────────────────────────┘
-```
+**Source:** `1_Pv9gOxUesAmgMlyngyIFIzQFVtlJktaHMU36vAZg7g` → `CONFIG` + `DATA_STATUS` tabs
 
-**Data mapped from PSO PIPELINE_STATUS tab:**
-- Current stage number + name (find last IN_PROGRESS or WAITING row)
-- Progress bar = (current stage / 13) × 100%
-- Status badge: IN_PROGRESS → `badge-progress`, WAITING → `badge-at-risk`, COMPLETE → `badge-complete`, FAILED → `badge-overdue`
-- Blocker text from the `notes` column of the WAITING stage (shown only when WAITING)
-- Link to PSO tracker (epb-hub URL)
+**Hero header:** eyebrow "CONSOLIDATED BILLED REVENUE", heading "Monthly Submission Status", lede: current period.
+
+**Components used:**
+
+| Block | Purpose |
+|-------|---------|
+| `.gstats` | Three stat tiles: Current Period / Segments Complete / Segments Pending |
+| `.gt` table | One row per segment — Segment, Status (`.pbadge`), Last Updated |
+| `.gcards` | "Open CBR Tracker →" link card |
+
+**Status → `.pbadge`:** COMPLETE → `.ok`, PENDING → `.todo`, PARTIAL → `.warn`
 
 ---
 
-### Card 2 — Consolidated Billed Revenue
+### Tab 3 — BR Queries Pipeline
 
-```
-┌───────────────────────────────────────────────────┐
-│ CONSOLIDATED BILLED REVENUE               Jul 2026│
-│                                                   │
-│  EPB    ✓ Complete    TAC    ✓ Complete           │
-│  TH     ⏳ Pending    TDX    ✓ Complete           │
-│  TPS    ✓ Complete                               │
-│                                                   │
-│  4 of 5 segments complete      [badge-at-risk]   │
-│                           [Open CBR Tracker →]   │
-└───────────────────────────────────────────────────┘
-```
+**Source:** `19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw` → `CONFIG` tab
 
-**Data mapped from CBR CONFIG + DATA_STATUS tabs:**
-- Current period badge (top right)
-- Per-segment rows: COMPLETE → `badge-complete`, PENDING → `badge-pending`
-- Overall status badge driven by completion count
-- Link to CBR tracker web app
+**Hero header:** eyebrow "BR QUERIES PIPELINE", heading "Query Execution Status", lede: current period + stage.
+
+**Components used:**
+
+| Block | Purpose |
+|-------|---------|
+| `.steps` ordered list | 4 steps: Email Sent / Queries Run / Check / Done — active step `.info` pill, complete `.ok` pill |
+| `.gt` table | One row per query/table — Name, Pass/Fail pill |
+| `.gcards` | "Open Queries Tracker →" link card |
 
 ---
 
-### Card 3 — Consolidated BR Queries Pipeline
+### Tab 4 — Access Requests (admin only)
 
-```
-┌───────────────────────────────────────────────────┐
-│ BR QUERIES PIPELINE                       Jul 2026│
-│                                                   │
-│  ●────●────○────○                                 │
-│  Sent  Queries  Check  Done                       │
-│                                                   │
-│  GoCo ✓  PWN ✓  WLN ✗  Master ✓                  │
-│                                                   │
-│  Stage 2 of 4              [badge-at-risk]       │
-│                      [Open Queries Tracker →]    │
-└───────────────────────────────────────────────────┘
-```
+Visible only when `window.IS_ADMIN === true`. `app.js` removes the `<i data-admin="true">` element from `#tabData` before building the nav bar if the flag is not set — the tab never appears for non-admins.
 
-**Data mapped from Queries CONFIG tab:**
-- 4-step progress track using IPP Portal's `.pt-step` / `.pt-circle` pattern (replaces the current custom track style)
-- Table status row using `badge-complete` / `badge-overdue` pills
-- Overall status badge
-- Link to Queries tracker
+**Source:** `1OJpOFEwV0YaT1rUoygxXqypv5OwdDcBZX_q-_29Grug` (EPB Hub master) → `Access Requests` + `Admin - Access` tabs
+
+**Hero header:** eyebrow "ADMIN", heading "Access Requests", lede: "Approve or deny EPB Hub access requests without opening the spreadsheet."
+
+**Components used:**
+
+| Block | Purpose |
+|-------|---------|
+| `.gstats` | One stat tile: Pending Requests count |
+| `.gt` table | Email / Dashboard / Requested At / Action (Approve \| Deny buttons) |
+| `.gnote` callout | Inline confirmation strip shown when Approve is clicked — replaces a modal overlay |
+
+**Security:** `_isAdminUser()` re-checked server-side on every backend call. `window.IS_ADMIN` is display-only.
 
 ---
 
-### Buttons (matches IPP Portal)
+## Linked Assets (standalone — not embedded)
 
-```css
-.btn         { border-radius: 999px; padding: 10px 24px; font: 700 13px var(--text); }
-.btn-primary { background: var(--purple); color: #fff; box-shadow: 0 8px 24px rgba(75,40,109,0.22); }
-.btn-ghost   { background: transparent; color: var(--purple); border: 1.5px solid var(--purple); }
-```
-
-### Footer (matches IPP Portal)
-
-```css
-footer { background: var(--purple); color: #fff; padding: 28px var(--gut); }
-```
-
-Content: "EPB Commercial Planning · Pipeline Hub" left, "Auto-refreshes every 30s" right.
+`gm-milestone-tracker/` and `ro-dashboard/` stay as independent HTML files. They are linked from section cards when those sections are added. They do not need to match this design system until they are rebuilt.
 
 ---
 
-## Code.gs — Backend Structure
+## File Structure
+
+```
+apps-script/
+  Code.gs          ← backend (unchanged; two small additions below)
+  index.html       ← full site shell (replaces Dashboard.html)
+  styles.css       ← copied from Basic Microsite UI/styles.css
+  app.js           ← copied from Basic Microsite UI/app.js + two additions
+```
+
+`styles.css` and `app.js` are included inline via the Apps Script `include()` helper:
 
 ```javascript
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+```
+
+`Dashboard.html` is deprecated — delete once `index.html` is validated.
+
+---
+
+## Code.gs Changes (minimal)
+
+All data functions (`_getPSOStatus`, `_getCBRStatus`, `_getQueriesStatus`, `_isAdminUser`, `getPendingAccessRequests`, `approveAccessRequest`, `denyAccessRequest`) are already implemented and unchanged.
+
+**Two additions only:**
+
+```javascript
+// 1. File include helper
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// 2. Update doGet to serve index.html
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Dashboard')
-    .setTitle('EPB Pipeline Hub')
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('EPB Team Site')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
-
-function getDashboardData() {
-  return {
-    pso:     _getPSOStatus(),
-    cbr:     _getCBRStatus(),
-    queries: _getQueriesStatus(),
-    asOf:    new Date().toISOString(),
-  };
-}
-
-function _getPSOStatus() {
-  // Opens: 1wt1DgVwHxkDkTTFbJiFY6UQ_bEvs_sof_FNqDMl3pXA
-  // Tab: PIPELINE_STATUS
-  // Returns: { currentStage, totalStages: 13, stageName, status, blocker, pct, trackerUrl }
-}
-
-function _getCBRStatus() {
-  // Opens: 1_Pv9gOxUesAmgMlyngyIFIzQFVtlJktaHMU36vAZg7g
-  // Tabs: CONFIG (period), DATA_STATUS (per-segment)
-  // Returns: { currentPeriod, segments: [{name, status}], completeCount, totalCount, trackerUrl }
-}
-
-function _getQueriesStatus() {
-  // Opens: 19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw
-  // Tab: CONFIG
-  // Returns: { currentPeriod, stage, pipelineStatus, tables: [{name,pass}], trackerUrl }
-}
 ```
 
-Each `_get*Status()` function is self-contained. Adding a fourth pipeline (e.g., IPP) = one new function + one new card.
+---
+
+## index.html Structure
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <style><?!= include('styles') ?></style>
+</head>
+<body>
+
+  <!-- Greeter -->
+  <div id="greeter">
+    <div class="gr-panel gr-one">
+      <!-- wordmark, sub-label, chevron -->
+    </div>
+    <div class="gr-panel gr-two">
+      <!-- section picker cards -->
+    </div>
+  </div>
+
+  <!-- Tab declarations (hidden — read by app.js) -->
+  <div id="tabData" hidden>
+    <i data-section="pipeline" data-tab="pso"     data-label="PSO One Pager"></i>
+    <i data-section="pipeline" data-tab="cbr"     data-label="Billed Revenue"></i>
+    <i data-section="pipeline" data-tab="queries" data-label="BR Queries"></i>
+    <i data-section="pipeline" data-tab="admin"   data-label="Access Requests" data-admin="true"></i>
+  </div>
+
+  <!-- Portal (hidden until section selected) -->
+  <div id="portal" hidden>
+    <nav class="nav"><!-- home button + tab row --></nav>
+    <div id="view-pso"     class="tabview" hidden><!-- PSO content --></div>
+    <div id="view-cbr"     class="tabview" hidden><!-- CBR content --></div>
+    <div id="view-queries" class="tabview" hidden><!-- Queries content --></div>
+    <div id="view-admin"   class="tabview" hidden><!-- Admin content --></div>
+  </div>
+
+  <button class="scroll-btn" hidden></button>
+
+  <script><?!= include('app') ?></script>
+  <script>
+    // Server injects admin flag at render time
+    // <?!= isAdmin ? 'window.IS_ADMIN=true;' : '' ?>
+
+    // Remove admin tab if not admin (before nav bar is built)
+    if (!window.IS_ADMIN) {
+      var el = document.querySelector('#tabData i[data-admin]');
+      if (el) el.parentNode.removeChild(el);
+    }
+
+    // Load pipeline data asynchronously
+    google.script.run
+      .withSuccessHandler(function(data) {
+        renderPSO(data.pso);
+        renderCBR(data.cbr);
+        renderQueries(data.queries);
+        if (data.isAdmin) renderAdmin();
+      })
+      .getDashboardData();
+  </script>
+</body>
+</html>
+```
 
 ---
 
-## Google Chat Consolidation (Optional)
+## app.js Adaptations
 
-Currently each tracker posts to its own Chat space. To consolidate:
+Copy `Basic Microsite UI/app.js` verbatim. The `renderPSO()`, `renderCBR()`, `renderQueries()`, and `renderAdmin()` functions are added at the bottom and write component markup into the `.tabview` divs using blocks copied from `Basic Microsite UI/index.html`.
 
-1. Create a new Google Chat space: **"EPB Pipelines"**
-2. Add one incoming webhook per tracker — the webhook name appears as the sender so messages stay attributable
-3. Update `CHAT_WEBHOOK_URL` in Script Properties for each existing tracker
-
-This is independent of the unified UI and can be done at any time.
+Each tab view starts with a loading skeleton (`.gstats` tiles with placeholder dashes). Data populates when the `google.script.run` response arrives — greeter and navigation are instant.
 
 ---
 
-## Setup Steps (Once Built)
+## Responsive Behaviour
 
-1. Create a new Google Apps Script project named **"EPB Pipeline Hub"**
-2. Add `Code.gs` and `Dashboard.html`
-3. Authorize access to all three source sheets on first run (standard OAuth)
+Follow the reference kit breakpoints exactly:
+
+| Viewport | Greeter cards | Tab bar | Components |
+|----------|--------------|---------|-----------|
+| ≥1180px | 5-column | full row | full layout |
+| 760–1180px | 3-column | full row (may wrap) | 2-column grids |
+| <760px | 1-column | hamburger drawer | stacked |
+
+**Test priority:** 1366×768 first (projector fold), 1440×900, 1920×1080, 375×812.
+
+---
+
+## Component Reference Map
+
+When building tab content, copy blocks from `Basic Microsite UI/index.html`. Do not invent new patterns.
+
+| Need | Component |
+|------|-----------|
+| Big KPI number | `.gstats` stat tile |
+| Status label | `.pbadge` pill (ok / warn / bad / info / todo) |
+| Pipeline steps | `.steps` ordered list |
+| Alert / blocker | `.gnote` callout (one per page max) |
+| Data rows | `.gt` table with `.pbadge` in cells |
+| Links to other tools | `.gcards` card |
+| Numbered narrative | `.gbentos` prose cards |
+| Progressive disclosure | `.swap` pill toggles |
+
+---
+
+## Setup Steps (once built)
+
+1. Create a new Google Apps Script project named **"EPB Team Site"**
+2. Add: `Code.gs`, `index.html`, `styles.css`, `app.js`
+3. Authorize access to all source sheets on first run
 4. Deploy as web app: Execute as **Me**, Access: **Anyone at TELUS**
-5. Paste deployed URL into `tracker.bat`
-6. Share bat file or URL with the team
+5. Update `tracker.bat` (or share URL directly)
 
 ---
 
-## Admin: Access Requests Section
+## Future Sections
 
-An admin-only section rendered below the pipeline cards. Only visible when the current user's email appears in the `ADMINS` column of the "Admin - Access" tab in the EPB Hub master sheet.
+| Section | Notes |
+|---------|-------|
+| GM Milestone Tracker | Rebuild existing `gm-milestone-tracker/` using component library |
+| R&O Dashboard | Rebuild existing `ro-dashboard/` using component library |
+| Additional pipelines | New tab → new render function → no structural changes |
 
-### Purpose
-
-Eliminates the current spreadsheet-checkbox approval workflow. Admins can approve or deny EPB Hub access requests directly from a modal in this dashboard — no spreadsheet visit required.
-
-### Data Source
-
-| Sheet | ID | Tab |
-|-------|----|-----|
-| EPB Hub master | `1OJpOFEwV0YaT1rUoygxXqypv5OwdDcBZX_q-_29Grug` | `Access Requests` (pending rows) |
-| EPB Hub master | `1OJpOFEwV0YaT1rUoygxXqypv5OwdDcBZX_q-_29Grug` | `Admin - Access` (write approval here) |
-
-### Backend Functions (Code.gs)
-
-| Function | Purpose |
-|----------|---------|
-| `_isAdminUser()` | Returns `true` if current user's email is in the ADMINS column of "Admin - Access" |
-| `getPendingAccessRequests()` | Returns array of pending request rows: `{ rowIndex, email, dashboard, accessColumn, requestedAt }` |
-| `approveAccessRequest(rowIndex, email, accessColumn)` | Writes email to target column in "Admin - Access", marks row "Approved", emails requester |
-| `denyAccessRequest(rowIndex)` | Marks row "Denied" in "Access Requests" sheet, no access granted |
-
-`getDashboardData()` includes `isAdmin: _isAdminUser()` so the frontend knows whether to show the section.
-
-### Security
-
-- Every backend function re-checks `_isAdminUser()` server-side — the `isAdmin` flag in `getDashboardData()` is display-only
-- `approveAccessRequest()` validates `accessColumn` against `ACCESS_COLUMN_MAP` before writing (prevents privilege escalation)
-- Row data passed back to the frontend is read from the sheet; the frontend passes only `rowIndex` to trigger an approval — the backend re-reads the row to get email and column
-
-### UI Layout
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  ADMIN                                                    │
-│  Access Requests                                          │
-│  Pending requests from EPB Hub users.                     │
-│                                                           │
-│  Email              Dashboard          Requested   Action │
-│  ──────────────── ───────────────── ──────────── ─────── │
-│  user@telus.com   Flash Weekly      Aug 19 2026  [Approve]│
-│                                                  [Deny]  │
-│  user2@telus.com  Core Wireless     Aug 18 2026  [Approve]│
-│                                                  [Deny]  │
-└──────────────────────────────────────────────────────────┘
-```
-
-Clicking **Approve** opens a confirmation modal before calling `approveAccessRequest()`. On success:
-- Toast: "[email] approved for [dashboard]"
-- Table refreshes automatically
-- Requester receives an email: "Your access has been approved. Refresh EPB Hub to view your dashboard."
-
-Clicking **Deny** acts immediately (no modal), marks the row "Denied" in the sheet.
-
-### No onEdit Trigger Required
-
-The EPB Hub currently approves via a spreadsheet checkbox + installable `onEdit` trigger. This UI replaces that step entirely — approvals happen via a direct `google.script.run` call to `approveAccessRequest()`.
-
----
-
-## Future Additions
-
-| Pipeline | Source | Notes |
-|----------|--------|-------|
-| IPP Portal | `Projects/IPP/tracker.bat` already exists | Ready to add as Card 4 |
-| Additional pipelines | New sheet → new `_get*Status()` → new card | Fully modular |
-| Unified "Run Check" button | Surface BQ post-run check from hub UI | Phase 2 |
-| Weekly email digest | Single email across all pipelines every Monday | Phase 2 |
-
----
-
-## Summary of Work Required
-
-| Task | Effort |
-|------|--------|
-| Confirm PSO PIPELINE_STATUS tab column layout | Small |
-| Confirm CBR DATA_STATUS tab column layout | Small |
-| Write `Code.gs` (3 reader functions + doGet) | Medium |
-| Write `Dashboard.html` (IPP Portal design, 3 cards) | Medium |
-| Deploy and test | Small |
-| Create `tracker.bat` | Trivial |
-| Optional: Google Chat consolidation | Small |
-
-No changes to any existing tracker code or infrastructure required.
+Adding a section = one new greeter card + `#tabData` entries + `.tabview` divs + render function.

@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microsite UI — reference build</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===========================================================================
+     STRUCTURE
+       greeter   two full-height panels: wordmark, then the section picker
+       portal    the sticky tab bar plus one .tabview panel per tab
+
+     Replace the placeholder copy with your own. The block markup below the
+     first tab is the library — copy the pattern you need, delete the rest.
+     =========================================================================== -->
+
+<!-- ============================ GREETER ============================ -->
+<div id="greeter">
+
+  <!-- Panel 1 — the wordmark.
+       Sized to land the chevron just inside the fold. Verify at 1366x768,
+       which is the tightest realistic laptop: if you add anything to this
+       panel, check there first.
+
+       The reference build masks a PHOTO inside the letterforms with an SVG
+       mask, so the type is a window onto an image. To do that, replace .gr-word
+       with:  <svg viewBox="0 0 1000 340"><defs><mask id="m">
+              <rect width="100%" height="100%" fill="#000"/>
+              <text x="500" y="255" text-anchor="middle" fill="#fff">ABC</text>
+              </mask></defs>
+              <g mask="url(#m)"><image href="photo.jpg" width="100%"
+              height="100%" preserveAspectRatio="xMidYMid slice"/></g></svg>
+       Measure the rendered glyphs and snap the viewBox to them, or the word
+       will not fill the frame when a fallback font loads. -->
+  <section class="gr-panel gr-one">
+    <span class="gr-logo">LOGO</span>
+    <h1 class="gr-word">ABC</h1>
+    <p class="gr-place">City &middot; Month 00&ndash;00</p>
+    <p class="gr-ask">Your opening question?</p>
+    <button class="gr-chev" id="grChev" aria-label="Scroll to the sections">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 8l8 8 8-8" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- Panel 2 — the section picker. One card per major theme.
+       Five cards is the reference; the grid is a FIXED column count so five
+       peers read as five rather than reflowing to four-plus-one. -->
+  <section class="gr-panel gr-two" id="grStart">
+    <h2 class="gr-kicker">Choose your section</h2>
+    <p class="gr-lede">One line explaining what these sections are and how the
+    reader should move through them.</p>
+
+    <div class="ws-cards">
+      <button class="ws-card" data-section="one">
+        <span class="ws-num">Section 01</span>
+        <span class="ws-title">Section One Title</span>
+        <span class="ws-blurb">A short blurb naming what this section covers.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="two">
+        <span class="ws-num">Section 02</span>
+        <span class="ws-title">Section Two Title</span>
+        <span class="ws-blurb">A short blurb naming what this section covers.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="three">
+        <span class="ws-num">Section 03</span>
+        <span class="ws-title">Section Three Title</span>
+        <span class="ws-blurb">A short blurb naming what this section covers.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="four">
+        <span class="ws-num">Section 04</span>
+        <span class="ws-title">Section Four Title</span>
+        <span class="ws-blurb">A short blurb naming what this section covers.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <button class="ws-card" data-section="five">
+        <span class="ws-num">Section 05</span>
+        <span class="ws-title">Section Five Title</span>
+        <span class="ws-blurb">A short blurb naming what this section covers.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== TAB DECLARATIONS =====================
+     app.js builds each section's tab bar from these. Add a tab by adding a
+     line here AND a matching <div class="tabview" id="view-KEY"> below.
+     In a data-driven build this list comes from your backend instead. -->
+<div id="tabData" hidden>
+  <i data-section="one"   data-tab="why"     data-label="Why Are We Here"></i>
+  <i data-section="one"   data-tab="data"    data-label="The Data"></i>
+  <i data-section="one"   data-tab="process" data-label="Process &amp; Approvals"></i>
+  <i data-section="one"   data-tab="blocks"  data-label="Block Library"></i>
+  <i data-section="two"   data-tab="why"     data-label="Why Are We Here"></i>
+  <i data-section="two"   data-tab="data"    data-label="The Data"></i>
+  <i data-section="three" data-tab="why"     data-label="Why Are We Here"></i>
+  <i data-section="four"  data-tab="why"     data-label="Why Are We Here"></i>
+  <i data-section="five"  data-tab="why"     data-label="Why Are We Here"></i>
+</div>
+
+<!-- ============================== PORTAL ============================== -->
+<div id="portal" hidden>
+
+  <!-- Sticky bar. Transparent over a hero, opaque once scrolled.
+       Tabs WRAP to a second row rather than truncate — a label is never
+       clipped. app.js detects the wrap and publishes the measured height. -->
+  <nav class="nav">
+    <div class="nav-mobile">
+      <button class="nav-home" id="navHomeM" aria-label="Back to all sections">
+        <i>&larr;</i></button>
+      <span class="nav-current" id="navCurrent">Tab</span>
+      <button class="nav-burger" id="navBurger" aria-label="Toggle sections">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-shell">
+      <button class="nav-home" id="navHome" aria-label="Back to all sections">
+        <i>&larr;</i> <span>All sections</span></button>
+      <div class="nav-row" id="navRow"></div>
+    </div>
+  </nav>
+
+  <!-- One .tabview per tab key. Only the active one is shown. -->
+
+  <!-- ---------------------------------------------- TAB: why ------------ -->
+  <div class="tabview" id="view-why">
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Section 01 &middot; Name</span>
+        <h1 class="hero-t">Why are we here.</h1>
+        <p class="hero-l">One lede sentence that orients the room before any
+        data appears.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Three goals for this section</h3>
+          <p class="sect-sub">A sentence framing the landscape, so the goals
+          below have context rather than arriving cold.</p>
+        </div>
+        <div class="gbentos reveal">
+          <div class="gbento"><span class="gbento-n">01</span>
+            <p><b>First goal.</b> One or two sentences on what this means and
+            why it matters.</p></div>
+          <div class="gbento"><span class="gbento-n">02</span>
+            <p><b>Second goal.</b> One or two sentences on what this means and
+            why it matters.</p></div>
+          <div class="gbento"><span class="gbento-n">03</span>
+            <p><b>Third goal.</b> One or two sentences on what this means and
+            why it matters.</p></div>
+          <div class="gbento"><span class="gbento-n">04</span>
+            <p><b>Fourth goal.</b> Delete this card for a 3-up layout, or keep
+            it for a balanced 2&times;2.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The callout. At most one per page — it is the loudest element here. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="gnote reveal">
+          <span class="dsr-icon" aria-hidden="true">i</span>
+          <div>
+            <h4 class="gnote-h">The one thing everything depends on.</h4>
+            <p class="gnote-p">Close the page by pointing at the tabs that
+            follow, so the reader knows where the evidence lives rather than
+            simply stopping here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ---------------------------------------------- TAB: data ----------- -->
+  <div class="tabview" id="view-data" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Section 01 &middot; Name</span>
+        <h1 class="hero-t">The data.</h1>
+        <p class="hero-l">What the numbers say, and what they do not.</p>
+      </div>
+    </header>
+
+    <!-- Stat tiles: value first, caption second. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">At a glance</h3></div>
+        <div class="gstats reveal">
+          <div class="gstat"><b>0,000</b><span>what this figure counts</span></div>
+          <div class="gstat"><b>00%</b><span>what this share represents</span></div>
+          <div class="gstat"><b>00 days</b><span>what this duration measures</span></div>
+          <div class="gstat"><b>0,000</b><span>what this figure counts</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Insights bento, 4 across. Badge, header across the top, then figure
+         left / prose right. Add .hot to a card to mark it as a highlight. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Key insights</h3></div>
+        <div class="ginsights reveal">
+          <div class="ginsight hot">
+            <span class="gi-badge">01</span>
+            <div class="gi-top"><h4>Highlighted finding</h4></div>
+            <div class="gi-split">
+              <b class="gi-fig">00%</b>
+              <p class="gi-body">One sentence explaining what the figure means.</p>
+            </div>
+          </div>
+          <div class="ginsight">
+            <span class="gi-badge">02</span>
+            <div class="gi-top"><h4>Second finding</h4></div>
+            <div class="gi-split">
+              <b class="gi-fig long">A to B</b>
+              <p class="gi-body">A longer figure gets .long so it steps down a
+              size instead of swallowing the card.</p>
+            </div>
+          </div>
+          <div class="ginsight">
+            <span class="gi-badge">03</span>
+            <div class="gi-top"><h4>Third finding</h4></div>
+            <div class="gi-split">
+              <b class="gi-fig">00</b>
+              <p class="gi-body">One sentence explaining what the figure means.</p>
+            </div>
+          </div>
+          <div class="ginsight">
+            <span class="gi-badge">04</span>
+            <div class="gi-top"><h4>Fourth finding</h4></div>
+            <div class="gi-split">
+              <b class="gi-fig">0,000</b>
+              <p class="gi-body">One sentence explaining what the figure means.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- A table, and the pill toggle that keeps long data off one scroll.
+         Note .gt-prose on the prose column and .gt-wide on 5+ column tables. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Breakdown by year</h3></div>
+        <div class="swap reveal" id="sw1">
+          <div class="swap-bar">
+            <button class="swap-b on" data-wrap="sw1" data-i="0">2025</button>
+            <button class="swap-b" data-wrap="sw1" data-i="1">2026</button>
+          </div>
+          <div class="swap-p on" data-i="0">
+            <div class="gt-wrap">
+              <table class="gt">
+                <thead><tr><th>Category</th><th>Count</th><th>Share</th>
+                  <th class="gt-prose">Notes</th></tr></thead>
+                <tbody>
+                  <tr><td>First row label</td><td class="num">1,234</td>
+                      <td class="num">45%</td>
+                      <td class="gt-prose">A prose column wraps; figure columns
+                      do not. That is what keeps the table from scrolling.</td></tr>
+                  <tr class="row-hi"><td><b class="hi">Highlighted row</b></td>
+                      <td class="num"><b class="hi">2,345</b></td>
+                      <td class="num"><b class="hi">55%</b></td>
+                      <td class="gt-prose">Tinted band plus a left marker.</td></tr>
+                  <tr><td>Status example</td><td class="num">99</td>
+                      <td><span class="pbadge ok">RETAINED</span></td>
+                      <td class="gt-prose">A cell whose whole value matches a
+                      keyword renders as a pill.</td></tr>
+                  <tr><td>Another status</td><td class="num">42</td>
+                      <td><span class="pbadge warn">REVISED</span></td>
+                      <td class="gt-prose">Five states are defined in the CSS.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="swap-p" data-i="1">
+            <div class="gt-wrap">
+              <table class="gt">
+                <thead><tr><th>Category</th><th>Count</th><th>Share</th></tr></thead>
+                <tbody>
+                  <tr><td>Second pane</td><td class="num">987</td><td class="num">38%</td></tr>
+                  <tr><td>Another row</td><td class="num">654</td><td class="num">62%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------------------------------------- TAB: process -------- -->
+  <div class="tabview" id="view-process" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Section 01 &middot; Name</span>
+        <h1 class="hero-t">Process &amp; approvals.</h1>
+        <p class="hero-l">How the work actually moves, end to end.</p>
+      </div>
+    </header>
+
+    <!-- Numbered steps for a sequence. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">The path, step by step</h3></div>
+        <ol class="steps reveal">
+          <li class="step"><span class="step-n">01</span>
+            <div><h4>First step</h4><p>What happens here and who owns it.</p></div></li>
+          <li class="step"><span class="step-n">02</span>
+            <div><h4>Second step</h4><p>What happens here and who owns it.</p></div></li>
+          <li class="step"><span class="step-n">03</span>
+            <div><h4>Third step</h4><p>What happens here and who owns it.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Continuation block: no heading, so it inherits the tint above and drops
+         its top padding. The two read as one section, not two stripes. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Where it slows down</h3></div>
+        <div class="gcards reveal">
+          <div class="gcard"><h4>First blocker</h4>
+            <p>A sentence on what causes the delay.</p></div>
+          <div class="gcard"><h4>Second blocker</h4>
+            <p>A sentence on what causes the delay.</p></div>
+          <div class="gcard"><h4>Third blocker</h4>
+            <p>A sentence on what causes the delay.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="sect tint contd">
+      <div class="pad">
+        <div class="gcards reveal">
+          <div class="gcard"><h4>Fourth blocker</h4>
+            <p>This section has no heading, so it continues the one above.</p></div>
+          <div class="gcard"><h4>Fifth blocker</h4>
+            <p>Same tint, no top padding — one visual beat.</p></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------------------------------------- TAB: blocks --------- -->
+  <div class="tabview" id="view-blocks" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Reference</span>
+        <h1 class="hero-t">Block library.</h1>
+        <p class="hero-l">The remaining patterns. Copy what you need, delete the
+        rest.</p>
+      </div>
+    </header>
+
+    <!-- Click-to-expand cards: depth one click away, several open at once. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Expandable cards</h3>
+          <p class="sect-sub">Independent open state, because the point is to
+          compare them.</p>
+        </div>
+        <div class="gexps reveal">
+          <div class="gexp" id="ex1">
+            <button class="gexp-hd" aria-expanded="false">
+              <span class="gexp-t">First theme</span>
+              <span class="gexp-s">The summary line, always visible.</span>
+              <span class="gexp-i" aria-hidden="true"></span>
+            </button>
+            <div class="gexp-p"><p>The detail, revealed on click. Height is
+            animated from a measured value, so the pane keeps its layout box
+            rather than using display:none.</p></div>
+          </div>
+          <div class="gexp" id="ex2">
+            <button class="gexp-hd" aria-expanded="false">
+              <span class="gexp-t">Second theme</span>
+              <span class="gexp-s">The summary line, always visible.</span>
+              <span class="gexp-i" aria-hidden="true"></span>
+            </button>
+            <div class="gexp-p"><p>Opening one does not close the other.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-column split: numbered cards left, stat tiles right. Both visible
+         without scrolling, which is the whole point. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="split reveal">
+          <div class="spl-l">
+            <h3 class="spl-h">Two themes</h3>
+            <div class="spl-card"><span class="spl-n">1</span>
+              <div class="spl-b"><h4>First theme</h4>
+                <p class="spl-s">A short summary line.</p>
+                <p class="spl-d">The detail, shown inline here since there is
+                room for it.</p></div></div>
+            <div class="spl-card"><span class="spl-n">2</span>
+              <div class="spl-b"><h4>Second theme</h4>
+                <p class="spl-s">A short summary line.</p>
+                <p class="spl-d">The detail, shown inline here since there is
+                room for it.</p></div></div>
+          </div>
+          <div class="spl-r">
+            <h3 class="spl-h">The scale</h3>
+            <div class="gstat"><b>00</b><span>what this figure counts</span></div>
+            <div class="gstat"><b>0,000</b><span>what this figure counts</span></div>
+            <div class="gstat"><b>0,000</b><span>what this figure counts</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-column ranked list. The NAME is bold with the figure beside it —
+         bolding the number instead inverts the point of the block. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Ranked list</h3></div>
+        <div class="pairs reveal">
+          <ul class="pairs-c">
+            <li><b>First item</b><span>$00.0M</span></li>
+            <li><b>Second item</b><span>$00.0M</span></li>
+            <li><b>Third item</b><span>$0.0M</span></li>
+          </ul>
+          <ul class="pairs-c">
+            <li><b>Fourth item</b><span>$0.0M</span></li>
+            <li><b>Fifth item</b><span>$0.0M</span></li>
+            <li><b>Sixth item</b><span>$0.0M</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2x2 image grid. Each caption carries its own footnote, and the same
+         footnote must appear in the expanded view — a definition visible in
+         only one place is the one people ask about in the other. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Chart grid</h3>
+          <p class="sect-sub">Click any chart to expand it.</p>
+        </div>
+        <div class="imggrid reveal">
+          <figure class="ig-cell">
+            <div class="ig-ph">Chart placeholder</div>
+            <figcaption><b>First chart</b>
+              <em>*Footnote defining how this is measured.</em></figcaption>
+          </figure>
+          <figure class="ig-cell">
+            <div class="ig-ph">Chart placeholder</div>
+            <figcaption><b>Second chart</b>
+              <em>*Footnote defining how this is measured.</em></figcaption>
+          </figure>
+          <figure class="ig-cell">
+            <div class="ig-ph">Chart placeholder</div>
+            <figcaption><b>Third chart</b>
+              <em>**A second footnote marker, if the measure differs.</em></figcaption>
+          </figure>
+          <figure class="ig-cell">
+            <div class="ig-ph">Chart placeholder</div>
+            <figcaption><b>Fourth chart</b>
+              <em>**A second footnote marker, if the measure differs.</em></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Plain bullets, where cards or a table would add unwanted framing. -->
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Plain list</h3></div>
+        <ul class="gbul reveal">
+          <li>A bullet, for content that wants no framing at all.</li>
+          <li>Capped at 88ch, because full-width prose is hard to read at range.</li>
+          <li>Coloured markers via ::before rather than list-style.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Embed. Always pair one with an open-in-new-tab link: many hosted
+         documents refuse to be framed, and a blank iframe reads as a bug. -->
+    <section class="sect tint">
+      <div class="pad">
+        <div class="sect-head reveal"><h3 class="h3">Embedded document</h3></div>
+        <div class="deck reveal">
+          <div class="deck-bar">
+            <span class="deck-l">Document title</span>
+            <a class="deck-open" href="#" target="_blank" rel="noopener">
+              Open in a new tab &rarr;</a>
+          </div>
+          <div class="deck-frame">
+            <div class="deck-ph">Iframe placeholder &mdash; set src to your document</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <button class="scroll-btn" id="scrollBtn" aria-label="Back to top">
+    <i>&uarr;</i> Back to top
+  </button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
