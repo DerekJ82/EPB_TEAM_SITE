@@ -9,3 +9,6 @@ desktop.ini
 
 # Claude Code
 .claude/
+
+# Clasp credentials — never commit
+.clasprc.json
