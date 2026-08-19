@@ -569,4 +569,20 @@ a{color:var(--purple)}
   opacity:0;pointer-events:none;
   transition:opacity .25s,transform .25s}
 .epb-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* --- Roster manager filter ------------------------------------------------ */
+.team-card-mgr{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.team-card-mgr:hover{border-color:var(--purple-l);transform:translateY(-2px)}
+.team-card-mgr.active{border-color:var(--purple);box-shadow:0 0 0 3px rgba(75,40,109,.15)}
+.team-card.filtered-out{display:none}
+.sect-sub{font-size:13px;color:var(--grey);margin:2px 0 0}
+.roster-filter-bar{display:flex;align-items:center;gap:10px;font-size:13px;
+  color:var(--grey);background:var(--tint2);border:1px solid var(--line);
+  border-radius:8px;padding:8px 14px;margin-bottom:16px}
+.roster-filter-bar strong{color:var(--ink)}
+.roster-filter-reset{margin-left:auto;background:none;border:none;
+  font-size:13px;color:var(--purple);cursor:pointer;padding:2px 6px;
+  border-radius:4px;font-family:inherit}
+.roster-filter-reset:hover{background:var(--tint)}
+
 </style>

@@ -119,7 +119,7 @@
 
 
   <!-- ═══════════════════ TEAM: ROSTER ═══════════════════ -->
-    <div class="tabview" id="view-roster">
+        <div class="tabview" id="view-roster">
     <header class="hero">
       <div class="hero-in">
         <span class="eyebrow">Team &middot; Roster</span>
@@ -139,11 +139,6 @@
             <p class="team-name">Derek Johnson</p>
             <p class="team-role">Director, Products &amp; Services</p>
           </div>
-          <div class="team-card">
-            <div class="team-init">KS</div>
-            <p class="team-name">Kyle Sakaguchi</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
         </div>
       </div>
     </section>
@@ -152,19 +147,20 @@
       <div class="pad">
         <div class="sect-head reveal">
           <h3 class="h3">Managers</h3>
+          <p class="sect-sub">Click a manager to filter the team below.</p>
         </div>
-        <div class="team-grid reveal">
-          <div class="team-card">
+        <div class="team-grid reveal" id="mgr-grid">
+          <div class="team-card team-card-mgr" data-filter="malcolm">
             <div class="team-init">MP</div>
             <p class="team-name">Malcolm Pilgrim</p>
             <p class="team-role">Manager, Products &amp; Services</p>
           </div>
-          <div class="team-card">
+          <div class="team-card team-card-mgr" data-filter="tyler">
             <div class="team-init">TM</div>
             <p class="team-name">Tyler Makhuza</p>
             <p class="team-role">Manager, Products &amp; Services</p>
           </div>
-          <div class="team-card">
+          <div class="team-card team-card-mgr" data-filter="windy">
             <div class="team-init">WW</div>
             <p class="team-name">Windy Wijaya</p>
             <p class="team-role">Manager, Products &amp; Services</p>
@@ -178,48 +174,59 @@
         <div class="sect-head reveal">
           <h3 class="h3">Team</h3>
         </div>
-        <div class="team-grid reveal">
-          <div class="team-card">
+        <div id="roster-filter-bar" class="roster-filter-bar" hidden>
+          Showing: <strong id="roster-filter-label"></strong>
+          <button class="roster-filter-reset" id="roster-filter-reset" aria-label="Show all team members">
+            &times; Show all
+          </button>
+        </div>
+        <div class="team-grid reveal" id="team-grid">
+          <div class="team-card" data-mgr="direct">
+            <div class="team-init">KS</div>
+            <p class="team-name">Kyle Sakaguchi</p>
+            <p class="team-role">Sr. Strategy Manager</p>
+          </div>
+          <div class="team-card" data-mgr="malcolm">
             <div class="team-init">JH</div>
             <p class="team-name">Jonathan Hu</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="malcolm">
             <div class="team-init">KM</div>
             <p class="team-name">Kevin Mao</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="malcolm">
             <div class="team-init">SS</div>
             <p class="team-name">Simrit Singh</p>
             <p class="team-role">Sr. Product Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="tyler">
             <div class="team-init">CM</div>
             <p class="team-name">Cindy Ma</p>
             <p class="team-role">Sr. Market Intelligence Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="tyler">
             <div class="team-init">AP</div>
             <p class="team-name">Angie Panah</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="tyler">
             <div class="team-init">KM</div>
             <p class="team-name">Kaitlyne MacPherson</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="windy">
             <div class="team-init">AF</div>
             <p class="team-name">Arleen Kyle Fernandez</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="windy">
             <div class="team-init">JL</div>
             <p class="team-name">Jonathan Lum</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card">
+          <div class="team-card" data-mgr="windy">
             <div class="team-init">SD</div>
             <p class="team-name">Sapna Datta</p>
             <p class="team-role">Sr. Strategy Manager</p>

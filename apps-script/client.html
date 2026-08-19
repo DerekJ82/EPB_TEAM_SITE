@@ -511,4 +511,51 @@
 
   window._epbToast = _epbToast;
 })();
+
+
+/* --- Roster manager filter ------------------------------------------------ */
+(function () {
+  'use strict';
+
+  function initRosterFilter() {
+    var mgrCards  = Array.prototype.slice.call(document.querySelectorAll('.team-card-mgr'));
+    var teamCards = Array.prototype.slice.call(document.querySelectorAll('#team-grid .team-card'));
+    var bar       = document.getElementById('roster-filter-bar');
+    var label     = document.getElementById('roster-filter-label');
+    var resetBtn  = document.getElementById('roster-filter-reset');
+    var active    = null;
+
+    if (!mgrCards.length) return;
+
+    mgrCards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        var key = card.getAttribute('data-filter');
+        if (active === key) { reset(); return; }
+        active = key;
+        mgrCards.forEach(function (c) { c.classList.toggle('active', c === card); });
+        teamCards.forEach(function (tc) {
+          tc.classList.toggle('filtered-out', tc.getAttribute('data-mgr') !== key);
+        });
+        if (label) label.textContent = card.querySelector('.team-name').textContent;
+        if (bar)   bar.hidden = false;
+      });
+    });
+
+    if (resetBtn) resetBtn.addEventListener('click', reset);
+
+    function reset() {
+      active = null;
+      mgrCards.forEach(function (c) { c.classList.remove('active'); });
+      teamCards.forEach(function (tc) { tc.classList.remove('filtered-out'); });
+      if (bar) bar.hidden = true;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRosterFilter);
+  } else {
+    initRosterFilter();
+  }
+})();
+
 </script>
