@@ -448,6 +448,38 @@ a{color:var(--purple)}
 .team-grid--pets .team-init{width:112px;height:112px;font-size:36px}
 .pet-card{cursor:pointer}
 
+/* --------------------------------------- ROSTER CARD MODAL */
+.modal-box--roster{max-width:340px;padding:0;overflow:hidden;text-align:center}
+.rcard-hd{background:var(--purple);color:#fff;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--disp);font-weight:900;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.rcard-yr{opacity:.6;font-size:10px;letter-spacing:.1em}
+.rcard-close{background:none;border:none;color:#fff;font-size:20px;
+  cursor:pointer;padding:0;line-height:1;opacity:.75}
+.rcard-close:hover{opacity:1}
+.rcard-body{padding:24px 24px 16px}
+.rcard-init{width:96px;height:96px;border-radius:50%;background:var(--tint2);
+  color:var(--purple);font-family:var(--disp);font-weight:900;font-size:30px;
+  display:grid;place-items:center;margin:0 auto 16px;letter-spacing:-.02em}
+.rcard-name{font-family:var(--disp);font-weight:800;font-size:18px;
+  letter-spacing:-.018em;color:var(--ink);margin:0 0 4px}
+.rcard-title{font-family:var(--text);font-size:12.5px;color:var(--grey);
+  line-height:1.4;margin:0 0 12px}
+.rcard-team{display:inline-block;font-family:var(--text);font-size:10.5px;
+  font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.1em;
+  background:var(--tint2);padding:3px 12px;border-radius:100px}
+.rcard-stats{display:grid;grid-template-columns:repeat(3,1fr);
+  border-top:2px solid var(--purple)}
+.rcard-stat{padding:12px 8px;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.rcard-stat:nth-child(3n){border-right:none}
+.rcard-stat:nth-child(n+4){border-top:1px solid var(--line)}
+.rstat-val{font-family:var(--disp);font-weight:900;font-size:22px;
+  color:var(--purple);letter-spacing:-.02em;line-height:1}
+.rstat-lbl{font-family:var(--text);font-size:9px;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--grey)}
+#view-roster .team-card{cursor:pointer}
+
 /* --------------------------------------- PET MODAL */
 .modal-box--pet{max-width:480px;text-align:center;position:relative}
 .pmodal-close{position:absolute;top:14px;right:18px;background:none;border:none;

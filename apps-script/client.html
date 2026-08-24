@@ -559,6 +559,59 @@
 })();
 
 
+/* --- Roster baseball card modal ---------------------------------- */
+(function () {
+  'use strict';
+
+  var MGR_NAMES = { malcolm: 'Malcolm', tyler: 'Tyler', windy: 'Windy', direct: 'Derek' };
+
+  function teamLabel(card) {
+    var mgr = card.getAttribute('data-mgr');
+    if (mgr) return (MGR_NAMES[mgr] || mgr) + "'s Team";
+    if (card.classList.contains('team-card-mgr')) return 'People Manager';
+    return 'Leadership';
+  }
+
+  function openRosterModal(card) {
+    var stats = JSON.parse(card.getAttribute('data-card') || '{}');
+    document.getElementById('rc-init').textContent    = card.querySelector('.team-init').textContent;
+    document.getElementById('rc-name').textContent    = card.querySelector('.team-name').textContent;
+    document.getElementById('rc-title').textContent   = card.querySelector('.team-role').textContent;
+    document.getElementById('rc-team').textContent    = teamLabel(card);
+    document.getElementById('rc-coffee').textContent  = stats.coffee  != null ? stats.coffee  : '?';
+    document.getElementById('rc-decks').textContent   = stats.decks   != null ? stats.decks   : '?';
+    document.getElementById('rc-meets').textContent   = stats.meets   != null ? stats.meets   : '?';
+    document.getElementById('rc-slack').textContent   = stats.slack   != null ? stats.slack   : '?';
+    document.getElementById('rc-synergy').textContent = stats.synergy != null ? stats.synergy : '?';
+    document.getElementById('rc-yrs').textContent     = stats.yrs     != null ? stats.yrs     : '?';
+    document.getElementById('rosterModal').classList.add('open');
+  }
+
+  window._closeRosterModal = function () {
+    document.getElementById('rosterModal').classList.remove('open');
+  };
+
+  window._rosterOverlayClick = function (e) {
+    if (e.target === document.getElementById('rosterModal')) window._closeRosterModal();
+  };
+
+  function initRosterModal() {
+    document.querySelectorAll('#view-roster .team-card').forEach(function (card) {
+      card.addEventListener('click', function () { openRosterModal(card); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') window._closeRosterModal();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRosterModal);
+  } else {
+    initRosterModal();
+  }
+})();
+
+
 /* --- Pet profile modal ------------------------------------------- */
 (function () {
   'use strict';

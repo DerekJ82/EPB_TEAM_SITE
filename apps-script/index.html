@@ -134,7 +134,7 @@
           <h3 class="h3">Leadership</h3>
         </div>
         <div class="team-grid reveal">
-          <div class="team-card">
+          <div class="team-card" data-card='{"coffee":3,"decks":20,"meets":18,"slack":42,"synergy":9.9,"yrs":8}'>
             <div class="team-init">DJ</div>
             <p class="team-name">Derek Johnson</p>
             <p class="team-role">Director, Products &amp; Services</p>
@@ -150,17 +150,17 @@
           <p class="sect-sub">Click a manager to filter the team below.</p>
         </div>
         <div class="team-grid reveal" id="mgr-grid">
-          <div class="team-card team-card-mgr" data-filter="malcolm">
+          <div class="team-card team-card-mgr" data-filter="malcolm" data-card='{"coffee":2,"decks":15,"meets":16,"slack":38,"synergy":9.7,"yrs":6}'>
             <div class="team-init">MP</div>
             <p class="team-name">Malcolm Pilgrim</p>
             <p class="team-role">Manager, Products &amp; Services</p>
           </div>
-          <div class="team-card team-card-mgr" data-filter="tyler">
+          <div class="team-card team-card-mgr" data-filter="tyler" data-card='{"coffee":4,"decks":14,"meets":15,"slack":52,"synergy":9.6,"yrs":5}'>
             <div class="team-init">TM</div>
             <p class="team-name">Tyler Makhuza</p>
             <p class="team-role">Manager, Products &amp; Services</p>
           </div>
-          <div class="team-card team-card-mgr" data-filter="windy">
+          <div class="team-card team-card-mgr" data-filter="windy" data-card='{"coffee":2,"decks":16,"meets":14,"slack":44,"synergy":9.8,"yrs":7}'>
             <div class="team-init">WW</div>
             <p class="team-name">Windy Wijaya</p>
             <p class="team-role">Manager, Products &amp; Services</p>
@@ -181,52 +181,52 @@
           </button>
         </div>
         <div class="team-grid reveal" id="team-grid">
-          <div class="team-card" data-mgr="direct">
+          <div class="team-card" data-mgr="direct" data-card='{"coffee":3,"decks":10,"meets":12,"slack":35,"synergy":9.5,"yrs":4}'>
             <div class="team-init">KS</div>
             <p class="team-name">Kyle Sakaguchi</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="malcolm">
+          <div class="team-card" data-mgr="malcolm" data-card='{"coffee":2,"decks":12,"meets":11,"slack":28,"synergy":9.4,"yrs":3}'>
             <div class="team-init">JH</div>
             <p class="team-name">Jonathan Hu</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="malcolm">
+          <div class="team-card" data-mgr="malcolm" data-card='{"coffee":3,"decks":11,"meets":10,"slack":31,"synergy":9.3,"yrs":2}'>
             <div class="team-init">KM</div>
             <p class="team-name">Kevin Mao</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="malcolm">
+          <div class="team-card" data-mgr="malcolm" data-card='{"coffee":1,"decks":13,"meets":13,"slack":40,"synergy":9.7,"yrs":5}'>
             <div class="team-init">SS</div>
             <p class="team-name">Simrit Singh</p>
             <p class="team-role">Sr. Product Manager</p>
           </div>
-          <div class="team-card" data-mgr="tyler">
+          <div class="team-card" data-mgr="tyler" data-card='{"coffee":2,"decks":9,"meets":11,"slack":33,"synergy":9.5,"yrs":6}'>
             <div class="team-init">CM</div>
             <p class="team-name">Cindy Ma</p>
             <p class="team-role">Sr. Market Intelligence Manager</p>
           </div>
-          <div class="team-card" data-mgr="tyler">
+          <div class="team-card" data-mgr="tyler" data-card='{"coffee":3,"decks":10,"meets":12,"slack":29,"synergy":9.6,"yrs":4}'>
             <div class="team-init">AP</div>
             <p class="team-name">Angie Panah</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="tyler">
+          <div class="team-card" data-mgr="tyler" data-card='{"coffee":4,"decks":11,"meets":10,"slack":36,"synergy":9.4,"yrs":3}'>
             <div class="team-init">KM</div>
             <p class="team-name">Kaitlyne MacPherson</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="windy">
+          <div class="team-card" data-mgr="windy" data-card='{"coffee":2,"decks":13,"meets":13,"slack":41,"synergy":9.8,"yrs":7}'>
             <div class="team-init">AF</div>
             <p class="team-name">Arleen Kyle Fernandez</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="windy">
+          <div class="team-card" data-mgr="windy" data-card='{"coffee":3,"decks":10,"meets":11,"slack":27,"synergy":9.5,"yrs":4}'>
             <div class="team-init">JL</div>
             <p class="team-name">Jonathan Lum</p>
             <p class="team-role">Sr. Strategy Manager</p>
           </div>
-          <div class="team-card" data-mgr="windy">
+          <div class="team-card" data-mgr="windy" data-card='{"coffee":2,"decks":12,"meets":14,"slack":45,"synergy":9.9,"yrs":9}'>
             <div class="team-init">SD</div>
             <p class="team-name">Sapna Datta</p>
             <p class="team-role">Sr. Strategy Manager</p>
@@ -741,6 +741,31 @@
 
 </div><!-- /#portal -->
 
+
+<!-- ========================= ROSTER CARD MODAL ====================== -->
+<div class="modal-overlay" id="rosterModal" onclick="window._rosterOverlayClick(event)">
+  <div class="modal-box modal-box--roster">
+    <div class="rcard-hd">
+      <span>EPB S&amp;P</span>
+      <span class="rcard-yr">2026</span>
+      <button class="rcard-close" onclick="window._closeRosterModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="rcard-body">
+      <div class="rcard-init" id="rc-init"></div>
+      <div class="rcard-name" id="rc-name"></div>
+      <div class="rcard-title" id="rc-title"></div>
+      <div class="rcard-team" id="rc-team"></div>
+    </div>
+    <div class="rcard-stats">
+      <div class="rcard-stat"><span class="rstat-val" id="rc-coffee"></span><span class="rstat-lbl">Coffee / Day</span></div>
+      <div class="rcard-stat"><span class="rstat-val" id="rc-decks"></span><span class="rstat-lbl">Decks / Qtr</span></div>
+      <div class="rcard-stat"><span class="rstat-val" id="rc-meets"></span><span class="rstat-lbl">Meets / Wk</span></div>
+      <div class="rcard-stat"><span class="rstat-val" id="rc-slack"></span><span class="rstat-lbl">Slack / Day</span></div>
+      <div class="rcard-stat"><span class="rstat-val" id="rc-synergy"></span><span class="rstat-lbl">Synergy</span></div>
+      <div class="rcard-stat"><span class="rstat-val" id="rc-yrs"></span><span class="rstat-lbl">Yrs @ TELUS</span></div>
+    </div>
+  </div>
+</div>
 
 <!-- ========================== PET MODAL ============================== -->
 <div class="modal-overlay" id="petModal" onclick="window._petOverlayClick(event)">
