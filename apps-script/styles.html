@@ -468,16 +468,13 @@ a{color:var(--purple)}
 .rcard-team{display:inline-block;font-family:var(--text);font-size:10.5px;
   font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.1em;
   background:var(--tint2);padding:3px 12px;border-radius:100px}
-.rcard-stats{display:grid;grid-template-columns:repeat(3,1fr);
-  border-top:2px solid var(--purple)}
-.rcard-stat{padding:12px 8px;border-right:1px solid var(--line);
-  display:flex;flex-direction:column;align-items:center;gap:3px}
-.rcard-stat:nth-child(3n){border-right:none}
-.rcard-stat:nth-child(n+4){border-top:1px solid var(--line)}
-.rstat-val{font-family:var(--disp);font-weight:900;font-size:22px;
-  color:var(--purple);letter-spacing:-.02em;line-height:1}
+.rcard-stats{border-top:2px solid var(--purple)}
+.rcard-stat{display:flex;justify-content:space-between;align-items:baseline;
+  gap:12px;padding:8px 16px;border-bottom:1px solid var(--line)}
 .rstat-lbl{font-family:var(--text);font-size:9px;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--grey)}
+  letter-spacing:.08em;color:var(--grey);white-space:nowrap;flex-shrink:0}
+.rstat-val{font-family:var(--text);font-weight:700;font-size:12px;
+  color:var(--purple);text-align:right;line-height:1.4;flex:1}
 #view-roster .team-card{cursor:pointer}
 
 /* --------------------------------------- PET MODAL */

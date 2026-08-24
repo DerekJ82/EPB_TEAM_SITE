@@ -578,12 +578,12 @@
     document.getElementById('rc-name').textContent    = card.querySelector('.team-name').textContent;
     document.getElementById('rc-title').textContent   = card.querySelector('.team-role').textContent;
     document.getElementById('rc-team').textContent    = teamLabel(card);
-    document.getElementById('rc-coffee').textContent  = stats.coffee  != null ? stats.coffee  : '?';
-    document.getElementById('rc-decks').textContent   = stats.decks   != null ? stats.decks   : '?';
-    document.getElementById('rc-meets').textContent   = stats.meets   != null ? stats.meets   : '?';
-    document.getElementById('rc-slack').textContent   = stats.slack   != null ? stats.slack   : '?';
-    document.getElementById('rc-synergy').textContent = stats.synergy != null ? stats.synergy : '?';
-    document.getElementById('rc-yrs').textContent     = stats.yrs     != null ? stats.yrs     : '?';
+    document.getElementById('rc-song').textContent    = stats.song    || '?';
+    document.getElementById('rc-gateway').textContent = stats.gateway || '?';
+    document.getElementById('rc-report').textContent  = stats.report  || '?';
+    document.getElementById('rc-meal').textContent    = stats.meal    || '?';
+    document.getElementById('rc-turf').textContent    = stats.turf    || '?';
+    document.getElementById('rc-rookie').textContent  = stats.rookie  || '?';
     document.getElementById('rosterModal').classList.add('open');
   }
 
