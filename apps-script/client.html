@@ -558,4 +558,65 @@
   }
 })();
 
+
+/* --- Pet profile modal ------------------------------------------- */
+(function () {
+  'use strict';
+
+  function openPetModal(card) {
+    var name  = card.querySelector('.team-name').textContent;
+    var role  = card.querySelector('.team-role').textContent;
+    var owner = card.querySelector('.team-dept').textContent;
+    var bio   = card.getAttribute('data-bio') || '';
+    var img   = card.querySelector('img.team-init');
+    var emojiDiv = card.querySelector('div.team-init');
+
+    document.getElementById('pm-name').textContent  = name;
+    document.getElementById('pm-role').textContent  = role;
+    document.getElementById('pm-owner').textContent = owner;
+    document.getElementById('pm-bio').textContent   = bio;
+
+    var photoEl = document.getElementById('pm-photo');
+    var emojiEl = document.getElementById('pm-emoji');
+
+    if (img) {
+      photoEl.src           = img.src;
+      photoEl.alt           = name;
+      photoEl.style.display = '';
+      emojiEl.style.display = 'none';
+    } else if (emojiDiv) {
+      emojiEl.innerHTML     = emojiDiv.innerHTML;
+      emojiEl.style.display = '';
+      photoEl.style.display = 'none';
+    }
+
+    document.getElementById('petModal').classList.add('open');
+  }
+
+  window._closePetModal = function () {
+    document.getElementById('petModal').classList.remove('open');
+  };
+
+  window._petOverlayClick = function (e) {
+    if (e.target === document.getElementById('petModal')) {
+      window._closePetModal();
+    }
+  };
+
+  function initPetModal() {
+    document.querySelectorAll('.pet-card').forEach(function (card) {
+      card.addEventListener('click', function () { openPetModal(card); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') window._closePetModal();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPetModal);
+  } else {
+    initPetModal();
+  }
+})();
+
 </script>

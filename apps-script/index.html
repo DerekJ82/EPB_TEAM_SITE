@@ -367,7 +367,7 @@
     <section class="sect">
       <div class="pad">
         <div class="team-grid team-grid--pets reveal">
-          <div class="team-card">
+          <div class="team-card pet-card" data-bio="Ruff joined the EPB S&amp;P team on day one and hasn&#39;t left Derek&#39;s side since. He specialises in morale-boosting zoomies, strategic napping, and unconditional positive regard. Currently negotiating for a treat allowance in the next budget cycle.">
             <img class="team-init" src="https://derekj82.github.io/EPB_TEAM_SITE/assets/pets/ruff.jpg"
                  alt="Ruff" style="object-fit:cover"
                  onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'team-init',innerHTML:'&#128054;'}))">
@@ -375,25 +375,25 @@
             <p class="team-role">Chief Barketing Officer</p>
             <p class="team-dept">Owner: Derek</p>
           </div>
-          <div class="team-card">
+          <div class="team-card pet-card" data-bio="[Add a fun bio for your furry colleague here!]">
             <div class="team-init">&#128049;</div>
             <p class="team-name">[Pet Name]</p>
             <p class="team-role">[Role]</p>
             <p class="team-dept">Owner: [Name]</p>
           </div>
-          <div class="team-card">
+          <div class="team-card pet-card" data-bio="[Add a fun bio for your furry colleague here!]">
             <div class="team-init">&#128054;</div>
             <p class="team-name">[Pet Name]</p>
             <p class="team-role">[Role]</p>
             <p class="team-dept">Owner: [Name]</p>
           </div>
-          <div class="team-card">
+          <div class="team-card pet-card" data-bio="[Add a fun bio for your furry colleague here!]">
             <div class="team-init">&#128049;</div>
             <p class="team-name">[Pet Name]</p>
             <p class="team-role">[Role]</p>
             <p class="team-dept">Owner: [Name]</p>
           </div>
-          <div class="team-card">
+          <div class="team-card pet-card" data-bio="[Add a fun bio for your furry colleague here!]">
             <div class="team-init">&#128054;</div>
             <p class="team-name">[Pet Name]</p>
             <p class="team-role">[Role]</p>
@@ -741,6 +741,21 @@
 
 </div><!-- /#portal -->
 
+
+<!-- ========================== PET MODAL ============================== -->
+<div class="modal-overlay" id="petModal" onclick="window._petOverlayClick(event)">
+  <div class="modal-box modal-box--pet">
+    <button class="pmodal-close" onclick="window._closePetModal()" aria-label="Close">&times;</button>
+    <div class="pmodal-photo-wrap">
+      <img id="pm-photo" class="pmodal-photo" src="" alt="" style="display:none">
+      <div id="pm-emoji" class="pmodal-emoji" style="display:none"></div>
+    </div>
+    <div class="modal-title" id="pm-name"></div>
+    <p class="pmodal-role" id="pm-role"></p>
+    <p class="modal-note" id="pm-owner"></p>
+    <p class="pmodal-bio" id="pm-bio"></p>
+  </div>
+</div>
 
 <!-- ========================== APPROVE MODAL =========================== -->
 <div class="modal-overlay" id="approveModal" onclick="window._epbOverlayClick(event)">
