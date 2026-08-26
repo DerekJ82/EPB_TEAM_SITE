@@ -150,9 +150,12 @@
   .center-divider { height: 1px; background: #1a1d24; border: none; margin: 0; }
   .radio-widget { display: flex; align-items: center; gap: clamp(6px, 0.8vw, 12px); padding: clamp(4px, 0.8vw, 8px) clamp(10px, 1.5vw, 20px); background: rgba(255,255,255,0.02); z-index: 10; }
   .radio-icon { font-size: clamp(16px, 2vw, 26px); background: linear-gradient(135deg, #00d2ff, #39ff14); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .radio-text { font-size: clamp(8px, 0.9vw, 11px); color: #aaa; line-height: 1.3; }
+  .radio-text { font-size: clamp(8px, 0.9vw, 11px); color: #aaa; line-height: 1.3; flex: 1; }
   .radio-text b { font-size: clamp(10px, 1vw, 14px); color: #fff; }
   .radio-text span { font-size: clamp(8px, 0.8vw, 10px); color: #888; }
+  .radio-controls { display: flex; gap: 3px; margin-left: auto; }
+  .radio-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: #aaa; cursor: pointer; border-radius: 4px; padding: clamp(1px,0.3vw,3px) clamp(4px,0.6vw,8px); font-size: clamp(8px,0.9vw,12px); transition: background 0.2s, color 0.2s; }
+  .radio-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
   .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: clamp(6px, 0.8vw, 8px) clamp(10px, 1.5vw, 15px); border-top: 1px solid #1a1d24; background: #08090b; border-radius: 0 0 10px 10px; }
   .bottom-bar span { font-size: clamp(8px, 0.9vw, 11px); color: #7a8b9a; font-weight: bold; letter-spacing: 1px; }
   .gear-display { font-size: clamp(16px, 1.5vw, 22px) !important; color: #fff !important; }
@@ -228,7 +231,11 @@
       <hr class="center-divider">
       <div class="radio-widget">
         <div class="radio-icon">🎵</div>
-        <div class="radio-text">Now Playing<br><b>I Want It That Way</b><br><span>Backstreet Boys</span></div>
+        <div class="radio-text">Now Playing<br><b id="radio-title">I Want It That Way</b><br><span id="radio-artist">Backstreet Boys</span></div>
+        <div class="radio-controls">
+          <button class="radio-btn" onclick="prevStation()">&#9664;</button>
+          <button class="radio-btn" onclick="nextStation()">&#9654;</button>
+        </div>
       </div>
       <div class="bottom-bar">
         <span>AUG 11 2026</span>
@@ -345,7 +352,7 @@
       const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.repeat.set(1, 20000 / 10); tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); return tex;
     }
-    const lineMat = new THREE.MeshBasicMaterial({ map: createDashTexture(), transparent: true });
+    const lineMat = new THREE.MeshBasicMaterial({ map: createDashTexture(), alphaTest: 0.5 });
     const line = new THREE.Mesh(new THREE.PlaneGeometry(1, 20000), lineMat);
     line.rotation.x = -Math.PI / 2; line.position.y = 0.2; line.position.z = -5000; scene.add(line);
 
@@ -542,6 +549,7 @@
 
     addMilestoneSign('2024', '25,000', -20, -230);
     addMilestoneSign('2025', '210,000', 20, -430);
+    addMilestoneSign('AUG 2026', '602,654', -20, -750);
     addWarehouse('KDDI', '#39ff14', 45, -390, -Math.PI / 2);
 
     // ----- JULY 2026 PARADE ZONE -----
@@ -569,8 +577,9 @@
       bCtx.fillStyle = grad; bCtx.fillRect(0, 0, 1024, 256);
       bCtx.strokeStyle = '#ffffff'; bCtx.lineWidth = 12; bCtx.strokeRect(6, 6, 1012, 244);
       bCtx.textAlign = 'center'; bCtx.fillStyle = '#ffffff';
-      bCtx.font = 'bold 80px Arial'; bCtx.fillText('JULY PARADE AT 500,000', 512, 108);
-      bCtx.font = 'bold 56px Arial'; bCtx.fillText('JULY 2026', 512, 196);
+      bCtx.font = 'bold 72px Arial'; bCtx.fillText('JULY PARADE AT 500,000', 512, 88);
+      bCtx.font = 'bold 52px Arial'; bCtx.fillText('JULY 2026', 512, 162);
+      bCtx.font = 'bold 42px Arial'; bCtx.fillText('TOTAL: 564,083', 512, 232);
       const partyBanner = new THREE.Mesh(new THREE.PlaneGeometry(40, 10), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(bc) }));
       partyBanner.position.set(0, 18, partyZ); scene.add(partyBanner);
     }
@@ -648,7 +657,8 @@
       scene.add(conf);
     });
 
-    addWarehouse('CHERY', '#b026ff', 0, -1200, 0, 5);
+    addWarehouse('CHERY', '#b026ff', -120, -1200, Math.PI / 4, 5);
+    addWarehouse('TESLA', '#cc0000', 120, -1200, -Math.PI / 4, 5);
 
     const camTarget = new THREE.Vector3();
 
@@ -920,8 +930,12 @@
       if (!driveSequenceActive) return;
       await sleep(600);
 
-      updateGauges(523028, 41055, 2000, 1000000); // switch to % of 1M
-      await driveConvoy(-920, 8000);   // drive through arch, on to 1M sign
+      updateGauges(559712, 42942, 2000, 1000000); // August MTD added + switch to % of 1M as cars depart
+      await driveConvoy(-700, 3000);   // pull up at August sign
+      if (!driveSequenceActive) return;
+      await sleep(2500);               // pause at August banner
+      if (!driveSequenceActive) return;
+      await driveConvoy(-920, 5000);   // drive through arch, on to 1M sign
       if (!driveSequenceActive) return;
       fireConfetti();
       await sleep(800);
@@ -940,6 +954,21 @@
         colors: ['#4ba3e3', '#00ff66', '#fbcc04', '#cc0000', '#ffffff']
       });
     }
+
+    // ==========================================
+    // RADIO STATION
+    // ==========================================
+    const stations = [
+      { title: 'I Want It That Way',  artist: 'Backstreet Boys' },
+      { title: 'Life is a Highway',   artist: 'Tom Cochrane'    },
+    ];
+    let stationIndex = 0;
+    function updateRadio() {
+      document.getElementById('radio-title').textContent  = stations[stationIndex].title;
+      document.getElementById('radio-artist').textContent = stations[stationIndex].artist;
+    }
+    function nextStation() { stationIndex = (stationIndex + 1) % stations.length; updateRadio(); }
+    function prevStation() { stationIndex = (stationIndex - 1 + stations.length) % stations.length; updateRadio(); }
 
     // ==========================================
     // SOUND ENGINE (Web Audio API — no files needed)
