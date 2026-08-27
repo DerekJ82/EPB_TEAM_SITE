@@ -338,25 +338,47 @@ function approveAccessRequest(rowIndex, email, accessColumn) {
     }
     if (targetRow === -1) targetRow = lastRow + 1;
 
+    // Read display name from request row for webhook message
+    var displayName = String(reqSheet.getRange(rowIndex, 2).getValue()).trim() || accessColumn;
+
     // Write email into admin access matrix
     accessSheet.getRange(targetRow, 1).setValue(email);
     accessSheet.getRange(targetRow, colIdx + 1).setValue(email);
 
-    // Update request row: Status, Approved By, Approved At, Approve webhook trigger (col H)
+    // Update request row: Status, Approved By, Approved At
     var now = new Date();
     reqSheet.getRange(rowIndex, 5).setValue('Approved');
     reqSheet.getRange(rowIndex, 6).setValue(approverEmail);
     reqSheet.getRange(rowIndex, 7).setValue(now);
-    reqSheet.getRange(rowIndex, 8).setValue(true);
 
-    // Notify requester
-    MailApp.sendEmail({
-      to:      email,
-      subject: 'EPB Hub Access Approved',
-      body:    'Your access request for "' + accessColumn + '" has been approved.\n\n' +
-               'Refresh EPB Hub to access your dashboard.\n\n' +
-               'Approved by: ' + approverEmail
-    });
+    // Fire Google Chat webhook
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('GCHAT_WEBHOOK');
+    if (webhookUrl) {
+      UrlFetchApp.fetch(webhookUrl, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          text: '✅ *EPB Hub Access Granted!*\n\n*User:* ' + email +
+                '\n*Dashboard:* ' + displayName +
+                '\n*Approved By:* ' + approverEmail +
+                '\n*Time:* ' + now.toLocaleString() +
+                '\n\n' + email + ' — please refresh EPB Hub to access your new dashboard.'
+        })
+      });
+    }
+
+    // Email requester
+    try {
+      GmailApp.sendEmail(
+        email,
+        'EPB Hub — Access Granted: ' + displayName,
+        'Hi,\n\nYour access request for the ' + displayName + ' dashboard in EPB Hub has been approved.\n\n' +
+        'You can now refresh EPB Hub and the dashboard will be available to you.\n\n' +
+        'Approved by: ' + approverEmail + '\n\nEPB Hub Team'
+      );
+    } catch (mailErr) {
+      Logger.log('sendEmail error: ' + mailErr.message);
+    }
 
     return { success: true };
   } catch (e) {
@@ -371,11 +393,42 @@ function denyAccessRequest(rowIndex) {
     var reqSheet = ss.getSheetByName('Access Requests');
     if (!reqSheet) return { error: 'Access Requests tab not found' };
 
-    var now = new Date();
+    var rowData     = reqSheet.getRange(rowIndex, 1, 1, 3).getValues()[0];
+    var email       = String(rowData[0]).trim();
+    var displayName = String(rowData[1]).trim();
+    var decliner    = Session.getActiveUser().getEmail();
+    var now         = new Date();
+
     reqSheet.getRange(rowIndex, 5).setValue('Denied');
-    reqSheet.getRange(rowIndex, 6).setValue(Session.getActiveUser().getEmail());
+    reqSheet.getRange(rowIndex, 6).setValue(decliner);
     reqSheet.getRange(rowIndex, 7).setValue(now);
-    reqSheet.getRange(rowIndex, 9).setValue(true);
+
+    // Fire Google Chat webhook
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('GCHAT_WEBHOOK');
+    if (webhookUrl) {
+      UrlFetchApp.fetch(webhookUrl, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          text: '❌ *EPB Hub Access Request Declined*\n\n*User:* ' + email +
+                '\n*Dashboard:* ' + displayName +
+                '\n*Declined By:* ' + decliner +
+                '\n*Time:* ' + now.toLocaleString()
+        })
+      });
+    }
+
+    // Email requester
+    try {
+      GmailApp.sendEmail(
+        email,
+        'EPB Hub — Access Request Declined: ' + displayName,
+        'Hi,\n\nYour access request for the ' + displayName + ' dashboard in EPB Hub has been declined.\n\n' +
+        'If you believe this is an error, please reach out to your manager.\n\nEPB Hub Team'
+      );
+    } catch (mailErr) {
+      Logger.log('sendEmail error: ' + mailErr.message);
+    }
 
     return { success: true };
   } catch (e) {
