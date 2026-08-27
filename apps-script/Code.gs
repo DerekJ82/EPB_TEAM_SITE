@@ -342,11 +342,12 @@ function approveAccessRequest(rowIndex, email, accessColumn) {
     accessSheet.getRange(targetRow, 1).setValue(email);
     accessSheet.getRange(targetRow, colIdx + 1).setValue(email);
 
-    // Update request row: Status, Approved By, Approved At
+    // Update request row: Status, Approved By, Approved At, Approve webhook trigger (col H)
     var now = new Date();
     reqSheet.getRange(rowIndex, 5).setValue('Approved');
     reqSheet.getRange(rowIndex, 6).setValue(approverEmail);
     reqSheet.getRange(rowIndex, 7).setValue(now);
+    reqSheet.getRange(rowIndex, 8).setValue(true);
 
     // Notify requester
     MailApp.sendEmail({
@@ -374,6 +375,7 @@ function denyAccessRequest(rowIndex) {
     reqSheet.getRange(rowIndex, 5).setValue('Denied');
     reqSheet.getRange(rowIndex, 6).setValue(Session.getActiveUser().getEmail());
     reqSheet.getRange(rowIndex, 7).setValue(now);
+    reqSheet.getRange(rowIndex, 9).setValue(true);
 
     return { success: true };
   } catch (e) {
