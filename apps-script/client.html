@@ -411,7 +411,8 @@
     var rows = result.requests.map(function (r) {
       var safe = JSON.stringify(r)
         .replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
-        .replace(/&/g, '\\u0026').replace(/'/g, '\\u0027');
+        .replace(/&/g, '\\u0026').replace(/'/g, '\\u0027')
+        .replace(/"/g, '&quot;');
       return '<tr>' +
         '<td>' + _esc(r.email) + '</td>' +
         '<td>' + _esc(r.dashboard) + '</td>' +
