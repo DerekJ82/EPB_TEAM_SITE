@@ -352,7 +352,7 @@ function approveAccessRequest(rowIndex, email, accessColumn) {
     reqSheet.getRange(rowIndex, 7).setValue(now);
 
     // Fire Google Chat webhook
-    var webhookUrl = PropertiesService.getScriptProperties().getProperty('GCHAT_WEBHOOK');
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL');
     if (webhookUrl) {
       UrlFetchApp.fetch(webhookUrl, {
         method: 'post',
@@ -404,7 +404,7 @@ function denyAccessRequest(rowIndex) {
     reqSheet.getRange(rowIndex, 7).setValue(now);
 
     // Fire Google Chat webhook
-    var webhookUrl = PropertiesService.getScriptProperties().getProperty('GCHAT_WEBHOOK');
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL');
     if (webhookUrl) {
       UrlFetchApp.fetch(webhookUrl, {
         method: 'post',
