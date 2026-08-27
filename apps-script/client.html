@@ -177,6 +177,7 @@
 
   function boot() {
     $$('.ws-card').forEach(function (card) {
+      if (!card.getAttribute('data-section')) return;
       card.addEventListener('click', function () {
         openSection(card.getAttribute('data-section'));
       });
