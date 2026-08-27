@@ -454,19 +454,26 @@
     btn.disabled = true;
     btn.textContent = 'Approving…';
     var req = _pending;
+    console.log('[Approve] sending to server:', {
+      rowIndex:    req.rowIndex,
+      email:       req.email,
+      accessColumn: req.accessColumn
+    });
     google.script.run
       .withSuccessHandler(function (res) {
+        console.log('[Approve] server response:', JSON.stringify(res));
         window._epbCloseModal();
         if (res.success) {
           _epbToast(req.email + ' approved for ' + req.dashboard + '.');
           loadAdmin();
         } else {
-          _epbToast('Error: ' + (res.error || 'Unknown error'));
+          alert('Approval error: ' + (res.error || 'Unknown error'));
         }
       })
-      .withFailureHandler(function () {
+      .withFailureHandler(function (err) {
+        console.error('[Approve] failure:', err);
         window._epbCloseModal();
-        _epbToast('Approval failed — check Apps Script logs.');
+        alert('Approval failed: ' + (err && err.message ? err.message : 'Check Apps Script logs.'));
       })
       .approveAccessRequest(req.rowIndex, req.email, req.accessColumn);
   };

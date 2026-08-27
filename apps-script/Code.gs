@@ -293,13 +293,15 @@ function getPendingAccessRequests() {
 }
 
 function approveAccessRequest(rowIndex, email, accessColumn) {
-  if (!_isAdminUser()) return { error: 'NOT_ADMIN' };
+  Logger.log('approveAccessRequest called: rowIndex=%s email=%s accessColumn=%s', rowIndex, email, accessColumn);
+  if (!_isAdminUser()) { Logger.log('NOT_ADMIN'); return { error: 'NOT_ADMIN' }; }
 
   // Privilege escalation check — column must be a known value in ACCESS_COLUMN_MAP
   var validColumns = Object.keys(ACCESS_COLUMN_MAP).map(function(k) {
     return ACCESS_COLUMN_MAP[k];
   });
-  if (validColumns.indexOf(accessColumn) === -1) return { error: 'INVALID_COLUMN' };
+  Logger.log('validColumns: %s', JSON.stringify(validColumns));
+  if (validColumns.indexOf(accessColumn) === -1) { Logger.log('INVALID_COLUMN: %s', accessColumn); return { error: 'INVALID_COLUMN: ' + accessColumn }; }
 
   try {
     var ss           = SpreadsheetApp.openById(EPB_HUB_SHEET_ID);
