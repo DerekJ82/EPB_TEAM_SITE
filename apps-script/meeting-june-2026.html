@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPB Strategy Check 2026 – Vancouver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --purple:      #4B286D;
+      --purple-dark: #3A1D55;
+      --purple-mid:  #63398B;
+      --green:       #66CC00;
+      --green-dark:  #4A9900;
+      --teal:        #1abc9c;
+      --gold:        #f1c40f;
+      --red:         #e74c3c;
+      --blue:        #3498db;
+      --dark:        #0a0a1a;
+      --white:       #ffffff;
+      --font: "Helvetica Neue", Arial, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    h1, h2 { color: var(--white); }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: var(--font);
+      background: #0a0a1e;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #slides { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.45s ease;
+      padding: 44px 64px 76px;
+      overflow: hidden;
+    }
+    .slide.active { opacity: 1; pointer-events: auto; }
+
+    /* ── Backgrounds ─────────────────────────────────── */
+    .bg-land   { background: linear-gradient(135deg, #1a4430 0%, #2d6a48 50%, #1a2b5a 100%); }
+    .bg-telus  { background: linear-gradient(135deg, #280a4a 0%, #422080 50%, #1a2b5a 100%); }
+    .bg-dark   { background: linear-gradient(135deg, #16163c 0%, #20205a 100%); }
+    .bg-cal    { background: linear-gradient(135deg, #280a4a 0%, #581890 50%, #1a2b5a 100%); }
+    .bg-fin    { background: linear-gradient(135deg, #1a2b5e 0%, #2a3e80 50%, #1a3a6e 100%); }
+
+    /* ── Navigation ──────────────────────────────────── */
+    #nav-dots {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 10;
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 50px; padding: 8px 18px;
+    }
+    .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: rgba(255,255,255,0.3); cursor: pointer; transition: all 0.25s;
+    }
+    .dot.active { background: var(--purple-mid); transform: scale(1.35); }
+
+    .arrow {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: white; width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; z-index: 10; transition: background 0.15s;
+    }
+    .arrow:hover { background: rgba(255,255,255,0.2); }
+    #arrow-prev { left: 18px; }
+    #arrow-next { right: 18px; }
+
+    #slide-counter {
+      position: fixed; bottom: 26px; right: 26px;
+      color: rgba(255,255,255,0.38); font-size: 12px; z-index: 10; font-weight: 600;
+    }
+
+    /* ── FadeUp animation ────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .slide.active .anim { opacity: 0; animation: fadeUp 0.5s ease-out forwards; }
+    .slide.active .anim:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .anim:nth-child(2) { animation-delay: 0.15s; }
+    .slide.active .anim:nth-child(3) { animation-delay: 0.25s; }
+    .slide.active .anim:nth-child(4) { animation-delay: 0.35s; }
+    .slide.active .anim:nth-child(5) { animation-delay: 0.45s; }
+    .slide.active .anim:nth-child(6) { animation-delay: 0.55s; }
+
+    /* ── Typography ──────────────────────────────────── */
+    .eyebrow {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--purple-mid); margin-bottom: 12px;
+    }
+    .slide-title {
+      font-size: clamp(1.7rem, 2.8vw, 2.5rem);
+      font-weight: 800; line-height: 1.15; color: var(--white); margin-bottom: 6px;
+    }
+    .slide-sub {
+      font-size: clamp(0.88rem, 1.2vw, 1.05rem);
+      color: rgba(255,255,255,0.88); line-height: 1.5; margin-bottom: 18px;
+    }
+
+    /* ── Shared card ─────────────────────────────────── */
+    .card {
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px; padding: 18px 22px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(99,57,139,0.45); }
+    .card h3 {
+      font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+      font-weight: 700; color: var(--white); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card p {
+      font-size: clamp(0.87rem, 1.12vw, 1.01rem);
+      color: rgba(255,255,255,0.88); line-height: 1.65;
+    }
+
+    /* ── Metric box ──────────────────────────────────── */
+    .mbox {
+      background: rgba(99,57,139,0.14); border: 1px solid rgba(99,57,139,0.3);
+      border-radius: 12px; padding: 16px 18px; text-align: center;
+    }
+    .mbox-val {
+      font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+      font-weight: 900; color: #c39bd3; line-height: 1;
+    }
+    .mbox-val.green  { color: var(--green); }
+    .mbox-val.gold   { color: var(--gold); }
+    .mbox-val.teal   { color: var(--teal); }
+    .mbox-val.red    { color: #f1948a; }
+    .mbox-lbl {
+      font-size: clamp(0.74rem, 1vw, 0.84rem);
+      color: rgba(255,255,255,0.82); margin-top: 5px; font-weight: 600;
+    }
+
+    /* ── Pill badges ─────────────────────────────────── */
+    .pill {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .pill-purple { background: rgba(99,57,139,0.22); color: #c39bd3; border: 1px solid rgba(99,57,139,0.4); }
+    .pill-green  { background: rgba(46,204,113,0.18);  color: #82e0aa;  border: 1px solid rgba(46,204,113,0.35); }
+    .pill-gold   { background: rgba(241,196,15,0.18);  color: #f9e79f;  border: 1px solid rgba(241,196,15,0.35); }
+    .pill-red    { background: rgba(231,76,60,0.18);   color: #f1948a;  border: 1px solid rgba(231,76,60,0.35); }
+    .pill-teal   { background: rgba(26,188,156,0.18);  color: #76d7c4;  border: 1px solid rgba(26,188,156,0.35); }
+    .pill-blue   { background: rgba(52,152,219,0.18);  color: #85c1e9;  border: 1px solid rgba(52,152,219,0.35); }
+
+    /* ── Grid helpers ────────────────────────────────── */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+    /* ── Segment card ────────────────────────────────── */
+    .seg-card {
+      border-radius: 14px; padding: 18px 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .seg-growth  { background: linear-gradient(135deg, rgba(46,204,113,0.12), rgba(26,188,156,0.08)); border-color: rgba(46,204,113,0.25); }
+    .seg-protect { background: linear-gradient(135deg, rgba(99,57,139,0.12), rgba(52,73,94,0.08)); border-color: rgba(99,57,139,0.25); }
+    .seg-warn    { background: rgba(231,76,60,0.07); border-color: rgba(231,76,60,0.22); }
+    .seg-teal    { background: linear-gradient(135deg, rgba(26,188,156,0.1), rgba(52,73,94,0.08)); border-color: rgba(26,188,156,0.22); }
+    .seg-val {
+      font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+      font-weight: 900; line-height: 1; margin: 8px 0 4px;
+    }
+    .seg-yoy { font-size: clamp(0.72rem, 1vw, 0.84rem); font-weight: 700; margin-bottom: 4px; }
+    .seg-name { font-size: clamp(0.76rem, 1.02vw, 0.88rem); color: rgba(255,255,255,0.88); }
+
+    /* ── Timeline ────────────────────────────────────── */
+    .tl { display: flex; flex-direction: column; gap: 10px; }
+    .tl-item { display: flex; gap: 12px; align-items: flex-start; }
+    .tl-dot-col { display: flex; flex-direction: column; align-items: center; }
+    .tl-dot  { width: 13px; height: 13px; border-radius: 50%; background: var(--purple-mid); flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.green { background: var(--green); }
+    .tl-dot.gold  { background: var(--gold); }
+    .tl-line { width: 2px; flex: 1; background: rgba(99,57,139,0.25); min-height: 14px; }
+    .tl-item h4 { font-size: clamp(0.82rem, 1.1vw, 0.95rem); font-weight: 700; color: var(--white); }
+    .tl-item p  { font-size: clamp(0.78rem, 1.02vw, 0.9rem); color: rgba(255,255,255,0.85); margin-top: 2px; }
+
+    /* ── Tool badge ──────────────────────────────────── */
+    .tool-badge {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 10px 14px;
+    }
+    .tool-badge .ti { font-size: 22px; flex-shrink: 0; }
+    .tool-badge .tn { font-size: clamp(0.8rem, 1.05vw, 0.94rem); font-weight: 700; color: var(--white); }
+    .tool-badge .td { font-size: clamp(0.74rem, 0.96vw, 0.84rem); color: rgba(255,255,255,0.82); margin-top: 2px; }
+
+    /* ── Calendar event card ─────────────────────────── */
+    .cal-card {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px; padding: 20px 16px; text-align: center;
+      transition: transform 0.2s, border-color 0.2s; cursor: default;
+    }
+    .cal-card:hover { transform: scale(1.04); border-color: rgba(99,57,139,0.55); background: rgba(99,57,139,0.1); }
+    .cal-date { font-size: 13px; font-weight: 700; color: var(--purple-mid); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+    .cal-icon { font-size: 36px; margin-bottom: 8px; }
+    .cal-name { font-size: clamp(0.85rem, 1.1vw, 1rem); font-weight: 700; color: var(--white); line-height: 1.3; }
+    .cal-desc { font-size: clamp(0.7rem, 0.92vw, 0.8rem); color: rgba(255,255,255,0.82); margin-top: 4px; line-height: 1.4; }
+
+    /* ── Progress bar ────────────────────────────────── */
+    .prog-track { width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--purple-mid), var(--blue)); border-radius: 3px; }
+
+    /* ── Quiz ────────────────────────────────────────── */
+    .quiz-opt {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px; padding: 11px 16px; cursor: pointer;
+      transition: all 0.2s; font-size: clamp(0.82rem, 1.1vw, 0.96rem);
+      font-family: var(--font); color: var(--white); text-align: left; width: 100%;
+    }
+    .quiz-opt:hover:not(:disabled) { background: rgba(99,57,139,0.2); border-color: var(--purple-mid); }
+    .quiz-opt.correct { background: rgba(46,204,113,0.2); border-color: var(--green); }
+    .quiz-opt.wrong   { background: rgba(231,76,60,0.18); border-color: var(--red); }
+
+    /* ── Notes panel ─────────────────────────────────── */
+    #notes-toggle {
+      position: fixed; bottom: 22px; left: 24px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+      color: white; width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; z-index: 20; transition: background 0.15s;
+    }
+    #notes-toggle:hover { background: rgba(255,255,255,0.2); }
+    #notes-panel {
+      position: fixed; bottom: 68px; left: 24px; width: 310px;
+      background: #1c1c42; border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px; padding: 16px; z-index: 20;
+      display: none; flex-direction: column; gap: 10px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    #notes-panel.open { display: flex; }
+    #notes-panel h5 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--purple-mid); }
+    #notes-panel select, #notes-panel textarea {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: rgba(255,255,255,0.85);
+      font-family: var(--font); font-size: 0.84rem; padding: 9px 12px; outline: none;
+    }
+    #notes-panel select { cursor: pointer; }
+    #notes-panel select option { background: #12122a; }
+    #notes-panel textarea { min-height: 88px; resize: vertical; line-height: 1.5; user-select: text; }
+    #notes-panel select:focus, #notes-panel textarea:focus { border-color: rgba(99,57,139,0.5); }
+    #notes-panel textarea::placeholder { color: rgba(255,255,255,0.28); }
+    .notes-row { display: flex; gap: 8px; align-items: center; }
+    #notes-save-btn {
+      background: var(--purple); color: var(--white); border: none;
+      border-radius: 8px; padding: 9px 16px; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; font-family: var(--font);
+    }
+    #notes-save-btn:hover:not(:disabled) { background: var(--purple-mid); }
+    #notes-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #notes-status { font-size: 0.74rem; color: var(--green); flex: 1; }
+    #notes-link   { font-size: 0.74rem; color: var(--green); text-decoration: underline; cursor: pointer; display: none; }
+
+    /* ── Archive ─────────────────────────────────────── */
+    #archive-btn {
+      position: fixed; top: 18px; right: 18px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+      color: white; padding: 8px 14px; border-radius: 20px;
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; font-size: 12px; font-family: var(--font);
+      font-weight: 600; z-index: 10; transition: background 0.15s;
+    }
+    #archive-btn:hover { background: rgba(255,255,255,0.2); }
+    #archive-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.9);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    #archive-overlay.open { opacity: 1; pointer-events: auto; }
+    #archive-panel {
+      width: 90%; max-width: 800px; max-height: 80vh;
+      background: #280a4a; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    #archive-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 26px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+    }
+    #archive-header h2 { font-size: 1.4rem; font-weight: 800; color: var(--white); }
+    #archive-close {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: white; width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; font-family: var(--font); transition: background 0.15s;
+    }
+    #archive-close:hover { background: rgba(255,255,255,0.2); }
+    #archive-grid {
+      padding: 22px 26px; overflow-y: auto; flex: 1;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px; align-content: start;
+    }
+    .archive-card {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-top: 3px solid var(--purple-mid); border-radius: 12px; padding: 18px;
+      cursor: pointer; transition: background 0.2s, transform 0.15s;
+    }
+    .archive-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+    .archive-card .card-date  { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--purple-mid); margin-bottom: 6px; }
+    .archive-card .card-title { font-size: 0.95rem; font-weight: 800; color: var(--white); margin-bottom: 5px; line-height: 1.3; }
+    .archive-card .card-desc  { font-size: 0.78rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+    #archive-loading { grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.9rem; padding: 40px; }
+
+    /* ── Segment click-reveal ───────────────────────── */
+    .seg-reveal {
+      opacity: 0; transform: translateY(18px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      pointer-events: none;
+    }
+    .seg-reveal.shown { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .seg-hint {
+      position: absolute; bottom: 10px; right: 0; left: 0; text-align: center;
+      font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35); pointer-events: none;
+    }
+
+    /* ── Closing stars ───────────────────────────────── */
+    .star { position: absolute; border-radius: 50%; background: rgba(99,57,139,0.6); animation: twinkle 2s infinite alternate; }
+    @keyframes twinkle { from { opacity: 0.2; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
+  </style>
+</head>
+<body>
+<div id="slides">
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 0 — COVER
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-telus active" id="slide-0">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;">
+      <div class="anim eyebrow" style="margin-bottom:18px;">TELUS Enterprise &amp; Public Business</div>
+      <h1 class="anim" style="font-size:clamp(2.8rem,5.5vw,5rem);font-weight:900;line-height:1.1;margin-bottom:16px;">
+        <span style="color:var(--purple-mid);">June</span><br><span style="color:var(--purple-mid);">Team Meeting</span>
+      </h1>
+      <p class="anim" style="font-size:clamp(1rem,1.6vw,1.3rem);color:rgba(255,255,255,0.7);margin-bottom:36px;letter-spacing:1px;">
+        S&amp;P Team &nbsp;·&nbsp; Midsummer, Milestones &amp; More &nbsp;·&nbsp; June 2026
+      </p>
+      <div class="anim" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <span class="pill pill-green">Vancouver, BC 🍁</span>
+        <span class="pill pill-teal">Pride Month 🏳️‍🌈</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 1 — LAND ACKNOWLEDGEMENT
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-land" id="slide-1">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;max-width:780px;margin:0 auto;">
+      <div class="anim" style="font-size:2rem;margin-bottom:16px;">🪶&nbsp;&nbsp;🌿&nbsp;&nbsp;🪶</div>
+      <div class="anim eyebrow">Land Acknowledgement</div>
+      <h2 class="anim" style="font-size:clamp(1.5rem,2.5vw,2.2rem);font-weight:800;color:var(--white);margin-bottom:22px;">Acknowledging the Lands We Gather On</h2>
+      <p class="anim slide-sub" style="max-width:660px;margin:0 auto 22px;font-size:clamp(0.96rem,1.35vw,1.12rem);">
+        We gather today on the unceded, ancestral, and traditional territories of the
+        <strong style="color:#82e0aa;">xʷməθkʷəy̓əm (Musqueam)</strong>,
+        <strong style="color:#82e0aa;">Sḵwx̱wú7mesh (Squamish)</strong>, and
+        <strong style="color:#82e0aa;">səlilwətaɬ (Tsleil-Waututh)</strong> Nations.
+      </p>
+      <div class="anim card" style="max-width:540px;margin:0 auto 22px;background:rgba(46,204,113,0.07);border-color:rgba(46,204,113,0.22);">
+        <p style="font-size:clamp(0.88rem,1.2vw,1rem);color:rgba(255,255,255,0.78);font-style:italic;">
+          "We are all treaty people. Reconciliation is not an event — it is an ongoing commitment."
+        </p>
+      </div>
+      <div class="anim" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <span class="pill pill-green">Vancouver, BC</span>
+        <span class="pill pill-teal">Coast Salish Peoples</span>
+        <span class="pill pill-purple">Unceded Territory</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 2 — AGENDA
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-dark" id="slide-2">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:760px;margin:0 auto;width:100%;">
+      <div class="anim eyebrow" style="margin-bottom:14px;">June Team Meeting</div>
+      <div class="anim slide-title" style="text-align:center;margin-bottom:30px;">Today's <span style="color:var(--purple-mid);">Agenda</span></div>
+      <div class="anim" style="width:100%;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);opacity:0.5;">
+          <span class="pill pill-green" style="min-width:28px;text-align:center;">✓</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:rgba(255,255,255,0.55);">Land Acknowledgement</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-purple" style="min-width:28px;text-align:center;">01</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">EPB Strategy Overview</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-teal" style="min-width:28px;text-align:center;">02</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">Key Dates &amp; Team Milestones</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-green" style="min-width:28px;text-align:center;">03</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">Segment Strategy</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-gold" style="min-width:28px;text-align:center;">04</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">Strategic Pillars 1, 2 &amp; 3</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-purple" style="min-width:28px;text-align:center;">05</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">Team Wins &amp; Initiatives</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+          <span class="pill pill-blue" style="min-width:28px;text-align:center;">06</span>
+          <span style="font-size:clamp(0.92rem,1.2vw,1.08rem);color:var(--white);font-weight:600;">2027 Financial Outlook &amp; Closing</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:10px 18px;border-radius:10px;background:rgba(99,57,139,0.06);border:1px solid rgba(99,57,139,0.18);margin-top:2px;">
+          <span style="font-size:1rem;">💬</span>
+          <span style="font-size:clamp(0.82rem,1.05vw,0.95rem);color:rgba(255,255,255,0.5);font-style:italic;">Discussion &amp; Q&amp;A throughout</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 3 — TITLE
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-telus" id="slide-3">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;max-width:900px;margin:0 auto;">
+      <div class="anim eyebrow">TELUS Enterprise &amp; Public Business</div>
+      <h1 class="anim" style="font-size:clamp(2.2rem,4.5vw,4rem);font-weight:900;line-height:1.1;margin-bottom:10px;">
+        EPB Strategy Check<br><span style="color:var(--purple-mid);">2026</span>
+      </h1>
+      <p class="anim slide-sub" style="font-size:clamp(1rem,1.5vw,1.2rem);margin-bottom:28px;">
+        Built together. Delivered together. Growing together.
+      </p>
+      <div class="anim g3" style="max-width:720px;margin:0 auto 28px;">
+        <div class="mbox">
+          <div class="mbox-val">3,600+</div>
+          <div class="mbox-lbl">Enterprise &amp; Public Customers</div>
+        </div>
+        <div class="mbox">
+          <div class="mbox-val">$1.58B</div>
+          <div class="mbox-lbl">Total Revenue 2026</div>
+        </div>
+        <div class="mbox">
+          <div class="mbox-val">$798M</div>
+          <div class="mbox-lbl">EBITDA 2026</div>
+        </div>
+      </div>
+      <div class="anim" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;">
+        <span class="pill pill-purple">🎯 3 Strategic Pillars</span>
+        <span class="pill pill-green">🤖 AI-Powered Growth</span>
+        <span class="pill pill-gold">📈 $1.05B+ Target 2027</span>
+      </div>
+      <p class="anim" style="font-size:clamp(0.82rem,1.1vw,0.96rem);color:rgba(255,255,255,0.38);font-style:italic;">
+        "We are not here to manage decline — we are here to overcome and accelerate growth."
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 2 — KEY DATES
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-cal" id="slide-2">
+    <div class="anim" style="text-align:center;margin-bottom:18px;flex-shrink:0;">
+      <div class="eyebrow">June &amp; July 2026</div>
+      <div class="slide-title">Key Dates &amp; Milestones</div>
+      <p class="slide-sub" style="margin-bottom:0;">Holidays, celebrations &amp; team moments to mark 🎉</p>
+    </div>
+    <div class="anim" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex:1;min-height:0;">
+      <div class="cal-card">
+        <div class="cal-date">June 21</div>
+        <div class="cal-icon">🪶</div>
+        <div class="cal-name">National Indigenous Peoples Day</div>
+        <div class="cal-desc">Honouring First Nations, Métis &amp; Inuit cultures across Canada</div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-date">June 21</div>
+        <div class="cal-icon">☀️</div>
+        <div class="cal-name">Summer Solstice</div>
+        <div class="cal-desc">Longest day of the year — peak energy, peak momentum</div>
+      </div>
+      <div class="cal-card" style="border-color:rgba(255,100,150,0.4);background:rgba(255,100,150,0.07);">
+        <div class="cal-date">June 24 · Yesterday</div>
+        <div class="cal-icon">🏳️‍🌈</div>
+        <div class="cal-name">Vancouver Pride Day</div>
+        <div class="cal-desc">Celebrating diversity, inclusion &amp; belonging on our team</div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-date">July 1</div>
+        <div class="cal-icon">🍁</div>
+        <div class="cal-name">Canada Day</div>
+        <div class="cal-desc">159 years of Canada — and TELUS powering it forward</div>
+      </div>
+      <div class="cal-card" style="border-color:rgba(99,57,139,0.45);background:rgba(99,57,139,0.1);">
+        <div class="cal-date">July 2026</div>
+        <div class="cal-icon">🚀</div>
+        <div class="cal-name">EPB AI Tools Launch</div>
+        <div class="cal-desc">ANNA, RFP Response Tool &amp; Pricing/Quote framework go live!</div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-date">August 1</div>
+        <div class="cal-icon">🏁</div>
+        <div class="cal-name">PSO 2.0 Full Deployment</div>
+        <div class="cal-desc">Full EPB &amp; Mid-Market rollout target date</div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-date">Q4 2026</div>
+        <div class="cal-icon">🤖</div>
+        <div class="cal-name">AI Churn Propensity Launch</div>
+        <div class="cal-desc">Targeting 92% renewal success rate in 2027</div>
+      </div>
+      <div class="cal-card" style="border-color:rgba(46,204,113,0.4);background:rgba(46,204,113,0.07);">
+        <div class="cal-date">Q4 2027</div>
+        <div class="cal-icon">📈</div>
+        <div class="cal-name">Return to EBITDA Growth</div>
+        <div class="cal-desc">From -2.8% YoY in '26 to -1.9% YoY in '27</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 3 — SEGMENT STRATEGY
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-dark" id="slide-3">
+    <div class="anim" style="text-align:center;margin-bottom:18px;flex-shrink:0;">
+      <div class="eyebrow">Segment Strategy</div>
+      <div class="slide-title">Deliver <span style="color:var(--green);">$1,050M+</span> with Focused Segment Strategy</div>
+      <p class="slide-sub" style="margin-bottom:0;">Empowered by AI tools across Growth &amp; Protection Zones</p>
+    </div>
+    <div class="g2" style="flex:1;min-height:0;position:relative;" id="seg-grid">
+      <div class="seg-reveal seg-card seg-growth">
+        <span class="pill pill-green">🚀 Growth Zone</span>
+        <div class="seg-val" style="color:var(--green);">$285.1M</div>
+        <div class="seg-yoy" style="color:var(--green);">⬆ +13.6% YoY Direct Margin</div>
+        <div class="seg-name" style="margin-bottom:10px;">Mid-Market Large (&lt;1,000 Employees)</div>
+        <p style="font-size:clamp(0.78rem,1vw,0.9rem);color:rgba(255,255,255,0.88);line-height:1.5;">Capture market share through standardized pricing &amp; value propositions. Highest growth opportunity segment.</p>
+      </div>
+      <div class="seg-reveal seg-card seg-protect">
+        <span class="pill pill-purple">🛡️ Protection Zone</span>
+        <div class="seg-val" style="color:#c39bd3;">$460.9M</div>
+        <div class="seg-yoy" style="color:#c39bd3;">⬆ +4.1% YoY Direct Margin</div>
+        <div class="seg-name" style="margin-bottom:10px;">Enterprise (1,000+ Employees)</div>
+        <p style="font-size:clamp(0.78rem,1vw,0.9rem);color:rgba(255,255,255,0.88);line-height:1.5;">Grow revenue through optimized pricing, AI retention &amp; vertical-led growth. Deepening wallet share in our largest accounts.</p>
+      </div>
+      <div class="seg-reveal seg-card seg-teal">
+        <span class="pill pill-teal">🌐 Public Local</span>
+        <div class="seg-val" style="color:var(--teal);">$115.2M</div>
+        <div class="seg-yoy" style="color:var(--teal);">⬆ +1.2% YoY Direct Margin</div>
+        <div class="seg-name" style="margin-bottom:10px;">Public Local Segment</div>
+        <p style="font-size:clamp(0.78rem,1vw,0.9rem);color:rgba(255,255,255,0.88);line-height:1.5;">Grow margins through retention, operational efficiency &amp; product intensity. Proactive renewal focus.</p>
+      </div>
+      <div class="seg-reveal seg-card seg-warn">
+        <span class="pill pill-red">⚠️ Headwind</span>
+        <div class="seg-val" style="color:#f1948a;">-$45M</div>
+        <div class="seg-yoy" style="color:#f1948a;">Annual headwind — actively managed</div>
+        <div class="seg-name" style="margin-bottom:10px;">Top 5 Public Sector (Generational Renewals)</div>
+        <p style="font-size:clamp(0.78rem,1vw,0.9rem);color:rgba(255,255,255,0.88);line-height:1.5;">Structural headwinds from large contract renewals. Targeted mitigation programs and executive engagement underway.</p>
+      </div>
+      <div class="seg-hint" id="seg-hint">→ click to reveal each segment</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 4 — PILLARS 1 & 3 (LOYALTY + GROWTH PRODUCTS)
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-telus" id="slide-4">
+    <div class="anim g2" style="margin-bottom:14px;flex-shrink:0;">
+      <div>
+        <div class="eyebrow">Strategic Pillar 1</div>
+        <div class="slide-title" style="font-size:clamp(1.3rem,2vw,1.9rem);">Reinvigorate Customer Loyalty</div>
+        <p class="slide-sub" style="margin-bottom:0;">Unlock an incremental <strong style="color:var(--gold);">$8M</strong> with focused retention &amp; wallet share programs</p>
+      </div>
+      <div>
+        <div class="eyebrow">Strategic Pillar 3</div>
+        <div class="slide-title" style="font-size:clamp(1.3rem,2vw,1.9rem);">Scale Next-Gen Products</div>
+        <p class="slide-sub" style="margin-bottom:0;">Driving <strong style="color:var(--green);">+10% YoY</strong> next-gen revenue through differentiated product &amp; GTM execution</p>
+      </div>
+    </div>
+    <div class="anim g2" style="flex:1;min-height:0;">
+      <!-- Pillar 1 Left -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="g3">
+          <div class="mbox">
+            <div class="mbox-val gold">+$2M</div>
+            <div class="mbox-lbl">Wallet Share Target</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val">85%→92%</div>
+            <div class="mbox-lbl">Renewal Rate ('26→'27)</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val green">$196M</div>
+            <div class="mbox-lbl">Cross-Sell TCV Funnel</div>
+          </div>
+        </div>
+        <div class="card" style="flex:1;">
+          <h3>💼 Wallet Share &amp; Renewal Execution</h3>
+          <div class="tl">
+            <div class="tl-item">
+              <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+              <div><h4>Account-level intel + price discipline</h4><p>Drive $2M wallet share growth &amp; margin uplift across installed base</p></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+              <div><h4>EPB Churn Propensity Model — Q4 2026</h4><p>AI-driven re-launch with BI &amp; data teams, targeting 92% renewal success</p></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot-col"><div class="tl-dot gold"></div></div>
+              <div><h4>Power of TELUS Cross-Sell</h4><p>$56.4M TCV target via TELUS Health &amp; TDx product integration</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Pillar 3 Right -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="g3">
+          <div class="mbox">
+            <div class="mbox-val green">+10%</div>
+            <div class="mbox-lbl">Next-Gen Rev YoY</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val">+16%</div>
+            <div class="mbox-lbl">PWN TCV Win Rate</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val gold">&gt;90%</div>
+            <div class="mbox-lbl">GPUaaS Utilization</div>
+          </div>
+        </div>
+        <div class="card" style="flex:1;">
+          <h3>🔌 Product Roadmap</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:clamp(0.8rem,1.05vw,0.93rem);color:var(--white);">Secured Connectivity &amp; Apps</span>
+              <span class="pill pill-green">Live</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:clamp(0.8rem,1.05vw,0.93rem);color:var(--white);">SAIF — Sovereign AI Framework</span>
+              <span class="pill pill-gold">In Dev</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:clamp(0.8rem,1.05vw,0.93rem);color:var(--white);">PWN East Scale + New Verticals</span>
+              <span class="pill pill-gold">In Dev</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:clamp(0.8rem,1.05vw,0.93rem);color:var(--white);">Mobility 4-Year Financing Model</span>
+              <span class="pill pill-purple">Planned</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:clamp(0.8rem,1.05vw,0.93rem);color:var(--white);">ModelaaS Platform Features</span>
+              <span class="pill pill-purple">Planned</span>
+            </div>
+            <div style="margin-top:8px;padding:10px 12px;background:rgba(46,204,113,0.09);border-radius:8px;border:1px solid rgba(46,204,113,0.22);">
+              <p style="font-size:clamp(0.72rem,0.95vw,0.84rem);color:#82e0aa;font-weight:700;">🎯 20% funnel contribution from above-the-line marketing by June 2027</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 5 — PILLAR 2: AI OPERATIONS
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-dark" id="slide-5">
+    <div class="anim" style="text-align:center;margin-bottom:16px;flex-shrink:0;">
+      <div class="eyebrow">Strategic Pillar 2</div>
+      <div class="slide-title">Transform Revenue Operations <span style="color:var(--purple-mid);">with AI</span></div>
+      <p class="slide-sub" style="margin-bottom:0;">AI embedded across the entire EPB customer journey — <strong style="color:var(--gold);">$19M EBITDA improvement by 2027</strong></p>
+    </div>
+    <div class="anim g4" style="margin-bottom:14px;flex-shrink:0;">
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <div style="font-size:34px;margin-bottom:8px;">🎯</div>
+        <div style="font-size:clamp(0.78rem,1vw,0.9rem);font-weight:700;color:#c39bd3;margin-bottom:6px;">01</div>
+        <div style="font-size:clamp(0.9rem,1.15vw,1.05rem);font-weight:700;color:var(--white);">Sales &amp; Presales</div>
+        <div style="font-size:clamp(0.76rem,0.96vw,0.86rem);color:rgba(255,255,255,0.88);margin-top:6px;line-height:1.45;">AI scoring, personalized proposals, dynamic pricing</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <div style="font-size:34px;margin-bottom:8px;">⚙️</div>
+        <div style="font-size:clamp(0.78rem,1vw,0.9rem);font-weight:700;color:#c39bd3;margin-bottom:6px;">02</div>
+        <div style="font-size:clamp(0.9rem,1.15vw,1.05rem);font-weight:700;color:var(--white);">Order Implementation</div>
+        <div style="font-size:clamp(0.76rem,0.96vw,0.86rem);color:rgba(255,255,255,0.88);margin-top:6px;line-height:1.45;">Intelligent automation, delivery prediction, config bots</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <div style="font-size:34px;margin-bottom:8px;">🛡️</div>
+        <div style="font-size:clamp(0.78rem,1vw,0.9rem);font-weight:700;color:#c39bd3;margin-bottom:6px;">03</div>
+        <div style="font-size:clamp(0.9rem,1.15vw,1.05rem);font-weight:700;color:var(--white);">Support &amp; Compliance</div>
+        <div style="font-size:clamp(0.76rem,0.96vw,0.86rem);color:rgba(255,255,255,0.88);margin-top:6px;line-height:1.45;">Ticket routing, churn prediction, compliance audit bots</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <div style="font-size:34px;margin-bottom:8px;">💰</div>
+        <div style="font-size:clamp(0.78rem,1vw,0.9rem);font-weight:700;color:#c39bd3;margin-bottom:6px;">04</div>
+        <div style="font-size:clamp(0.9rem,1.15vw,1.05rem);font-weight:700;color:var(--white);">Revenue Assurance</div>
+        <div style="font-size:clamp(0.76rem,0.96vw,0.86rem);color:rgba(255,255,255,0.88);margin-top:6px;line-height:1.45;">Contract-to-bill reconciliation, anomaly detection</div>
+      </div>
+    </div>
+    <div class="anim" style="flex-shrink:0;margin-bottom:8px;">
+      <p style="font-size:clamp(0.7rem,0.9vw,0.82rem);color:rgba(255,255,255,0.4);margin-bottom:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">AI Tools — Launched &amp; In Development</p>
+      <div class="g3">
+        <div class="tool-badge"><span class="ti">🤖</span><div><div class="tn">Project Maguire</div><div class="td">Agentic AI Revenue Assurance — $8M target</div></div></div>
+        <div class="tool-badge"><span class="ti">📋</span><div><div class="tn">BriBot (RFP Tool)</div><div class="td">End-to-end AI proposal generation — 80% automated</div></div></div>
+        <div class="tool-badge"><span class="ti">📊</span><div><div class="tn">EPB Hub</div><div class="td">Live dashboard — 30 min/week saved per person</div></div></div>
+        <div class="tool-badge"><span class="ti">🧠</span><div><div class="tn">ANNA (Pre-Sales AI)</div><div class="td">Public sector qualification — launching July 2026</div></div></div>
+        <div class="tool-badge"><span class="ti">📈</span><div><div class="tn">Churn Predictor</div><div class="td">Proactive risk identification — Q4 2026 launch</div></div></div>
+        <div class="tool-badge"><span class="ti">💲</span><div><div class="tn">Pricing Optimization AI</div><div class="td">Dynamic discounting &amp; quoting engine</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 6 — TEAM WINS + QUIZ
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-telus" id="slide-6">
+    <div class="anim" style="text-align:center;margin-bottom:16px;flex-shrink:0;">
+      <div class="eyebrow">Team Spotlight 🌟</div>
+      <div class="slide-title">Built By <span style="color:var(--purple-mid);">This Team</span></div>
+      <p class="slide-sub" style="margin-bottom:0;">Every one of these initiatives was shaped by your contributions — let's celebrate the wins</p>
+    </div>
+    <div class="anim g2" style="margin-bottom:14px;flex:1;min-height:0;">
+      <div class="card" style="background:rgba(99,57,139,0.09);border-color:rgba(99,57,139,0.3);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:30px;">🏠</span>
+          <div style="flex:1;"><h3 style="margin-bottom:4px;">EPB Hub</h3><span class="pill pill-green">Live</span></div>
+        </div>
+        <p>Our team's one-stop shop for financials, KPIs, and pipeline — built from scratch using <strong>FueliX, Gemini, NotebookLLM &amp; Claude Code</strong>. Gives every team member <strong style="color:var(--gold);">30+ minutes back each week.</strong></p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <span class="pill pill-purple">FueliX</span><span class="pill pill-teal">Gemini</span>
+          <span class="pill pill-gold">NotebookLLM</span><span class="pill pill-green">Claude Code</span>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(26,188,156,0.07);border-color:rgba(26,188,156,0.25);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:30px;">📄</span>
+          <div style="flex:1;"><h3 style="margin-bottom:4px;">BriBot RFP Platform</h3><span class="pill pill-gold">In Dev</span></div>
+        </div>
+        <p>Upload an RFP → minutes later get fully branded pricing, solutioning &amp; financial documents. Targeting <strong style="color:var(--teal);">80% process automation</strong> and <strong>50% time reduction</strong> by year end.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <span class="pill pill-teal">50% Time Reduction</span><span class="pill pill-green">80% Automation</span>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(241,196,15,0.05);border-color:rgba(241,196,15,0.2);">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:30px;flex-shrink:0;">🏆</span>
+          <div>
+            <h3 style="color:#f9e79f;margin-bottom:6px;">PSO 2.0</h3>
+            <p>A fundamental modernization of sales performance across EPB — next-gen planning, analytics &amp; coaching built <em>with</em> frontline sellers. On track for <strong>full EPB + Mid-Market deployment by August 1.</strong></p>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(52,152,219,0.07);border-color:rgba(52,152,219,0.22);">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:30px;flex-shrink:0;">🧠</span>
+          <div>
+            <h3 style="color:#85c1e9;margin-bottom:6px;">ANNA + Churn Propensity</h3>
+            <p>ANNA (public sector AI qualification) launches July 2026. Churn propensity model relaunches Q4 2026 with AI &amp; BI teams — targeting <strong>92% renewal success rate in 2027.</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SLIDE 7 — 2027 FINANCIALS + CLOSING
+  ══════════════════════════════════════════════════ -->
+  <div class="slide bg-fin" id="slide-7">
+    <!-- Decorative stars -->
+    <div class="star" style="width:5px;height:5px;top:12%;left:8%;animation-delay:0s;"></div>
+    <div class="star" style="width:4px;height:4px;top:22%;left:88%;animation-delay:0.5s;"></div>
+    <div class="star" style="width:7px;height:7px;top:75%;left:15%;animation-delay:1s;"></div>
+    <div class="star" style="width:4px;height:4px;top:65%;left:80%;animation-delay:1.5s;"></div>
+
+    <div class="anim" style="text-align:center;margin-bottom:16px;flex-shrink:0;position:relative;z-index:1;">
+      <div class="eyebrow">2027 Financial Outlook</div>
+      <div class="slide-title">The Path to <span style="color:var(--purple-mid);">EBITDA Growth</span></div>
+      <p class="slide-sub" style="margin-bottom:0;">From -2.8% YoY in '26 → <strong style="color:var(--green);">-1.9% YoY in '27</strong> — returning to growth in Q4 '27</p>
+    </div>
+
+    <div class="anim g4" style="margin-bottom:14px;flex-shrink:0;position:relative;z-index:1;">
+      <div class="mbox">
+        <div class="mbox-val">$745M</div>
+        <div class="mbox-lbl">2027 Baseline</div>
+      </div>
+      <div class="mbox" style="background:rgba(46,204,113,0.1);border-color:rgba(46,204,113,0.28);">
+        <div class="mbox-val green">+$20M</div>
+        <div class="mbox-lbl">Scale Growth Products</div>
+      </div>
+      <div class="mbox" style="background:rgba(52,152,219,0.1);border-color:rgba(52,152,219,0.28);">
+        <div class="mbox-val" style="color:#85c1e9;">+$12M</div>
+        <div class="mbox-lbl">Transform Ops with AI</div>
+      </div>
+      <div class="mbox" style="background:rgba(241,196,15,0.08);border-color:rgba(241,196,15,0.28);">
+        <div class="mbox-val gold">+$6M</div>
+        <div class="mbox-lbl">Drive Loyalty &amp; Retention</div>
+      </div>
+    </div>
+
+    <div class="anim g3" style="flex:1;min-height:0;position:relative;z-index:1;">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <h3 style="margin-bottom:0;">Total Programs Impact: <span style="color:var(--green);">+$38M</span></h3>
+          <span class="pill pill-green">2027 EST: $783.1M</span>
+        </div>
+        <div style="font-size:clamp(0.78rem,1vw,0.9rem);color:rgba(255,255,255,0.82);">
+          $745M Baseline → <strong style="color:var(--white);">$783M Estimate</strong>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:85%;"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+          <h3 style="margin-bottom:8px;">📉 Opex Savings</h3>
+          <div style="font-size:clamp(1.6rem,2.5vw,2.2rem);font-weight:900;color:var(--green);">-$42M</div>
+          <p style="font-size:clamp(0.76rem,0.96vw,0.86rem);margin-top:4px;">Opex 2025 vs. 2027 (-13%)</p>
+        </div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+          <h3 style="margin-bottom:8px;">🤖 AI EBITDA</h3>
+          <div style="font-size:clamp(1.6rem,2.5vw,2.2rem);font-weight:900;color:var(--gold);">$19M</div>
+          <p style="font-size:clamp(0.76rem,0.96vw,0.86rem);margin-top:4px;">+$12M vs. 2026 — 60/40 DM/Opex split</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;">
+        <div style="font-size:clamp(2rem,3.2vw,2.8rem);">🚀</div>
+        <h2 style="font-size:clamp(1.2rem,1.9vw,1.7rem);font-weight:900;line-height:1.2;">We Are Not Here to<br><span style="color:var(--purple-mid);">Manage Decline.</span></h2>
+        <p style="font-size:clamp(0.86rem,1.1vw,1rem);color:rgba(255,255,255,0.88);line-height:1.6;">
+          We are here to <strong style="color:var(--green);">overcome</strong> and <strong style="color:var(--purple-mid);">accelerate</strong> — together.
+        </p>
+        <p style="font-size:clamp(0.76rem,0.96vw,0.86rem);color:rgba(255,255,255,0.72);">
+          Thank you for everything you've contributed. 🙏<br>Now let's go deliver it.
+        </p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <span class="pill pill-purple">EPB Strategy Check 2026</span>
+          <span class="pill pill-green">Vancouver, BC 🍁</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#slides -->
+
+<!-- Navigation -->
+<div id="nav-dots">
+  <div class="dot active" onclick="goTo(0)"></div>
+  <div class="dot" onclick="goTo(1)"></div>
+  <div class="dot" onclick="goTo(2)"></div>
+  <div class="dot" onclick="goTo(3)"></div>
+  <div class="dot" onclick="goTo(4)"></div>
+  <div class="dot" onclick="goTo(5)"></div>
+  <div class="dot" onclick="goTo(6)"></div>
+  <div class="dot" onclick="goTo(7)"></div>
+  <div class="dot" onclick="goTo(8)"></div>
+  <div class="dot" onclick="goTo(9)"></div>
+</div>
+
+<div class="arrow" id="arrow-prev" onclick="changeSlide(-1)" style="display:none;">&#8592;</div>
+<div class="arrow" id="arrow-next" onclick="changeSlide(1)">&#8594;</div>
+<div id="slide-counter">1 / 10</div>
+
+<!-- Archive -->
+<button id="archive-btn" onclick="openArchive()">
+  <i class="fa-solid fa-clock-rotate-left"></i> Archive
+</button>
+
+<!-- Notes toggle -->
+<div id="notes-toggle" onclick="toggleNotes()" title="Capture Notes">
+  <i class="fa-solid fa-pen-to-square"></i>
+</div>
+<div id="notes-panel">
+  <h5><i class="fa-solid fa-pen-to-square" style="margin-right:6px;"></i>Capture a Note</h5>
+  <select id="notes-section">
+    <option>Customer Loyalty (Pillar 1)</option>
+    <option>AI Operations (Pillar 2)</option>
+    <option>Growth Products (Pillar 3)</option>
+    <option>Segment Strategy</option>
+    <option>Key Enablers</option>
+    <option>2027 Targets</option>
+    <option>Team Wins</option>
+    <option>Discussion / Q&A</option>
+    <option>Action Item</option>
+    <option>General</option>
+  </select>
+  <textarea id="notes-textarea" placeholder="Type your note or action item…"></textarea>
+  <div class="notes-row">
+    <button id="notes-save-btn" onclick="saveNote()">Save to Sheet</button>
+    <span id="notes-status"></span>
+    <a id="notes-link" target="_blank">Open Sheet ↗</a>
+  </div>
+</div>
+
+<!-- Archive overlay -->
+<div id="archive-overlay">
+  <div id="archive-panel">
+    <div id="archive-header">
+      <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--purple-mid);margin-right:10px;"></i>Meeting Archive</h2>
+      <button id="archive-close" onclick="closeArchive()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="archive-grid"></div>
+  </div>
+</div>
+
+<script>
+  const TOTAL = 10;
+  const SEG_SLIDE = 5; // 0-based index of Segment Strategy slide
+  let current = 0;
+  let segRevealed = 0;
+
+  function resetSegCards() {
+    segRevealed = 0;
+    document.querySelectorAll('#seg-grid .seg-reveal').forEach(function(c) { c.classList.remove('shown'); });
+    var hint = document.getElementById('seg-hint');
+    if (hint) hint.style.display = '';
+  }
+
+  function goTo(n) {
+    if (n < 0 || n >= TOTAL) return;
+    if (current === SEG_SLIDE || n === SEG_SLIDE) resetSegCards();
+    document.querySelectorAll('.slide')[current].classList.remove('active');
+    document.querySelectorAll('.dot')[current].classList.remove('active');
+    current = n;
+    document.querySelectorAll('.slide')[current].classList.add('active');
+    document.querySelectorAll('.dot')[current].classList.add('active');
+    updateNav();
+  }
+  function changeSlide(dir) {
+    if (dir > 0 && current === SEG_SLIDE) {
+      var cards = document.querySelectorAll('#seg-grid .seg-reveal');
+      if (segRevealed < cards.length) {
+        cards[segRevealed].classList.add('shown');
+        segRevealed++;
+        if (segRevealed === cards.length) {
+          var hint = document.getElementById('seg-hint');
+          if (hint) hint.style.display = 'none';
+        }
+        return;
+      }
+    }
+    goTo(current + dir);
+  }
+  function updateNav() {
+    document.getElementById('slide-counter').textContent = (current + 1) + ' / ' + TOTAL;
+    document.getElementById('arrow-prev').style.display = current === 0         ? 'none' : 'flex';
+    document.getElementById('arrow-next').style.display = current === TOTAL - 1 ? 'none' : 'flex';
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+    if (e.key === 'Escape') closeArchive();
+  });
+
+  function toggleNotes() { document.getElementById('notes-panel').classList.toggle('open'); }
+  function saveNote() {
+    var section = document.getElementById('notes-section').value;
+    var text    = document.getElementById('notes-textarea').value.trim();
+    if (!text) return;
+    var btn = document.getElementById('notes-save-btn');
+    var status = document.getElementById('notes-status');
+    btn.disabled = true; status.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function(url) {
+        status.textContent = 'Saved!'; btn.disabled = false;
+        document.getElementById('notes-textarea').value = '';
+        if (url) { var l = document.getElementById('notes-link'); l.href = url; l.style.display = 'inline'; }
+        setTimeout(function(){ status.textContent = ''; }, 3000);
+      })
+      .withFailureHandler(function(err) {
+        status.textContent = 'Error: ' + ((err && err.message) || 'failed');
+        status.style.color = '#e74c3c'; btn.disabled = false;
+        setTimeout(function(){ status.textContent = ''; status.style.color = 'var(--green)'; }, 4000);
+      })
+      .saveNoteToSheet(section, text);
+  }
+
+  var EXEC_URL = '<?!= execUrl ?>';
+  var archiveLoaded = false;
+  function openArchive() { document.getElementById('archive-overlay').classList.add('open'); loadArchiveCards(); }
+  function closeArchive() { document.getElementById('archive-overlay').classList.remove('open'); }
+  function loadArchiveCards() {
+    if (archiveLoaded) return;
+    var grid = document.getElementById('archive-grid');
+    grid.innerHTML = '<div id="archive-loading">Loading meetings…</div>';
+    google.script.run
+      .withSuccessHandler(function(meetings) {
+        archiveLoaded = true; grid.innerHTML = '';
+        if (!meetings || !meetings.length) { grid.innerHTML = '<div id="archive-loading">No meetings found.</div>'; return; }
+        meetings.forEach(function(m) {
+          var c = document.createElement('div'); c.className = 'archive-card';
+          c.innerHTML = '<div class="card-date">' + escHtml(m.date) + '</div><div class="card-title">' + escHtml(m.title) + '</div><div class="card-desc">' + escHtml(m.description||'') + '</div>';
+          c.addEventListener('click', function() { window.top.location.href = EXEC_URL + '?meeting=' + encodeURIComponent(m.id); });
+          grid.appendChild(c);
+        });
+      })
+      .withFailureHandler(function(err) { grid.innerHTML = '<div id="archive-loading">Error: ' + escHtml((err&&err.message)||'Unknown') + '</div>'; })
+      .getMeetingsManifest();
+  }
+  function escHtml(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(String(s))); return d.innerHTML; }
+</script>
+</body>
+</html>

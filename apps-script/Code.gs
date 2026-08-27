@@ -35,9 +35,22 @@ var ACCESS_COLUMN_MAP = {
 
 // ─── Entry Point ─────────────────────────────────────────────────────────────
 
-function doGet() {
+function doGet(e) {
+  var meetingId = e && e.parameter && e.parameter.meeting;
+
+  if (meetingId) {
+    var file = _getMeetingFile(meetingId);
+    var tpl = HtmlService.createTemplateFromFile(file);
+    tpl.execUrl = ScriptApp.getService().getUrl();
+    return tpl.evaluate()
+      .setTitle('EPB Team Meeting')
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
   var tmpl = HtmlService.createTemplateFromFile('index');
   tmpl.isAdmin = _isAdminUser();
+  tmpl.execUrl = ScriptApp.getService().getUrl();
   return tmpl.evaluate()
     .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -364,4 +377,74 @@ function denyAccessRequest(rowIndex) {
   } catch (e) {
     return { error: String(e) };
   }
+}
+
+
+// ─── Team Meetings ────────────────────────────────────────────────────────────
+
+var MEETINGS = [
+  {
+    id: 'july-2026',
+    title: 'July Team Meeting',
+    date: 'July 2026',
+    description: 'AMA on org announcement, dashboard presentations by Jonathan Hu & Jonathan Lum.',
+    file: 'meeting-july-2026'
+  },
+  {
+    id: 'june-2026',
+    title: 'June Team Meeting',
+    date: 'June 2026',
+    description: 'Growth story, 4 strategic pillars, team wins, and 2027 targets.',
+    file: 'meeting-june-2026'
+  },
+  {
+    id: 'april-2026',
+    title: 'April 2026 Team Meeting',
+    date: 'April 2026',
+    description: 'AI Innovation & 45-Minute Breakout Challenge',
+    file: 'meeting-april-2026'
+  }
+];
+
+function _getMeetingFile(meetingId) {
+  if (!meetingId || meetingId === 'current') return MEETINGS[0].file;
+  for (var i = 0; i < MEETINGS.length; i++) {
+    if (MEETINGS[i].id === meetingId) return MEETINGS[i].file;
+  }
+  return MEETINGS[0].file;
+}
+
+function getMeetingsManifest() {
+  return MEETINGS;
+}
+
+function saveNoteToSheet(section, noteText) {
+  var props = PropertiesService.getUserProperties();
+  var sheetId = props.getProperty('MEETING_NOTES_SHEET_ID');
+  var doc, sheet;
+
+  if (!sheetId) {
+    doc = SpreadsheetApp.create('S&P Leadership Team - Meeting Notes & Actions');
+    sheet = doc.getActiveSheet();
+    sheet.appendRow(['Timestamp', 'Agenda Section', 'Action Item / Note']);
+    sheet.getRange('A1:C1').setFontWeight('bold').setBackground('#4b286d').setFontColor('white');
+    sheet.setColumnWidth(1, 150);
+    sheet.setColumnWidth(2, 200);
+    sheet.setColumnWidth(3, 500);
+    props.setProperty('MEETING_NOTES_SHEET_ID', doc.getId());
+  } else {
+    try {
+      doc = SpreadsheetApp.openById(sheetId);
+      sheet = doc.getActiveSheet();
+    } catch (ex) {
+      doc = SpreadsheetApp.create('S&P Leadership Team - Meeting Notes & Actions');
+      sheet = doc.getActiveSheet();
+      sheet.appendRow(['Timestamp', 'Agenda Section', 'Action Item / Note']);
+      sheet.getRange('A1:C1').setFontWeight('bold').setBackground('#4b286d').setFontColor('white');
+      props.setProperty('MEETING_NOTES_SHEET_ID', doc.getId());
+    }
+  }
+
+  sheet.appendRow([new Date(), section, noteText]);
+  return doc.getUrl();
 }
