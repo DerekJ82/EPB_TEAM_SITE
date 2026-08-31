@@ -181,37 +181,49 @@
     return (i > -1 && i < list.length - 1) ? list[i + 1] : null;
   }
 
-  // Apply survey response data to roster cards.
-  // TEAM_CARD_DATA is injected by doGet as a name-keyed JSON object.
-  // Cards are matched by the text content of .team-name (case-insensitive).
+  // Apply survey response data to roster and pet cards.
+  // TEAM_CARD_DATA and PET_CARD_DATA are injected by doGet as name-keyed JSON objects.
   function applySyncedCardData() {
-    var data = window.TEAM_CARD_DATA;
-    if (!data || typeof data !== 'object') return;
+    var cardData = window.TEAM_CARD_DATA;
+    if (cardData && typeof cardData === 'object') {
+      $$('#view-roster .team-card').forEach(function (card) {
+        var nameEl = card.querySelector('.team-name');
+        if (!nameEl) return;
 
-    $$('#view-roster .team-card').forEach(function (card) {
-      var nameEl = card.querySelector('.team-name');
-      if (!nameEl) return;
+        var synced = cardData[nameEl.textContent.trim().toLowerCase()];
+        if (!synced) return;
 
-      var name   = nameEl.textContent.trim().toLowerCase();
-      var synced = data[name];
-      if (!synced) return;
+        // Merge synced fields, preserving any values already in the HTML
+        var existing = {};
+        try { existing = JSON.parse(card.getAttribute('data-card') || '{}'); } catch (e) {}
 
-      // Merge synced fields into existing data-card JSON, preserving any
-      // fields already filled in the HTML (e.g. Derek's hardcoded values)
-      var existing = {};
-      try { existing = JSON.parse(card.getAttribute('data-card') || '{}'); } catch (e) {}
+        card.setAttribute('data-card', JSON.stringify({
+          song:    synced.song    || existing.song    || '?',
+          gateway: synced.gateway || existing.gateway || '?',
+          report:  synced.report  || existing.report  || '?',
+          meal:    synced.meal    || existing.meal    || '?',
+          turf:    synced.turf    || existing.turf    || '?',
+          rookie:  synced.rookie  || existing.rookie  || '?'
+        }));
+      });
+    }
 
-      var merged = {
-        song:    synced.song    || existing.song    || '?',
-        gateway: synced.gateway || existing.gateway || '?',
-        report:  synced.report  || existing.report  || '?',
-        meal:    synced.meal    || existing.meal    || '?',
-        turf:    synced.turf    || existing.turf    || '?',
-        rookie:  synced.rookie  || existing.rookie  || '?'
-      };
+    var petData = window.PET_CARD_DATA;
+    if (petData && typeof petData === 'object') {
+      $$('#view-furry-friends .pet-card').forEach(function (card) {
+        var deptEl = card.querySelector('.team-dept');
+        if (!deptEl) return;
 
-      card.setAttribute('data-card', JSON.stringify(merged));
-    });
+        // Extract owner first name from "Owner: Arleen"
+        var ownerText = deptEl.textContent.replace('Owner:', '').trim().toLowerCase();
+        var synced = petData[ownerText];
+        if (!synced) return;
+
+        if (synced.bio)     card.setAttribute('data-bio', synced.bio);
+        if (synced.petName) { var nameEl = card.querySelector('.team-name'); if (nameEl) nameEl.textContent = synced.petName; }
+        if (synced.role)    { var roleEl = card.querySelector('.team-role'); if (roleEl) roleEl.textContent = synced.role; }
+      });
+    }
   }
 
   function boot() {

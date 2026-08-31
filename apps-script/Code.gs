@@ -17,6 +17,7 @@ function doGet(e) {
   tmpl.isAdmin = false;
   tmpl.execUrl = ScriptApp.getService().getUrl();
   tmpl.teamCardData = PropertiesService.getScriptProperties().getProperty('TEAM_CARD_DATA') || '{}';
+  tmpl.petCardData  = PropertiesService.getScriptProperties().getProperty('PET_CARD_DATA')  || '{}';
   return tmpl.evaluate()
     .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -244,22 +245,28 @@ function syncTeamData() {
   var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
   function col(name) { return headers.indexOf(name); }
 
-  var iName    = col('your name');
-  var iSong    = col('walk-up song');
-  var iGateway = col('goat vacation spot');
-  var iReport  = col('fun fact');
-  var iMeal    = col('pre-game meal');
-  var iTurf    = col('home turf');
-  var iRookie  = col('rookie card year');
+  var iName      = col('your name');
+  var iSong      = col('walk-up song');
+  var iGateway   = col('goat vacation spot');
+  var iReport    = col('fun fact');
+  var iMeal      = col('pre-game meal');
+  var iTurf      = col('home turf');
+  var iRookie    = col('rookie card year');
+  var iPetName   = col('pet name');
+  var iPetRole   = col('playful title');
+  var iPetBio    = col('pet bio');
+  var iPetOwner  = col('your name (for the "owner" field)');
 
   if (iName === -1) {
     Logger.log('ERROR: Could not find "Your Name" column. Check the response sheet headers.');
     return;
   }
 
-  // Build a map keyed by normalised full name → card data
-  // If a person submitted multiple times, the latest row wins
+  // Build maps keyed by normalised name → data.
+  // If a person submitted multiple times, the latest row wins.
   var cardData = {};
+  var petData  = {};
+
   for (var i = 1; i < rows.length; i++) {
     var row  = rows[i];
     var name = String(row[iName]).trim();
@@ -274,11 +281,28 @@ function syncTeamData() {
       turf:    iTurf    >= 0 ? String(row[iTurf]).trim()    : '',
       rookie:  iRookie  >= 0 ? String(row[iRookie]).trim()  : ''
     };
+
+    // Only capture pet data if the respondent named their pet
+    var petName = iPetName >= 0 ? String(row[iPetName]).trim() : '';
+    if (petName) {
+      var ownerFirst = iPetOwner >= 0 ? String(row[iPetOwner]).trim() : name.split(' ')[0];
+      petData[ownerFirst.toLowerCase()] = {
+        petName: petName,
+        role:    iPetRole >= 0 ? String(row[iPetRole]).trim() : '',
+        bio:     iPetBio  >= 0 ? String(row[iPetBio]).trim()  : '',
+        owner:   ownerFirst
+      };
+    }
   }
 
-  var json = JSON.stringify(cardData);
-  PropertiesService.getScriptProperties().setProperty('TEAM_CARD_DATA', json);
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('TEAM_CARD_DATA', JSON.stringify(cardData));
+  props.setProperty('PET_CARD_DATA',  JSON.stringify(petData));
 
   Logger.log('Sync complete. ' + Object.keys(cardData).length + ' team member(s) updated:');
   Object.keys(cardData).forEach(function(k) { Logger.log('  • ' + cardData[k].name); });
+  if (Object.keys(petData).length) {
+    Logger.log(Object.keys(petData).length + ' pet(s) updated:');
+    Object.keys(petData).forEach(function(k) { Logger.log('  • ' + petData[k].petName + ' (Owner: ' + petData[k].owner + ')'); });
+  }
 }
