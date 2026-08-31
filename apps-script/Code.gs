@@ -16,6 +16,7 @@ function doGet(e) {
   var tmpl = HtmlService.createTemplateFromFile('index');
   tmpl.isAdmin = false;
   tmpl.execUrl = ScriptApp.getService().getUrl();
+  tmpl.teamCardData = PropertiesService.getScriptProperties().getProperty('TEAM_CARD_DATA') || '{}';
   return tmpl.evaluate()
     .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -202,11 +203,82 @@ function createTeamInputForm() {
     )
     .setRequired(false);
 
-  // Link responses to a new Sheet
-  form.setDestination(FormApp.DestinationType.SPREADSHEET,
-    SpreadsheetApp.create('EPB Team Site — Input Form Responses').getId());
+  // Link responses to a new Sheet and store its ID for syncTeamData()
+  var responseSheet = SpreadsheetApp.create('EPB Team Site — Input Form Responses');
+  form.setDestination(FormApp.DestinationType.SPREADSHEET, responseSheet.getId());
+  PropertiesService.getScriptProperties().setProperty('FORM_RESPONSE_SHEET_ID', responseSheet.getId());
 
   Logger.log('Form created successfully.');
   Logger.log('Edit URL:       ' + form.getEditUrl());
   Logger.log('Respondent URL: ' + form.getPublishedUrl());
+}
+
+
+// ─── Sync Survey Responses → Team Card Data ───────────────────────────────────
+// Run this function from the Apps Script editor after responses come in.
+// It reads the Form response Sheet, builds a name-keyed lookup of baseball
+// card stats, and stores it in Script Properties so doGet can inject it into
+// the page. The site picks up the latest data on next load — no HTML editing.
+//
+// Expected response Sheet columns (auto-created by the Form):
+//   A: Timestamp  B: Email  C: Your Name  D: Walk-Up Song  E: GOAT Vacation Spot
+//   F: Fun Fact   G: Pre-Game Meal  H: Home Turf  I: Rookie Card Year
+
+function syncTeamData() {
+  var sheetId = PropertiesService.getScriptProperties().getProperty('FORM_RESPONSE_SHEET_ID');
+  if (!sheetId) {
+    Logger.log('ERROR: FORM_RESPONSE_SHEET_ID not set. Run createTeamInputForm() first.');
+    return;
+  }
+
+  var ss    = SpreadsheetApp.openById(sheetId);
+  var sheet = ss.getSheets()[0]; // Form responses always land on the first sheet
+  var rows  = sheet.getDataRange().getValues();
+
+  if (rows.length < 2) {
+    Logger.log('No responses yet.');
+    return;
+  }
+
+  // Normalise headers to find column positions by name (robust to column reordering)
+  var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+  function col(name) { return headers.indexOf(name); }
+
+  var iName    = col('your name');
+  var iSong    = col('walk-up song');
+  var iGateway = col('goat vacation spot');
+  var iReport  = col('fun fact');
+  var iMeal    = col('pre-game meal');
+  var iTurf    = col('home turf');
+  var iRookie  = col('rookie card year');
+
+  if (iName === -1) {
+    Logger.log('ERROR: Could not find "Your Name" column. Check the response sheet headers.');
+    return;
+  }
+
+  // Build a map keyed by normalised full name → card data
+  // If a person submitted multiple times, the latest row wins
+  var cardData = {};
+  for (var i = 1; i < rows.length; i++) {
+    var row  = rows[i];
+    var name = String(row[iName]).trim();
+    if (!name) continue;
+
+    cardData[name.toLowerCase()] = {
+      name:    name,
+      song:    iSong    >= 0 ? String(row[iSong]).trim()    : '',
+      gateway: iGateway >= 0 ? String(row[iGateway]).trim() : '',
+      report:  iReport  >= 0 ? String(row[iReport]).trim()  : '',
+      meal:    iMeal    >= 0 ? String(row[iMeal]).trim()    : '',
+      turf:    iTurf    >= 0 ? String(row[iTurf]).trim()    : '',
+      rookie:  iRookie  >= 0 ? String(row[iRookie]).trim()  : ''
+    };
+  }
+
+  var json = JSON.stringify(cardData);
+  PropertiesService.getScriptProperties().setProperty('TEAM_CARD_DATA', json);
+
+  Logger.log('Sync complete. ' + Object.keys(cardData).length + ' team member(s) updated:');
+  Object.keys(cardData).forEach(function(k) { Logger.log('  • ' + cardData[k].name); });
 }

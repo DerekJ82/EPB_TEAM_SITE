@@ -181,6 +181,39 @@
     return (i > -1 && i < list.length - 1) ? list[i + 1] : null;
   }
 
+  // Apply survey response data to roster cards.
+  // TEAM_CARD_DATA is injected by doGet as a name-keyed JSON object.
+  // Cards are matched by the text content of .team-name (case-insensitive).
+  function applySyncedCardData() {
+    var data = window.TEAM_CARD_DATA;
+    if (!data || typeof data !== 'object') return;
+
+    $$('#view-roster .team-card').forEach(function (card) {
+      var nameEl = card.querySelector('.team-name');
+      if (!nameEl) return;
+
+      var name   = nameEl.textContent.trim().toLowerCase();
+      var synced = data[name];
+      if (!synced) return;
+
+      // Merge synced fields into existing data-card JSON, preserving any
+      // fields already filled in the HTML (e.g. Derek's hardcoded values)
+      var existing = {};
+      try { existing = JSON.parse(card.getAttribute('data-card') || '{}'); } catch (e) {}
+
+      var merged = {
+        song:    synced.song    || existing.song    || '?',
+        gateway: synced.gateway || existing.gateway || '?',
+        report:  synced.report  || existing.report  || '?',
+        meal:    synced.meal    || existing.meal    || '?',
+        turf:    synced.turf    || existing.turf    || '?',
+        rookie:  synced.rookie  || existing.rookie  || '?'
+      };
+
+      card.setAttribute('data-card', JSON.stringify(merged));
+    });
+  }
+
   function boot() {
     $$('.ws-card').forEach(function (card) {
       if (!card.getAttribute('data-section')) return;
@@ -225,6 +258,7 @@
 
     initScrollBtn();
     initReveal(document);
+    applySyncedCardData();
 
     // Restore section/tab from hash on load (e.g. #team/roster)
     var hash = window.location.hash.replace('#', '');
