@@ -43,6 +43,7 @@
     $('#greeter').hidden = false;
     $('.nav').classList.remove('open');
     window.scrollTo(0, 0);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
   }
 
   function showTab(tab) {
@@ -64,6 +65,11 @@
     $('.nav').classList.remove('open');
     window.scrollTo(0, 0);
     if (onScroll) onScroll();
+
+    // Persist current location so a refresh restores this tab
+    if (SECTION) {
+      history.replaceState(null, '', '#' + SECTION + '/' + tab);
+    }
   }
 
   function markNavWrap() {
@@ -219,6 +225,18 @@
 
     initScrollBtn();
     initReveal(document);
+
+    // Restore section/tab from hash on load (e.g. #team/roster)
+    var hash = window.location.hash.replace('#', '');
+    if (hash) {
+      var parts   = hash.split('/');
+      var section = parts[0];
+      var tab     = parts[1] || null;
+      var sectionTabs = $$('[data-section="' + section + '"]', $('#tabData'));
+      if (sectionTabs.length) {
+        openSection(section, tab);
+      }
+    }
   }
 
   if (document.readyState === 'loading') {
