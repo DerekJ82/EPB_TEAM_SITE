@@ -1,38 +1,3 @@
-// ─── Source Sheet IDs ────────────────────────────────────────────────────────
-
-var PSO_SHEET_ID     = '1wt1DgVwHxkDkTTFbJiFY6UQ_bEvs_sof_FNqDMl3pXA';
-var CBR_SHEET_ID     = '1_Pv9gOxUesAmgMlyngyIFIzQFVtlJktaHMU36vAZg7g';
-var QUERIES_SHEET_ID = '19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw';
-var EPB_HUB_SHEET_ID = '1OJpOFEwV0YaT1rUoygxXqypv5OwdDcBZX_q-_29Grug';
-
-// Maps EPB Hub dashboard display names to the "Admin - Access" column keys.
-// Must match exactly the same map in epb-hub/server/Auth.gs.
-var ACCESS_COLUMN_MAP = {
-  'ACIA REVENUE & MARGIN':          'ACIA REVENUE',
-  'WLN REVENUE DETAIL':             'WIRELINE REVENUE',
-  'WLN DIRECT MARGIN DETAIL':       'WIRELINE MARGIN',
-  'WLN NET KPIS':                   'WLN NET KPIS',
-  'IOT DETAIL':                     'IOT DETAILS',
-  'CORE WIRELESS DETAIL':           'WLS DETAILS',
-  'EBITDA CONTRIBUTION':            'EBITDA',
-  'EPB EXECUTIVE DASHBOARD':        'EPB ON A PAGE',
-  'WLS NETWORK REVENUE':            'WLS DETAILS',
-  'WLS P&L SUMMARY':                'WLS DETAILS',
-  'PORTING PERFORMANCE':            'EPB ON A PAGE',
-  'WLS EQUIPMENT MARGIN':           'WLS DETAILS',
-  'EPB PSO ONE PAGER':              'EPB ON A PAGE',
-  'WLS/WLN ACQUISITION & RENEWALS': 'WLS DETAILS',
-  'EPB PIPELINE':                   'WLS DETAILS',
-  'FLASH WEEKLY REPORT':            'FLASH',
-  'FLASH NEWSLETTER':               'FLASH ADMIN',
-  'EPB STRATCHECK':                 'STRATCHECK',
-  'GOQ WLS DASHBOARD':              'GOQ',
-  'WLS/WLN CMRG PIPELINE':          'CMRG',
-  'CMRG PIPELINE':                  'CMRG',
-  'CROSS-SELL PERFORMANCE':         'CROSS SELL'
-};
-
-
 // ─── Entry Point ─────────────────────────────────────────────────────────────
 
 function doGet(e) {
@@ -62,186 +27,11 @@ function include(filename) {
 }
 
 
-// ─── Dashboard Data ───────────────────────────────────────────────────────────
-
-function getDashboardData() {
-  return {
-    pso:     _getPSOStatus(),
-    cbr:     _getCBRStatus(),
-    queries: _getQueriesStatus(),
-    isAdmin: _isAdminUser(),
-    asOf:    new Date().toISOString()
-  };
-}
-
-
-// ─── PSO One Pager Pipeline ──────────────────────────────────────────────────
-
-function _getPSOStatus() {
-  try {
-    var ss    = SpreadsheetApp.openById(PSO_SHEET_ID);
-    var sheet = ss.getSheetByName('PIPELINE_STATUS');
-    if (!sheet) return { error: 'PIPELINE_STATUS tab not found' };
-
-    var data = sheet.getDataRange().getValues();
-    if (data.length < 2) return { error: 'No pipeline data' };
-
-    var headers = data[0].map(function(h) { return String(h).trim().toUpperCase(); });
-    var iStage  = headers.indexOf('STAGE');
-    var iName   = headers.indexOf('NAME');
-    var iStatus = headers.indexOf('STATUS');
-    var iNotes  = headers.indexOf('NOTES');
-
-    var stages = [];
-    var currentStage = 0;
-    var stageName    = '';
-    var overallStatus = 'COMPLETE';
-    var blocker      = '';
-
-    for (var i = 1; i < data.length; i++) {
-      var row    = data[i];
-      var stageN = iStage  >= 0 ? parseInt(row[iStage])         : i;
-      var name   = iName   >= 0 ? String(row[iName]).trim()     : '';
-      var status = iStatus >= 0 ? String(row[iStatus]).trim().toUpperCase() : '';
-      var notes  = iNotes  >= 0 ? String(row[iNotes]).trim()    : '';
-
-      stages.push({ stage: stageN, name: name, status: status, notes: notes });
-
-      if (status === 'IN_PROGRESS' || status === 'WAITING') {
-        if (currentStage === 0) {
-          currentStage  = stageN;
-          stageName     = name;
-          overallStatus = status;
-          blocker       = notes;
-        }
-      }
-      if (status === 'FAILED') {
-        overallStatus = 'FAILED';
-        if (currentStage === 0) { currentStage = stageN; stageName = name; blocker = notes; }
-      }
-    }
-
-    var total = stages.length;
-    if (currentStage === 0 && total > 0) {
-      var lastComplete = 0;
-      stages.forEach(function(s) {
-        if (s.status === 'COMPLETE') lastComplete = s.stage;
-      });
-      currentStage  = lastComplete;
-      overallStatus = lastComplete === total ? 'COMPLETE' : 'NOT_STARTED';
-    }
-
-    return {
-      currentStage:  currentStage,
-      totalStages:   total,
-      stageName:     stageName,
-      status:        overallStatus,
-      blocker:       blocker,
-      pct:           total > 0 ? Math.round((currentStage / total) * 100) : 0,
-      trackerUrl:    'https://script.google.com/a/macros/telus.com/s/AKfycbzQ3kGQP-P7n6Y_PgkF5rFzv7vCbfBbr0ZOt6Vd4dUkPv6A7LM/exec'
-    };
-  } catch (e) {
-    return { error: String(e) };
-  }
-}
-
-
-// ─── Consolidated Billed Revenue ─────────────────────────────────────────────
-
-function _getCBRStatus() {
-  try {
-    var ss        = SpreadsheetApp.openById(CBR_SHEET_ID);
-    var configTab = ss.getSheetByName('CONFIG');
-    var statusTab = ss.getSheetByName('DATA_STATUS');
-    if (!configTab || !statusTab) return { error: 'CONFIG or DATA_STATUS tab not found' };
-
-    var configData    = configTab.getDataRange().getValues();
-    var currentPeriod = '';
-    for (var i = 0; i < configData.length; i++) {
-      if (String(configData[i][0]).trim().toUpperCase() === 'CURRENT PERIOD') {
-        currentPeriod = String(configData[i][1]).trim();
-        break;
-      }
-    }
-
-    var statusData = statusTab.getDataRange().getValues();
-    var segments   = [];
-    for (var j = 1; j < statusData.length; j++) {
-      var seg    = String(statusData[j][0]).trim();
-      var status = String(statusData[j][1]).trim().toUpperCase();
-      if (seg) segments.push({ name: seg, status: status });
-    }
-
-    var completeCount = segments.filter(function(s) {
-      return s.status === 'COMPLETE';
-    }).length;
-
-    var overallStatus = completeCount === segments.length
-      ? 'COMPLETE'
-      : completeCount === 0 ? 'PENDING' : 'IN_PROGRESS';
-
-    return {
-      currentPeriod: currentPeriod,
-      segments:      segments,
-      completeCount: completeCount,
-      totalCount:    segments.length,
-      status:        overallStatus,
-      trackerUrl:    'https://script.google.com/a/macros/telus.com/s/AKfycbyUKFm8TBq7R5eN8F2P_placeholder/exec'
-    };
-  } catch (e) {
-    return { error: String(e) };
-  }
-}
-
-
-// ─── BR Queries Pipeline ─────────────────────────────────────────────────────
-
-function _getQueriesStatus() {
-  try {
-    var ss        = SpreadsheetApp.openById(QUERIES_SHEET_ID);
-    var configTab = ss.getSheetByName('CONFIG');
-    if (!configTab) return { error: 'CONFIG tab not found' };
-
-    var data          = configTab.getDataRange().getValues();
-    var currentPeriod = '';
-    var stage         = 0;
-    var pipelineStatus = 'PENDING';
-    var tables        = [];
-
-    for (var i = 0; i < data.length; i++) {
-      var key = String(data[i][0]).trim().toUpperCase();
-      var val = String(data[i][1]).trim();
-      if (key === 'CURRENT PERIOD')   currentPeriod  = val;
-      if (key === 'STAGE')            stage          = parseInt(val) || 0;
-      if (key === 'PIPELINE STATUS')  pipelineStatus = val.toUpperCase();
-      if (key === 'TABLES') {
-        for (var j = i + 1; j < data.length; j++) {
-          var tName = String(data[j][0]).trim();
-          var tPass = String(data[j][1]).trim().toUpperCase();
-          if (!tName) break;
-          tables.push({ name: tName, pass: tPass === 'PASS' || tPass === 'COMPLETE' || tPass === 'TRUE' });
-        }
-        break;
-      }
-    }
-
-    var totalStages = 4;
-    return {
-      currentPeriod:  currentPeriod,
-      stage:          stage,
-      totalStages:    totalStages,
-      pipelineStatus: pipelineStatus,
-      tables:         tables,
-      status:         pipelineStatus,
-      trackerUrl:     'https://docs.google.com/spreadsheets/d/' + QUERIES_SHEET_ID
-    };
-  } catch (e) {
-    return { error: String(e) };
-  }
-}
-
-
 // ─── Admin: Access Control ────────────────────────────────────────────────────
+// Checks whether the current user is in the EPB Hub admin list.
+// Used by doGet to gate the admin panel in the Team Site UI.
+
+var EPB_HUB_SHEET_ID = '1OJpOFEwV0YaT1rUoygxXqypv5OwdDcBZX_q-_29Grug';
 
 function _isAdminUser() {
   try {
@@ -261,6 +51,35 @@ function _isAdminUser() {
 
 
 // ─── Admin: Access Requests ───────────────────────────────────────────────────
+// These functions support the access-request panel in the Team Site UI,
+// which lets team members request access to EPB Hub dashboards.
+
+// Maps EPB Hub dashboard display names to the "Admin - Access" column keys.
+// Must match exactly the same map in epb-hub/server/Auth.gs.
+var ACCESS_COLUMN_MAP = {
+  'ACIA REVENUE & MARGIN':          'ACIA REVENUE',
+  'WLN REVENUE DETAIL':             'WIRELINE REVENUE',
+  'WLN DIRECT MARGIN DETAIL':       'WIRELINE MARGIN',
+  'WLN NET KPIS':                   'WLN NET KPIS',
+  'IOT DETAIL':                     'IOT DETAILS',
+  'CORE WIRELESS DETAIL':           'WLS DETAILS',
+  'EBITDA CONTRIBUTION':            'EBITDA',
+  'EPB EXECUTIVE DASHBOARD':        'EPB ON A PAGE',
+  'WLS NETWORK REVENUE':            'WLS DETAILS',
+  'WLS P&L SUMMARY':                'WLS DETAILS',
+  'PORTING PERFORMANCE':            'EPB ON A PAGE',
+  'WLS EQUIPMENT MARGIN':           'WLS DETAILS',
+  'EPB PSO ONE PAGER':              'EPB ON A PAGE',
+  'WLS/WLN ACQUISITION & RENEWALS': 'WLS DETAILS',
+  'EPB PIPELINE':                   'WLS DETAILS',
+  'FLASH WEEKLY REPORT':            'FLASH',
+  'FLASH NEWSLETTER':               'FLASH ADMIN',
+  'EPB STRATCHECK':                 'STRATCHECK',
+  'GOQ WLS DASHBOARD':              'GOQ',
+  'WLS/WLN CMRG PIPELINE':          'CMRG',
+  'CMRG PIPELINE':                  'CMRG',
+  'CROSS-SELL PERFORMANCE':         'CROSS SELL'
+};
 
 function getPendingAccessRequests() {
   if (!_isAdminUser()) return { error: 'NOT_ADMIN' };
