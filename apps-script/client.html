@@ -862,6 +862,22 @@
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
 
+  // Find the row whose date is closest to N days before baseRow's date.
+  // Skips baseRow itself; requires at least N/2 days gap to avoid same-day match.
+  function findRowNDaysAgo(rows, baseRow, days) {
+    var baseMs = new Date(baseRow.date + 'T00:00:00').getTime();
+    var targetMs = baseMs - days * 864e5;
+    var minGapMs = (days / 2) * 864e5;
+    var best = null, bestDiff = Infinity;
+    rows.forEach(function (r) {
+      var ms = new Date(r.date + 'T00:00:00').getTime();
+      if (baseMs - ms < minGapMs) return; // too recent
+      var diff = Math.abs(ms - targetMs);
+      if (diff < bestDiff) { bestDiff = diff; best = r; }
+    });
+    return best;
+  }
+
   function renderEngDashboard(rows) {
     var el = document.getElementById('eng-dashboard-body');
     if (!el) return;
@@ -870,9 +886,9 @@
       return;
     }
 
-    var monthly = aggregateByMonth(rows);
-    var cur  = monthly[monthly.length - 1];
-    var prev = monthly.length > 1 ? monthly[monthly.length - 2] : null;
+    // Use raw rows: latest entry as current, entry ~30 days prior as comparison.
+    var cur  = rows[rows.length - 1];
+    var prev = findRowNDaysAgo(rows, cur, 30);
 
     var partPct = cur.participation;
     var partAlert = '';
@@ -923,14 +939,14 @@
     }).join('');
 
     var kpiTable = '<div class="gt-wrap reveal"><table class="gt">' +
-      '<thead><tr><th>Metric</th><th>Score</th><th>vs prev month</th></tr></thead>' +
+      '<thead><tr><th>Metric</th><th>Score</th><th>vs ~30 days ago</th></tr></thead>' +
       '<tbody>' + kpiRows + '</tbody></table></div>';
 
     var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
     var header = '<div class="gstats reveal" style="margin-bottom:1.5rem">' +
       '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Current period</span></div>' +
       '<div class="gstat"><b><span class="pbadge ' + partBadgeCls + '">' + fmtPct(partPct) + '</span></b><span>Participation</span></div>' +
-      '<div class="gstat"><b>' + fmt(cur.engagement) + '</b><span>Overall engagement ' + trendArrow(dEng) + '</span></div>' +
+      '<div class="gstat"><b>' + fmt(cur.engagement) + ' ' + trendArrow(dEng) + '</b><span>Overall engagement</span></div>' +
     '</div>';
 
     el.innerHTML = header + partAlert + compositeCards + kpiTable;
