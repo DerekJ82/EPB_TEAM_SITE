@@ -745,4 +745,592 @@
   }
 })();
 
+
+/* --- Engagement tabs -------------------------------------------------------- */
+(function () {
+  'use strict';
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmt(n) { return n == null ? '—' : Number(n).toFixed(1); }
+  function fmtPct(n) { return n == null ? '—' : Number(n).toFixed(0) + '%'; }
+
+  function trendArrow(delta) {
+    if (delta == null) return '<span class="eng-arrow eng-arrow--flat">—</span>';
+    if (delta >= 0.1)  return '<span class="eng-arrow eng-arrow--up">&#9650;</span>';
+    if (delta <= -0.1) return '<span class="eng-arrow eng-arrow--dn">&#9660;</span>';
+    return '<span class="eng-arrow eng-arrow--flat">&#9644;</span>';
+  }
+
+  function scoreClass(n) {
+    if (n == null) return 'pend';
+    if (n >= 8.5)  return 'ok';
+    if (n >= 7.5)  return 'warn';
+    if (n >= 6.5)  return 'pend';
+    return 'fail';
+  }
+
+  function scoreLabel(n) {
+    if (n == null) return '';
+    if (n >= 8.5) return 'Outstanding';
+    if (n >= 7.5) return 'Solid';
+    if (n >= 6.5) return 'Room to grow';
+    return 'Needs attention';
+  }
+
+  function trendWord(delta) {
+    if (delta == null) return 'holding steady';
+    if (delta >= 0.3)  return 'climbing 📈';
+    if (delta <= -0.3) return 'slipping 📉';
+    return 'holding steady';
+  }
+
+  // Group rows by YYYY-MM, keep last row of each month
+  function aggregateByMonth(rows) {
+    var months = {};
+    rows.forEach(function (r) {
+      var key = String(r.date).slice(0, 7);
+      months[key] = r;
+    });
+    return Object.keys(months).sort().map(function (k) { return months[k]; });
+  }
+
+  function monthLabel(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+  }
+
+  function delta(cur, prev, key) {
+    if (!prev || cur[key] == null || prev[key] == null) return null;
+    return Math.round((cur[key] - prev[key]) * 10) / 10;
+  }
+
+  // ── shared data cache ──────────────────────────────────────────────────────
+
+  var _engData    = null;
+  var _engLoading = false;
+  var _engCbs     = [];
+
+  function _loadEngData(cb) {
+    if (_engData) { cb(_engData); return; }
+    _engCbs.push(cb);
+    if (_engLoading) return;
+    _engLoading = true;
+    google.script.run
+      .withSuccessHandler(function (d) {
+        _engData    = d;
+        _engLoading = false;
+        var cbs = _engCbs.slice(); _engCbs = [];
+        cbs.forEach(function (fn) { fn(d); });
+      })
+      .withFailureHandler(function (e) {
+        _engLoading = false;
+        var msg = 'Error loading engagement data: ' + String(e);
+        var cbs = _engCbs.slice(); _engCbs = [];
+        cbs.forEach(function () {
+          ['eng-dashboard-body','eng-trends-body','eng-reports-body','eng-archive-body'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && el.innerHTML.indexOf('Loading') > -1)
+              el.innerHTML = '<p class="pipe-error">' + esc(msg) + '</p>';
+          });
+        });
+      })
+      .getEngagementData();
+  }
+
+  // ── tab observers ──────────────────────────────────────────────────────────
+
+  function observeTab(id, fn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var done = false;
+    new MutationObserver(function () {
+      if (!el.hidden && !done) { done = true; fn(); }
+    }).observe(el, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
+  observeTab('view-eng-dashboard', function () { _loadEngData(renderEngDashboard); });
+  observeTab('view-eng-trends',    function () { _loadEngData(renderEngTrends); });
+  observeTab('view-eng-reports',   function () { _loadEngData(renderEngReports); });
+  observeTab('view-eng-archive',   function () { _loadEngData(renderEngArchive); });
+
+  // ── Dashboard ──────────────────────────────────────────────────────────────
+
+  function renderEngDashboard(rows) {
+    var el = document.getElementById('eng-dashboard-body');
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>';
+      return;
+    }
+
+    var monthly = aggregateByMonth(rows);
+    var cur  = monthly[monthly.length - 1];
+    var prev = monthly.length > 1 ? monthly[monthly.length - 2] : null;
+
+    var partPct = cur.participation;
+    var partAlert = '';
+    if (partPct !== null && partPct < 70) {
+      var alertCls = partPct < 50 ? 'fail' : 'warn';
+      partAlert = '<div class="gnote reveal" style="margin-bottom:1.5rem">' +
+        '<span class="dsr-icon" aria-hidden="true">!</span>' +
+        '<div><h4 class="gnote-h">Low participation this period</h4>' +
+        '<p class="gnote-p">Only ' + fmtPct(partPct) + ' of the team responded — scores may not be fully representative.</p></div></div>';
+    }
+
+    var dExpSatis   = delta(cur, prev, 'expSatis');
+    var dOrgCulture = delta(cur, prev, 'orgCulture');
+    var dGrowthWell = delta(cur, prev, 'growthWell');
+    var dEng        = delta(cur, prev, 'engagement');
+
+    var compositeCards = '<div class="gstats reveal" style="margin-bottom:2rem">' +
+      _bigScoreCard('Experience &amp; Satisfaction', cur.expSatis, dExpSatis) +
+      _bigScoreCard('Culture &amp; Relationships',   cur.orgCulture, dOrgCulture) +
+      _bigScoreCard('Growth, Alignment &amp; Wellbeing', cur.growthWell, dGrowthWell) +
+    '</div>';
+
+    var coreMetrics = [
+      { label: 'Engagement',       key: 'engagement' },
+      { label: 'eNPS',             key: 'eNPS',          isENPS: true },
+      { label: 'Recognition',      key: 'recognition' },
+      { label: 'Ambassadorship',   key: 'ambassadorship' },
+      { label: 'Feedback',         key: 'feedback' },
+      { label: 'Rel. with Peers',  key: 'relPeers' },
+      { label: 'Rel. with Mgr',    key: 'relManager' },
+      { label: 'Satisfaction',     key: 'satisfaction' },
+      { label: 'Alignment',        key: 'alignment' },
+      { label: 'Happiness',        key: 'happiness' },
+      { label: 'Wellness',         key: 'wellness' },
+      { label: 'Personal Growth',  key: 'personalGrowth' }
+    ];
+
+    var kpiRows = coreMetrics.map(function (m) {
+      var val = cur[m.key];
+      var d   = delta(cur, prev, m.key);
+      var valStr = m.isENPS ? (val == null ? '—' : (val > 0 ? '+' : '') + val) : fmt(val);
+      var cls = m.isENPS ? (val > 20 ? 'ok' : val > 0 ? 'warn' : 'fail') : scoreClass(val);
+      return '<tr>' +
+        '<td>' + esc(m.label) + '</td>' +
+        '<td><span class="pbadge ' + cls + '">' + valStr + '</span></td>' +
+        '<td>' + trendArrow(d) + (d !== null ? ' ' + (d >= 0 ? '+' : '') + d : '') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var kpiTable = '<div class="gt-wrap reveal"><table class="gt">' +
+      '<thead><tr><th>Metric</th><th>Score</th><th>vs prev month</th></tr></thead>' +
+      '<tbody>' + kpiRows + '</tbody></table></div>';
+
+    var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
+    var header = '<div class="gstats reveal" style="margin-bottom:1.5rem">' +
+      '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Current period</span></div>' +
+      '<div class="gstat"><b><span class="pbadge ' + partBadgeCls + '">' + fmtPct(partPct) + '</span></b><span>Participation</span></div>' +
+      '<div class="gstat"><b>' + fmt(cur.engagement) + '</b><span>Overall engagement ' + trendArrow(dEng) + '</span></div>' +
+    '</div>';
+
+    el.innerHTML = header + partAlert + compositeCards + kpiTable;
+  }
+
+  function _bigScoreCard(label, val, d) {
+    var cls = scoreClass(val);
+    var dStr = d !== null ? ' ' + (d >= 0 ? '+' : '') + d : '';
+    return '<div class="gstat">' +
+      '<b>' + fmt(val) + ' <small style="font-size:.55em;font-weight:400">/ 10</small></b>' +
+      '<span>' + label + '</span>' +
+      '<span style="font-size:.8em;opacity:.7">' + trendArrow(d) + dStr + '</span>' +
+    '</div>';
+  }
+
+  // ── Trends (Chart.js) ──────────────────────────────────────────────────────
+
+  var _engCharts = {};
+
+  function renderEngTrends(rows) {
+    var el = document.getElementById('eng-trends-body');
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>';
+      return;
+    }
+
+    var monthly = aggregateByMonth(rows);
+    var labels  = monthly.map(function (r) { return monthLabel(r.date); });
+
+    el.innerHTML =
+      '<div class="eng-chart-group reveal"><h3 class="eng-chart-h">Composite Scores</h3>' +
+      '<canvas id="eng-chart-composite"></canvas></div>' +
+      '<div class="eng-chart-group reveal"><h3 class="eng-chart-h">Core Metrics</h3>' +
+      '<canvas id="eng-chart-core"></canvas></div>' +
+      '<div class="eng-chart-group reveal"><h3 class="eng-chart-h">Participation &amp; eNPS</h3>' +
+      '<canvas id="eng-chart-part"></canvas></div>';
+
+    if (typeof Chart === 'undefined') {
+      el.innerHTML = '<p class="pipe-error">Chart.js failed to load. Check your network connection.</p>';
+      return;
+    }
+
+    var chartDefaults = {
+      type: 'line',
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { ticks: { maxRotation: 45 } },
+          y: { beginAtZero: false }
+        }
+      }
+    };
+
+    // Composite scores chart
+    _makeChart('eng-chart-composite', labels, [
+      { label: 'Exp & Satisfaction',     data: monthly.map(function(r){ return r.expSatis; }),   borderColor: '#4B286D', backgroundColor: 'rgba(75,40,109,.1)', tension: .3, pointRadius: 3 },
+      { label: 'Culture & Relationships', data: monthly.map(function(r){ return r.orgCulture; }), borderColor: '#66CC00', backgroundColor: 'rgba(102,204,0,.1)',  tension: .3, pointRadius: 3 },
+      { label: 'Growth & Wellbeing',     data: monthly.map(function(r){ return r.growthWell; }),  borderColor: '#00B0F0', backgroundColor: 'rgba(0,176,240,.1)',   tension: .3, pointRadius: 3 }
+    ], { min: 5, max: 10 });
+
+    // Core metrics chart
+    _makeChart('eng-chart-core', labels, [
+      { label: 'Engagement',     data: monthly.map(function(r){ return r.engagement; }),     borderColor: '#4B286D', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Recognition',    data: monthly.map(function(r){ return r.recognition; }),    borderColor: '#66CC00', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Ambassadorship', data: monthly.map(function(r){ return r.ambassadorship; }), borderColor: '#E4750B', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Feedback',       data: monthly.map(function(r){ return r.feedback; }),       borderColor: '#00B0F0', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Satisfaction',   data: monthly.map(function(r){ return r.satisfaction; }),   borderColor: '#F5A623', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Happiness',      data: monthly.map(function(r){ return r.happiness; }),      borderColor: '#D0021B', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Wellness',       data: monthly.map(function(r){ return r.wellness; }),       borderColor: '#7B68EE', tension: .3, pointRadius: 3, fill: false },
+      { label: 'Personal Growth',data: monthly.map(function(r){ return r.personalGrowth; }), borderColor: '#20B2AA', tension: .3, pointRadius: 3, fill: false }
+    ], { min: 5, max: 10 });
+
+    // Participation & eNPS (dual axis)
+    _makeChartDual('eng-chart-part', labels,
+      { label: 'Participation (%)', data: monthly.map(function(r){ return r.participation; }), borderColor: '#4B286D', backgroundColor: 'rgba(75,40,109,.1)', tension: .3, pointRadius: 3, yAxisID: 'yPct' },
+      { label: 'eNPS',              data: monthly.map(function(r){ return r.eNPS; }),          borderColor: '#66CC00', backgroundColor: 'rgba(102,204,0,.1)',  tension: .3, pointRadius: 3, yAxisID: 'yENPS' }
+    );
+  }
+
+  function _makeChart(id, labels, datasets, yOpts) {
+    var canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (_engCharts[id]) { _engCharts[id].destroy(); }
+    _engCharts[id] = new Chart(canvas, {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { ticks: { maxRotation: 45 } },
+          y: Object.assign({ beginAtZero: false }, yOpts || {})
+        }
+      }
+    });
+  }
+
+  function _makeChartDual(id, labels, dsPct, dsENPS) {
+    var canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (_engCharts[id]) { _engCharts[id].destroy(); }
+    _engCharts[id] = new Chart(canvas, {
+      type: 'line',
+      data: { labels: labels, datasets: [dsPct, dsENPS] },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { ticks: { maxRotation: 45 } },
+          yPct:  { type: 'linear', position: 'left',  title: { display: true, text: 'Participation (%)' }, min: 0, max: 100 },
+          yENPS: { type: 'linear', position: 'right', title: { display: true, text: 'eNPS' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
+
+  // ── Reports ────────────────────────────────────────────────────────────────
+
+  function renderEngReports(rows) {
+    var el = document.getElementById('eng-reports-body');
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>';
+      return;
+    }
+
+    var monthly = aggregateByMonth(rows);
+    var opts = monthly.map(function (r, i) {
+      return '<option value="' + i + '"' + (i === monthly.length - 1 ? ' selected' : '') + '>' +
+        esc(monthLabel(r.date)) + '</option>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="eng-report-controls reveal">' +
+        '<label for="eng-period-sel"><strong>Select period:</strong></label> ' +
+        '<select id="eng-period-sel" class="eng-select">' + opts + '</select>' +
+        '<button class="btn-ghost eng-copy-btn" id="eng-copy-btn" style="margin-left:.75rem">Copy to clipboard</button>' +
+      '</div>' +
+      '<div class="gt-wrap reveal" style="margin-top:1.5rem">' +
+        '<pre id="eng-report-pre" class="eng-report-pre"></pre>' +
+      '</div>';
+
+    function update() {
+      var idx = Number(document.getElementById('eng-period-sel').value);
+      var cur  = monthly[idx];
+      var prev = idx > 0 ? monthly[idx - 1] : null;
+      document.getElementById('eng-report-pre').textContent = _buildPulseReport(cur, prev);
+    }
+
+    document.getElementById('eng-period-sel').addEventListener('change', update);
+    document.getElementById('eng-copy-btn').addEventListener('click', function () {
+      var text = document.getElementById('eng-report-pre').textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () {
+          var btn = document.getElementById('eng-copy-btn');
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = 'Copy to clipboard'; }, 2000);
+        });
+      }
+    });
+
+    update();
+  }
+
+  function _buildPulseReport(cur, prev) {
+    var dEng        = delta(cur, prev, 'engagement');
+    var dExpSatis   = delta(cur, prev, 'expSatis');
+    var dOrgCulture = delta(cur, prev, 'orgCulture');
+    var dGrowthWell = delta(cur, prev, 'growthWell');
+
+    var engStr = fmt(cur.engagement) + '/10' + (dEng !== null ? '  (' + (dEng >= 0 ? '+' : '') + dEng + ' vs prev)' : '');
+
+    var part    = cur.participation;
+    var partStr = part != null ? fmtPct(part) : '—';
+    var partDesc = part == null ? '' : part >= 90 ? 'Full house this month! Everyone checked in.' :
+                   part >= 75 ? 'Strong turnout — most of the team weighed in.' :
+                   part >= 60 ? 'Moderate participation. Some voices may be missing.' :
+                   'Low participation (' + partStr + ') — take scores with a grain of salt this period.';
+
+    var eNPS = cur.eNPS;
+    var eNPSStr = eNPS != null ? (eNPS > 0 ? '+' : '') + eNPS : '—';
+    var eNPSDesc = eNPS == null ? '' : eNPS >= 50 ? 'Excellent — team is highly likely to recommend.' :
+                   eNPS >= 20 ? 'Healthy eNPS. More promoters than detractors.' :
+                   eNPS >= 0  ? 'Neutral territory. Room to build more advocates.' :
+                   'More detractors than promoters. Worth a closer listen.';
+
+    var coreMetrics = [
+      { label: 'Recognition',     val: cur.recognition },
+      { label: 'Ambassadorship',  val: cur.ambassadorship },
+      { label: 'Feedback',        val: cur.feedback },
+      { label: 'Rel. with Peers', val: cur.relPeers },
+      { label: 'Rel. with Mgr',   val: cur.relManager },
+      { label: 'Satisfaction',    val: cur.satisfaction },
+      { label: 'Alignment',       val: cur.alignment },
+      { label: 'Happiness',       val: cur.happiness },
+      { label: 'Wellness',        val: cur.wellness },
+      { label: 'Personal Growth', val: cur.personalGrowth }
+    ].filter(function(m){ return m.val != null; })
+     .sort(function(a, b){ return b.val - a.val; });
+
+    var topMetric = coreMetrics[0];
+    var lowMetric = coreMetrics[coreMetrics.length - 1];
+
+    var overallTrend = '';
+    if (dEng !== null) {
+      overallTrend = dEng >= 0.3 ? 'Momentum is building — a nice step forward this period.' :
+                     dEng <= -0.3 ? 'Overall engagement dipped this month. Keep listening.' :
+                     'Engagement is holding steady — consistent is good!';
+    }
+
+    var lines = [
+      '📊 Team Pulse — ' + monthLabel(cur.date),
+      'As of ' + cur.date + '  |  ' + partStr + ' participation',
+      '',
+      '🔥 Overall Engagement: ' + engStr,
+      '',
+      '🌟 The Big Three',
+      '  Experience & Satisfaction ........  ' + fmt(cur.expSatis) + '/10  ' + trendWord(dExpSatis),
+      '  Culture & Relationships ..........  ' + fmt(cur.orgCulture) + '/10  ' + trendWord(dOrgCulture),
+      '  Growth, Alignment & Wellbeing ....  ' + fmt(cur.growthWell) + '/10  ' + trendWord(dGrowthWell),
+      '',
+      '💡 Key Highlights'
+    ];
+
+    if (topMetric) lines.push('  • ' + topMetric.label + ': ' + fmt(topMetric.val) + ' — ' + scoreLabel(topMetric.val) + ' 🌟');
+    if (lowMetric && lowMetric !== topMetric) lines.push('  • ' + lowMetric.label + ': ' + fmt(lowMetric.val) + ' — ' + scoreLabel(lowMetric.val));
+    if (eNPSDesc) lines.push('  • eNPS ' + eNPSStr + ': ' + eNPSDesc);
+    if (partDesc) lines.push('  • ' + partDesc);
+    if (overallTrend) lines.push('  • ' + overallTrend);
+
+    return lines.join('\n');
+  }
+
+  // ── Archive ────────────────────────────────────────────────────────────────
+
+  function renderEngArchive(rows) {
+    var el = document.getElementById('eng-archive-body');
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>';
+      return;
+    }
+
+    var monthly = aggregateByMonth(rows);
+
+    var headerRow = '<thead><tr>' +
+      '<th>Period</th><th>Eng.</th><th>Participation</th><th>eNPS</th>' +
+      '<th>Exp &amp; Satis</th><th>Culture &amp; Rel</th><th>Growth &amp; Well</th>' +
+      '</tr></thead>';
+
+    var bodyRows = monthly.map(function (cur, i) {
+      var prev = i > 0 ? monthly[i - 1] : null;
+      var dEng  = delta(cur, prev, 'engagement');
+      var dPart = delta(cur, prev, 'participation');
+      var dENPS = delta(cur, prev, 'eNPS');
+      var dES   = delta(cur, prev, 'expSatis');
+      var dOC   = delta(cur, prev, 'orgCulture');
+      var dGW   = delta(cur, prev, 'growthWell');
+
+      var eNPS = cur.eNPS;
+      var eNPSStr = eNPS != null ? (eNPS > 0 ? '+' : '') + eNPS : '—';
+      var eNPSCls = eNPS == null ? 'pend' : eNPS >= 20 ? 'ok' : eNPS >= 0 ? 'warn' : 'fail';
+
+      return '<tr>' +
+        '<td>' + esc(monthLabel(cur.date)) + '</td>' +
+        '<td><span class="pbadge ' + scoreClass(cur.engagement) + '">' + fmt(cur.engagement) + '</span> ' + trendArrow(dEng) + '</td>' +
+        '<td><span class="pbadge ' + (cur.participation >= 80 ? 'ok' : cur.participation >= 60 ? 'warn' : 'fail') + '">' + fmtPct(cur.participation) + '</span> ' + trendArrow(dPart) + '</td>' +
+        '<td><span class="pbadge ' + eNPSCls + '">' + esc(eNPSStr) + '</span> ' + trendArrow(dENPS) + '</td>' +
+        '<td>' + fmt(cur.expSatis) + ' ' + trendArrow(dES) + '</td>' +
+        '<td>' + fmt(cur.orgCulture) + ' ' + trendArrow(dOC) + '</td>' +
+        '<td>' + fmt(cur.growthWell) + ' ' + trendArrow(dGW) + '</td>' +
+      '</tr>';
+    }).reverse().join('');
+
+    el.innerHTML = '<div class="gt-wrap reveal">' +
+      '<table class="gt">' + headerRow + '<tbody>' + bodyRows + '</tbody></table>' +
+      '</div>';
+  }
+
+  // ── Inline styles ──────────────────────────────────────────────────────────
+
+  var css = document.createElement('style');
+  css.textContent =
+    '.eng-arrow { font-size:.85em; }' +
+    '.eng-arrow--up { color:#66CC00; }' +
+    '.eng-arrow--dn { color:#d00; }' +
+    '.eng-arrow--flat { color:#888; }' +
+    '.eng-chart-group { margin-bottom:2rem; padding:1.25rem; border:1px solid #e5e0ee; border-radius:10px; background:#fff; }' +
+    '.eng-chart-h { margin:0 0 1rem; font-size:1.05rem; color:#4B286D; }' +
+    '.eng-report-controls { margin-bottom:.5rem; }' +
+    '.eng-select { font-size:1rem; padding:.3rem .5rem; border:1px solid #ccc; border-radius:6px; }' +
+    '.eng-report-pre { white-space:pre-wrap; font-family:monospace; font-size:.9rem; line-height:1.6;' +
+      'background:#f6f2fa; border:1px solid #d8ceec; border-radius:8px; padding:1.25rem; overflow-x:auto; }';
+  document.head.appendChild(css);
+
+})();
+
+
+/* --- Calendar & Tasks tabs ----------------------------------------------- */
+(function () {
+  'use strict';
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderCalendar() {
+    var body = document.getElementById('cal-events-body');
+    if (!body) return;
+    var data = window.CALENDAR_DATA;
+    if (!Array.isArray(data) || !data.length) {
+      body.innerHTML = '<tr><td colspan="5" class="pipe-empty">No upcoming events in the next 90 days.</td></tr>';
+      return;
+    }
+    var typeCls = { meeting: 'info', deadline: 'bad', milestone: 'warn', event: 'ok' };
+    body.innerHTML = data.map(function (e) {
+      var t   = (e.type || 'event').toLowerCase();
+      var cls = typeCls[t] || 'ok';
+      var lbl = t.charAt(0).toUpperCase() + t.slice(1);
+      return '<tr>' +
+        '<td>' + esc(e.dateLabel || e.date || '') + '</td>' +
+        '<td>' + esc(e.title || '') + '</td>' +
+        '<td><span class="pbadge ' + cls + '">' + esc(lbl) + '</span></td>' +
+        '<td>' + esc(e.owner || '') + '</td>' +
+        '<td class="gt-prose">' + esc(e.notes || '') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  var _filter = 'all';
+
+  function renderTasks() {
+    var body = document.getElementById('tasks-body');
+    if (!body) return;
+    var data = window.TASKS_DATA;
+    if (!Array.isArray(data) || !data.length) {
+      body.innerHTML = '<tr><td colspan="6" class="pipe-empty">No tasks found. Add rows to the EPB Tasks Sheet.</td></tr>';
+      return;
+    }
+
+    var order = { 'in-progress': 0, 'in progress': 0, todo: 1, done: 2, completed: 2 };
+    data = data.slice().sort(function (a, b) {
+      var ao = order[a.status] !== undefined ? order[a.status] : 1;
+      var bo = order[b.status] !== undefined ? order[b.status] : 1;
+      if (ao !== bo) return ao - bo;
+      if (a.dueDate && b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
+      return a.dueDate ? -1 : b.dueDate ? 1 : 0;
+    });
+
+    var statusCls = { todo: 'todo', 'in-progress': 'warn', 'in progress': 'warn', done: 'ok', completed: 'ok' };
+    var prioCls   = { high: 'bad', medium: 'warn', low: 'info' };
+
+    body.innerHTML = data.map(function (t) {
+      var st    = (t.status || 'todo').toLowerCase();
+      var sCls  = statusCls[st] || 'todo';
+      var pr    = (t.priority || '').toLowerCase();
+      var pHtml = pr ? '<span class="pbadge ' + (prioCls[pr] || 'info') + '">' + esc(pr.charAt(0).toUpperCase() + pr.slice(1)) + '</span>' : '';
+      var due   = '';
+      if (t.dueDate) {
+        var p = t.dueDate.split('-');
+        due = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+      }
+      return '<tr data-status="' + esc(st) + '">' +
+        '<td class="gt-prose">' + esc(t.task) + '</td>' +
+        '<td>' + esc(t.owner) + '</td>' +
+        '<td>' + esc(due) + '</td>' +
+        '<td>' + pHtml + '</td>' +
+        '<td><span class="pbadge ' + sCls + '">' + esc(st.charAt(0).toUpperCase() + st.slice(1)) + '</span></td>' +
+        '<td class="gt-prose">' + esc(t.notes) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  window.filterTasks = function (filter) {
+    _filter = filter;
+    document.querySelectorAll('#tasks-body tr[data-status]').forEach(function (row) {
+      var st = (row.getAttribute('data-status') || '').replace(' ', '-');
+      row.hidden = filter !== 'all' && st !== filter;
+    });
+  };
+
+  function init() {
+    renderCalendar();
+    renderTasks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 </script>

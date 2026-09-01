@@ -18,6 +18,8 @@ function doGet(e) {
   tmpl.execUrl = ScriptApp.getService().getUrl();
   tmpl.teamCardData = PropertiesService.getScriptProperties().getProperty('TEAM_CARD_DATA') || '{}';
   tmpl.petCardData  = PropertiesService.getScriptProperties().getProperty('PET_CARD_DATA')  || '{}';
+  tmpl.calendarData = getCalendarData();
+  tmpl.tasksData    = getTasksData();
   return tmpl.evaluate()
     .setTitle('EPB Team Site')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -305,4 +307,233 @@ function syncTeamData() {
     Logger.log(Object.keys(petData).length + ' pet(s) updated:');
     Object.keys(petData).forEach(function(k) { Logger.log('  • ' + petData[k].petName + ' (Owner: ' + petData[k].owner + ')'); });
   }
+}
+
+
+// ─── Calendar Data ────────────────────────────────────────────────────────────
+// Merges events from Derek's Google Calendar (next 90 days) with rows from an
+// optional CALENDAR_EVENTS_SHEET_ID Sheet (Date | Title | Type | Owner | Notes).
+// Set CALENDAR_EVENTS_SHEET_ID in Script Properties to enable the Sheet source.
+
+function getCalendarData() {
+  var events = [];
+  var now    = new Date();
+  var end    = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  var tz     = Session.getScriptTimeZone();
+
+  try {
+    CalendarApp.getDefaultCalendar().getEvents(now, end).forEach(function(ev) {
+      var start = ev.getStartTime();
+      events.push({
+        date:      Utilities.formatDate(start, tz, 'yyyy-MM-dd'),
+        dateLabel: Utilities.formatDate(start, tz, 'MMM d'),
+        title:     ev.getTitle(),
+        type:      'meeting',
+        owner:     '',
+        notes:     ev.getDescription() || ''
+      });
+    });
+  } catch (ex) {
+    Logger.log('CalendarApp error: ' + ex);
+  }
+
+  var sheetId = PropertiesService.getScriptProperties().getProperty('CALENDAR_EVENTS_SHEET_ID');
+  if (sheetId) {
+    try {
+      var rows = SpreadsheetApp.openById(sheetId).getSheets()[0].getDataRange().getValues();
+      if (rows.length > 1) {
+        var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+        var iDate   = headers.indexOf('date');
+        var iTitle  = headers.indexOf('title');
+        var iType   = headers.indexOf('type');
+        var iOwner  = headers.indexOf('owner');
+        var iNotes  = headers.indexOf('notes');
+        for (var i = 1; i < rows.length; i++) {
+          var row = rows[i];
+          var raw = iDate >= 0 ? row[iDate] : '';
+          if (!raw) continue;
+          var d = raw instanceof Date ? raw : new Date(raw);
+          if (isNaN(d)) continue;
+          events.push({
+            date:      Utilities.formatDate(d, tz, 'yyyy-MM-dd'),
+            dateLabel: Utilities.formatDate(d, tz, 'MMM d'),
+            title:     iTitle >= 0 ? String(row[iTitle]).trim() : '',
+            type:      iType  >= 0 ? String(row[iType]).trim().toLowerCase()  : 'event',
+            owner:     iOwner >= 0 ? String(row[iOwner]).trim() : '',
+            notes:     iNotes >= 0 ? String(row[iNotes]).trim() : ''
+          });
+        }
+      }
+    } catch (ex) {
+      Logger.log('Events sheet error: ' + ex);
+    }
+  }
+
+  events.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  return JSON.stringify(events);
+}
+
+
+// ─── Tasks Data ───────────────────────────────────────────────────────────────
+// Reads task rows from the TASKS_SHEET_ID Sheet.
+// Expected columns: Task | Owner | Due Date | Priority | Status | Notes
+// Set TASKS_SHEET_ID in Script Properties to enable.
+
+function getTasksData() {
+  var tasks   = [];
+  var sheetId = PropertiesService.getScriptProperties().getProperty('TASKS_SHEET_ID');
+  if (!sheetId) return JSON.stringify(tasks);
+  var tz = Session.getScriptTimeZone();
+
+  try {
+    var rows = SpreadsheetApp.openById(sheetId).getSheets()[0].getDataRange().getValues();
+    if (rows.length < 2) return JSON.stringify(tasks);
+
+    var headers   = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+    var iTask     = headers.indexOf('task');
+    var iOwner    = headers.indexOf('owner');
+    var iDue      = headers.indexOf('due date');
+    var iPriority = headers.indexOf('priority');
+    var iStatus   = headers.indexOf('status');
+    var iNotes    = headers.indexOf('notes');
+
+    for (var i = 1; i < rows.length; i++) {
+      var row  = rows[i];
+      var task = iTask >= 0 ? String(row[iTask]).trim() : '';
+      if (!task) continue;
+
+      var dueStr = '';
+      if (iDue >= 0 && row[iDue]) {
+        var d = row[iDue] instanceof Date ? row[iDue] : new Date(row[iDue]);
+        if (!isNaN(d)) dueStr = Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+      }
+
+      tasks.push({
+        task:     task,
+        owner:    iOwner    >= 0 ? String(row[iOwner]).trim()                   : '',
+        dueDate:  dueStr,
+        priority: iPriority >= 0 ? String(row[iPriority]).trim().toLowerCase()  : '',
+        status:   iStatus   >= 0 ? String(row[iStatus]).trim().toLowerCase()    : 'todo',
+        notes:    iNotes    >= 0 ? String(row[iNotes]).trim()                   : ''
+      });
+    }
+  } catch (ex) {
+    Logger.log('Tasks sheet error: ' + ex);
+  }
+
+  return JSON.stringify(tasks);
+}
+
+
+// ─── Engagement Data ──────────────────────────────────────────────────────────
+// Reads engagement survey data from the YTD 2026 tab of the engagement sheet.
+// Returns an array of row objects with all core metrics, sub-metrics, and the
+// three composite scores computed server-side.
+
+var ENGAGEMENT_SHEET_ID = '1SScKVG1Zo-UdPWupq-vb4kE_WTu1P_8lMIu7WFYPsXU';
+
+function getEngagementData() {
+  try {
+    var ss    = SpreadsheetApp.openById(ENGAGEMENT_SHEET_ID);
+    var sheet = ss.getSheetByName('YTD 2026');
+    if (!sheet) return [];
+
+    var values = sheet.getDataRange().getValues();
+    if (values.length < 2) return [];
+
+    var results = [];
+    for (var i = 1; i < values.length; i++) {
+      var r = values[i];
+      var rawDate = r[0];
+      if (!rawDate || String(rawDate).trim() === '-----') continue;
+
+      var eng       = _engNum(r[1]);
+      var part      = _engNum(r[2]);
+      var eNPS      = _engNum(r[3]);
+      var recog     = _engNum(r[4]);
+      var ambass    = _engNum(r[5]);
+      var feedback  = _engNum(r[6]);
+      var relPeers  = _engNum(r[7]);
+      var relMgr    = _engNum(r[8]);
+      var satis     = _engNum(r[9]);
+      var align     = _engNum(r[10]);
+      var happy     = _engNum(r[11]);
+      var wellness  = _engNum(r[12]);
+      var growth    = _engNum(r[13]);
+      // r[14] is the ----- separator column
+
+      results.push({
+        date:         _formatEngDate(rawDate),
+        engagement:   eng,
+        participation: part,
+        eNPS:         eNPS,
+        recognition:  recog,
+        ambassadorship: ambass,
+        feedback:     feedback,
+        relPeers:     relPeers,
+        relManager:   relMgr,
+        satisfaction: satis,
+        alignment:    align,
+        happiness:    happy,
+        wellness:     wellness,
+        personalGrowth: growth,
+        // Composite scores
+        expSatis:    _engAvg([recog, ambass, feedback, satis]),
+        orgCulture:  _engAvg([relPeers, relMgr]),
+        growthWell:  _engAvg([align, happy, wellness, growth]),
+        // Sub-metrics
+        sub: {
+          recogQuality:    _engNum(r[15]),
+          recogFrequency:  _engNum(r[16]),
+          championing:     _engNum(r[17]),
+          pride:           _engNum(r[18]),
+          feedbackQuality: _engNum(r[19]),
+          feedbackFreq:    _engNum(r[20]),
+          feedbackSuggest: _engNum(r[21]),
+          peerCollab:      _engNum(r[22]),
+          peerTrust:       _engNum(r[23]),
+          peerComm:        _engNum(r[24]),
+          mgrCollab:       _engNum(r[25]),
+          mgrTrust:        _engNum(r[26]),
+          mgrComm:         _engNum(r[27]),
+          satisFair:       _engNum(r[28]),
+          satisRole:       _engNum(r[29]),
+          satisEnv:        _engNum(r[30]),
+          alignValues:     _engNum(r[31]),
+          alignVision:     _engNum(r[32]),
+          alignEthics:     _engNum(r[33]),
+          happyWork:       _engNum(r[34]),
+          happyWLB:        _engNum(r[35]),
+          stress:          _engNum(r[36]),
+          personalHealth:  _engNum(r[37]),
+          autonomy:        _engNum(r[38]),
+          mastery:         _engNum(r[39]),
+          purpose:         _engNum(r[40])
+        }
+      });
+    }
+    return results;
+  } catch (ex) {
+    Logger.log('getEngagementData error: ' + ex);
+    return [];
+  }
+}
+
+function _engNum(v) {
+  var n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+function _engAvg(vals) {
+  var nums = vals.filter(function(v) { return v !== null && !isNaN(v); });
+  if (!nums.length) return null;
+  var sum = nums.reduce(function(a, b) { return a + b; }, 0);
+  return Math.round((sum / nums.length) * 10) / 10;
+}
+
+function _formatEngDate(raw) {
+  if (raw instanceof Date) {
+    return Utilities.formatDate(raw, 'America/Vancouver', 'yyyy-MM-dd');
+  }
+  return String(raw).trim();
 }

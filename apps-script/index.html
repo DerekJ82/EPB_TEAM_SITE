@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EPB Team Site</title>
 <?!= include('styles') ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <script>window.IS_ADMIN = <?= isAdmin ?>;</script>
 <script>window.TEAM_CARD_DATA = <?!= teamCardData ?>;</script>
 <script>window.PET_CARD_DATA  = <?!= petCardData  ?>;</script>
+<script>window.CALENDAR_DATA  = <?!= calendarData ?>;</script>
+<script>window.TASKS_DATA     = <?!= tasksData    ?>;</script>
 
 <!-- ============================== GREETER ============================== -->
 <div id="greeter">
@@ -75,8 +78,14 @@
         <span class="ws-blurb">Links to dashboards, tools, and team resources.</span>
         <span class="ws-go">Open <i>&rarr;</i></span>
       </button>
-      <a class="ws-card" href="<?!= execUrl ?>?meeting=current" target="_blank" rel="noopener">
+      <button class="ws-card" data-section="engagement">
         <span class="ws-num">Section 05</span>
+        <span class="ws-title">Engagement</span>
+        <span class="ws-blurb">Team pulse scores, trend charts, and auto-generated pulse reports.</span>
+        <span class="ws-go">Open <i>&rarr;</i></span>
+      </button>
+      <a class="ws-card" href="<?!= execUrl ?>?meeting=current" target="_blank" rel="noopener">
+        <span class="ws-num">Section 06</span>
         <span class="ws-title">Team Meetings</span>
         <span class="ws-blurb">Presentations and archive for all S&amp;P team meeting sessions.</span>
         <span class="ws-go">Open <i>&rarr;</i></span>
@@ -93,8 +102,9 @@
   <i data-section="team"      data-tab="org-chart"     data-label="Org Chart"></i>
   <i data-section="team"      data-tab="furry-friends" data-label="Furry Friends"></i>
   <!-- Calendar -->
-  <i data-section="calendar"  data-tab="cadence"   data-label="Meeting Cadence"></i>
-  <i data-section="calendar"  data-tab="key-dates" data-label="Key Dates"></i>
+  <i data-section="calendar"  data-tab="cadence" data-label="Meeting Cadence"></i>
+  <i data-section="calendar"  data-tab="events"  data-label="Calendar"></i>
+  <i data-section="calendar"  data-tab="tasks"   data-label="Tasks"></i>
   <!-- Pipelines -->
   <i data-section="pipelines" data-tab="pso"       data-label="PSO One Pager"></i>
   <i data-section="pipelines" data-tab="cbr"       data-label="Consolidate BR Pipeline"></i>
@@ -102,6 +112,11 @@
   <i data-section="pipelines" data-tab="admin"     data-label="EPB Hub Access Requests" data-admin="true"></i>
   <!-- Playground -->
   <i data-section="playground" data-tab="links"    data-label="Links &amp; Resources"></i>
+  <!-- Engagement -->
+  <i data-section="engagement" data-tab="eng-dashboard" data-label="Dashboard"></i>
+  <i data-section="engagement" data-tab="eng-trends"    data-label="Trends"></i>
+  <i data-section="engagement" data-tab="eng-reports"   data-label="Reports"></i>
+  <i data-section="engagement" data-tab="eng-archive"   data-label="Archive"></i>
 </div>
 
 
@@ -499,64 +514,66 @@
   </div>
 
 
-  <!-- ═══════════════════ CALENDAR: KEY DATES ═══════════════════ -->
-  <div class="tabview" id="view-key-dates" hidden>
+  <!-- ═══════════════════ CALENDAR: EVENTS ═══════════════════ -->
+  <div class="tabview" id="view-events" hidden>
     <header class="hero">
       <div class="hero-in">
-        <span class="eyebrow">Calendar &middot; Key Dates</span>
-        <h1 class="hero-t">Upcoming milestones.</h1>
-        <p class="hero-l">Reporting deadlines, planning events, and hard commitments for the team.</p>
+        <span class="eyebrow">Calendar &middot; Upcoming Events</span>
+        <h1 class="hero-t">What&rsquo;s on the calendar.</h1>
+        <p class="hero-l">Meetings from Derek&rsquo;s calendar and key dates from the team events sheet &mdash; next 90 days.</p>
       </div>
     </header>
 
     <section class="sect">
       <div class="pad">
-        <div class="sect-head reveal"><h3 class="h3">Key dates</h3></div>
+        <div class="sect-head reveal"><h3 class="h3">Upcoming events</h3></div>
         <div class="gt-wrap reveal">
           <table class="gt">
             <thead>
-              <tr><th>Date</th><th>Event</th><th>Owner</th><th class="gt-prose">Notes</th></tr>
+              <tr><th>Date</th><th>Event</th><th>Type</th><th>Owner</th><th class="gt-prose">Notes</th></tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>— Add date —</td>
-                <td>Monthly Close</td>
-                <td>Analytics</td>
-                <td class="gt-prose">CBR and BR Queries pipelines must complete by EOD.</td>
-              </tr>
-              <tr>
-                <td>— Add date —</td>
-                <td>PSO One Pager Due</td>
-                <td>Planning</td>
-                <td class="gt-prose">Final deck delivered to VP for review.</td>
-              </tr>
-              <tr>
-                <td>— Add date —</td>
-                <td>QPR</td>
-                <td>All</td>
-                <td class="gt-prose">Full-day session. Location TBD.</td>
-              </tr>
-              <tr>
-                <td>— Add date —</td>
-                <td>Flash Newsletter</td>
-                <td>Strategy</td>
-                <td class="gt-prose">Distribution to exec leadership list.</td>
-              </tr>
-              <tr>
-                <td>— Add date —</td>
-                <td>StratCheck</td>
-                <td>All</td>
-                <td class="gt-prose">Mid-quarter review of QPR commitments.</td>
-              </tr>
+            <tbody id="cal-events-body">
+              <tr><td colspan="5" class="pipe-loading">Loading calendar&hellip;</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="gnote reveal" style="margin-top:24px">
-          <span class="dsr-icon" aria-hidden="true">i</span>
-          <div>
-            <h4 class="gnote-h">Keep this table updated in index.html</h4>
-            <p class="gnote-p">Replace placeholder rows with actual dates. Add a row for each hard commitment the team needs to track. Remove past dates as they pass.</p>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ CALENDAR: TASKS ═══════════════════ -->
+  <div class="tabview" id="view-tasks" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Calendar &middot; Tasks</span>
+        <h1 class="hero-t">Team task list.</h1>
+        <p class="hero-l">Shared action items tracked in the EPB Tasks Sheet. Update the sheet to keep this current.</p>
+      </div>
+    </header>
+
+    <section class="sect">
+      <div class="pad">
+        <div class="sect-head reveal">
+          <h3 class="h3">Tasks</h3>
+          <div class="swap reveal" id="tasks-filter" style="margin-top:16px">
+            <div class="swap-bar">
+              <button class="swap-b on" data-wrap="tasks-filter" data-i="0" onclick="filterTasks('all')">All</button>
+              <button class="swap-b" data-wrap="tasks-filter" data-i="1" onclick="filterTasks('in-progress')">In Progress</button>
+              <button class="swap-b" data-wrap="tasks-filter" data-i="2" onclick="filterTasks('todo')">To Do</button>
+              <button class="swap-b" data-wrap="tasks-filter" data-i="3" onclick="filterTasks('done')">Done</button>
+            </div>
           </div>
+        </div>
+        <div class="gt-wrap reveal">
+          <table class="gt">
+            <thead>
+              <tr><th class="gt-prose">Task</th><th>Owner</th><th>Due</th><th>Priority</th><th>Status</th><th class="gt-prose">Notes</th></tr>
+            </thead>
+            <tbody id="tasks-body">
+              <tr><td colspan="6" class="pipe-loading">Loading tasks&hellip;</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -754,6 +771,79 @@
           </div>
         </div>
 
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ═══════════════════ ENGAGEMENT: DASHBOARD ═══════════════════ -->
+  <div class="tabview" id="view-eng-dashboard" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Engagement &middot; Dashboard</span>
+        <h1 class="hero-t">How is the team feeling?</h1>
+        <p class="hero-l">Current engagement scores, composite KPIs, and participation snapshot.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="eng-dashboard-body">
+          <p class="pipe-loading">Loading engagement data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══════════════════ ENGAGEMENT: TRENDS ═══════════════════ -->
+  <div class="tabview" id="view-eng-trends" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Engagement &middot; Trends</span>
+        <h1 class="hero-t">How have things changed?</h1>
+        <p class="hero-l">Month-by-month trend lines for composite scores, core metrics, and participation.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="eng-trends-body">
+          <p class="pipe-loading">Loading engagement data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══════════════════ ENGAGEMENT: REPORTS ═══════════════════ -->
+  <div class="tabview" id="view-eng-reports" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Engagement &middot; Reports</span>
+        <h1 class="hero-t">Team Pulse reports.</h1>
+        <p class="hero-l">Auto-generated monthly pulse summaries ready to copy into a slide deck.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="eng-reports-body">
+          <p class="pipe-loading">Loading engagement data&hellip;</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══════════════════ ENGAGEMENT: ARCHIVE ═══════════════════ -->
+  <div class="tabview" id="view-eng-archive" hidden>
+    <header class="hero">
+      <div class="hero-in">
+        <span class="eyebrow">Engagement &middot; Archive</span>
+        <h1 class="hero-t">Historical data.</h1>
+        <p class="hero-l">Month-by-month summary of all engagement scores since January 2026.</p>
+      </div>
+    </header>
+    <section class="sect">
+      <div class="pad">
+        <div id="eng-archive-body">
+          <p class="pipe-loading">Loading engagement data&hellip;</p>
+        </div>
       </div>
     </section>
   </div>
