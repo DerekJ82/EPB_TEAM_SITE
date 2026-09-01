@@ -793,12 +793,64 @@
 
   // Group rows by YYYY-MM, keep last row of each month
   function aggregateByMonth(rows) {
-    var months = {};
+    var buckets = {};
     rows.forEach(function (r) {
       var key = String(r.date).slice(0, 7);
-      months[key] = r;
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(r);
     });
-    return Object.keys(months).sort().map(function (k) { return months[k]; });
+
+    function mean(arr, field) {
+      var vals = arr.map(function (r) { return r[field]; })
+                    .filter(function (v) { return v != null && !isNaN(v); });
+      if (!vals.length) return null;
+      return Math.round((vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) * 10) / 10;
+    }
+
+    function meanSub(arr, subKey) {
+      var vals = arr.map(function (r) { return r.sub ? r.sub[subKey] : null; })
+                    .filter(function (v) { return v != null && !isNaN(v); });
+      if (!vals.length) return null;
+      return Math.round((vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) * 10) / 10;
+    }
+
+    var SUB_KEYS = [
+      'recogQuality','recogFrequency','championing','pride',
+      'feedbackQuality','feedbackFreq','feedbackSuggest',
+      'peerCollab','peerTrust','peerComm',
+      'mgrCollab','mgrTrust','mgrComm',
+      'satisFair','satisRole','satisEnv',
+      'alignValues','alignVision','alignEthics',
+      'happyWork','happyWLB','stress','personalHealth',
+      'autonomy','mastery','purpose'
+    ];
+
+    return Object.keys(buckets).sort().map(function (k) {
+      var monthRows = buckets[k];
+      var sub = {};
+      SUB_KEYS.forEach(function (sk) { sub[sk] = meanSub(monthRows, sk); });
+      return {
+        date:           monthRows[monthRows.length - 1].date,
+        _count:         monthRows.length,
+        engagement:     mean(monthRows, 'engagement'),
+        participation:  mean(monthRows, 'participation'),
+        eNPS:           mean(monthRows, 'eNPS'),
+        recognition:    mean(monthRows, 'recognition'),
+        ambassadorship: mean(monthRows, 'ambassadorship'),
+        feedback:       mean(monthRows, 'feedback'),
+        relPeers:       mean(monthRows, 'relPeers'),
+        relManager:     mean(monthRows, 'relManager'),
+        satisfaction:   mean(monthRows, 'satisfaction'),
+        alignment:      mean(monthRows, 'alignment'),
+        happiness:      mean(monthRows, 'happiness'),
+        wellness:       mean(monthRows, 'wellness'),
+        personalGrowth: mean(monthRows, 'personalGrowth'),
+        expSatis:       mean(monthRows, 'expSatis'),
+        orgCulture:     mean(monthRows, 'orgCulture'),
+        growthWell:     mean(monthRows, 'growthWell'),
+        sub:            sub
+      };
+    });
   }
 
   function monthLabel(dateStr) {
@@ -862,22 +914,6 @@
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
 
-  // Find the row whose date is closest to N days before baseRow's date.
-  // Skips baseRow itself; requires at least N/2 days gap to avoid same-day match.
-  function findRowNDaysAgo(rows, baseRow, days) {
-    var baseMs = new Date(baseRow.date + 'T00:00:00').getTime();
-    var targetMs = baseMs - days * 864e5;
-    var minGapMs = (days / 2) * 864e5;
-    var best = null, bestDiff = Infinity;
-    rows.forEach(function (r) {
-      var ms = new Date(r.date + 'T00:00:00').getTime();
-      if (baseMs - ms < minGapMs) return; // too recent
-      var diff = Math.abs(ms - targetMs);
-      if (diff < bestDiff) { bestDiff = diff; best = r; }
-    });
-    return best;
-  }
-
   function renderEngDashboard(rows) {
     var el = document.getElementById('eng-dashboard-body');
     if (!el) return;
@@ -886,9 +922,9 @@
       return;
     }
 
-    // Use raw rows: latest entry as current, entry ~30 days prior as comparison.
-    var cur  = rows[rows.length - 1];
-    var prev = findRowNDaysAgo(rows, cur, 30);
+    var monthly = aggregateByMonth(rows);
+    var cur  = monthly[monthly.length - 1];
+    var prev = monthly.length > 1 ? monthly[monthly.length - 2] : null;
 
     var partPct = cur.participation;
     var partAlert = '';
@@ -939,7 +975,7 @@
     }).join('');
 
     var kpiTable = '<div class="gt-wrap reveal"><table class="gt">' +
-      '<thead><tr><th>Metric</th><th>Score</th><th>vs ~30 days ago</th></tr></thead>' +
+      '<thead><tr><th>Metric</th><th>Score</th><th>vs prev month</th></tr></thead>' +
       '<tbody>' + kpiRows + '</tbody></table></div>';
 
     var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
@@ -1198,7 +1234,7 @@
     var monthly = aggregateByMonth(rows);
 
     var headerRow = '<thead><tr>' +
-      '<th>Period</th><th>Eng.</th><th>Participation</th><th>eNPS</th>' +
+      '<th>Period</th><th>Entries</th><th>Eng.</th><th>Participation</th><th>eNPS</th>' +
       '<th>Exp &amp; Satis</th><th>Culture &amp; Rel</th><th>Growth &amp; Well</th>' +
       '</tr></thead>';
 
@@ -1217,6 +1253,7 @@
 
       return '<tr>' +
         '<td>' + esc(monthLabel(cur.date)) + '</td>' +
+        '<td style="text-align:center;color:#888">' + (cur._count || 1) + '</td>' +
         '<td><span class="pbadge ' + scoreClass(cur.engagement) + '">' + fmt(cur.engagement) + '</span> ' + trendArrow(dEng) + '</td>' +
         '<td><span class="pbadge ' + (cur.participation >= 80 ? 'ok' : cur.participation >= 60 ? 'warn' : 'fail') + '">' + fmtPct(cur.participation) + '</span> ' + trendArrow(dPart) + '</td>' +
         '<td><span class="pbadge ' + eNPSCls + '">' + esc(eNPSStr) + '</span> ' + trendArrow(dENPS) + '</td>' +
