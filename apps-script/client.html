@@ -912,90 +912,289 @@
   observeTab('view-eng-reports',   function () { _loadEngData(renderEngReports); });
   observeTab('view-eng-archive',   function () { _loadEngData(renderEngArchive); });
 
+  // ── Gauge SVG helpers ──────────────────────────────────────────────────────
+
+  function _gPt(cx, cy, r, deg) {
+    var rad = deg * Math.PI / 180;
+    return { x: +(cx + r * Math.cos(rad)).toFixed(2), y: +(cy - r * Math.sin(rad)).toFixed(2) };
+  }
+
+  // Ring arc segment: from angle `from` to `to` (degrees, math convention).
+  // Outer arc goes CW in SVG (sweep=1), inner goes CCW (sweep=0) to close the ring.
+  function _gArc(cx, cy, R, r, from, to) {
+    var p1 = _gPt(cx, cy, R, from),  p2 = _gPt(cx, cy, R, to);
+    var p3 = _gPt(cx, cy, r, to),    p4 = _gPt(cx, cy, r, from);
+    var lg = (from - to) > 180 ? 1 : 0;
+    return 'M' + p1.x + ',' + p1.y +
+      ' A' + R + ',' + R + ' 0 ' + lg + ',1 ' + p2.x + ',' + p2.y +
+      ' L' + p3.x + ',' + p3.y +
+      ' A' + r + ',' + r + ' 0 ' + lg + ',0 ' + p4.x + ',' + p4.y + 'Z';
+  }
+
+  function makeGaugeSVG(score, prevScore, isLarge) {
+    var cx = 100, cy = 106;
+    var R = isLarge ? 84 : 76, r = R - 22;
+    var mom = (score != null && prevScore != null)
+      ? Math.round((score - prevScore) * 10) / 10 : null;
+    var momClr = mom == null ? '#888' : mom > 0 ? '#66CC00' : mom < 0 ? '#cc3300' : '#888';
+    var momTxt = mom != null ? (mom > 0 ? '+' : '') + mom.toFixed(1) + ' MoM' : '';
+    var angle  = score != null ? 180 - (Math.max(0, Math.min(10, score)) / 10 * 180) : 90;
+    var tip    = _gPt(cx, cy, R - 8, angle);
+    var sf     = isLarge ? 22 : 18;
+    var mf     = isLarge ? 10 : 9;
+    var vbH    = cy + 33;
+
+    // Tick marks at 0, 2, 4, 6, 8, 10
+    var ticks = [0, 2, 4, 6, 8, 10].map(function (v) {
+      var a = 180 - (v / 10) * 180;
+      var t1 = _gPt(cx, cy, R + 1, a), t2 = _gPt(cx, cy, R + 7, a);
+      return '<line x1="' + t1.x + '" y1="' + t1.y + '" x2="' + t2.x + '" y2="' + t2.y + '" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>';
+    }).join('');
+
+    // Outer decorative arc (slightly outside R)
+    var rR = R + 5, rP1 = _gPt(cx, cy, rR, 182), rP2 = _gPt(cx, cy, rR, -2);
+
+    return '<svg viewBox="0 0 200 ' + vbH + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M' + rP1.x + ',' + rP1.y + ' A' + rR + ',' + rR + ' 0 0,1 ' + rP2.x + ',' + rP2.y + '" stroke="#d0c8e0" stroke-width="3" fill="none"/>' +
+      '<path d="' + _gArc(cx, cy, R, r, 180, 0)  + '" fill="#ddd"/>' +
+      '<path d="' + _gArc(cx, cy, R, r, 180, 90) + '" fill="#d94f3d"/>' +
+      '<path d="' + _gArc(cx, cy, R, r, 90, 54)  + '" fill="#f5a623"/>' +
+      '<path d="' + _gArc(cx, cy, R, r, 54, 0)   + '" fill="#66CC00"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - 3) + '" fill="#f8f6fb"/>' +
+      ticks +
+      '<text x="' + _gPt(cx, cy, R + 14, 180).x + '" y="' + (_gPt(cx, cy, R + 14, 180).y + 4) + '" text-anchor="middle" font-size="8" fill="#aaa">0</text>' +
+      '<text x="' + _gPt(cx, cy, R + 14, 0).x   + '" y="' + (_gPt(cx, cy, R + 14, 0).y + 4)   + '" text-anchor="middle" font-size="8" fill="#aaa">10</text>' +
+      (momTxt ? '<text x="' + cx + '" y="' + (cy - r + 15) + '" text-anchor="middle" font-size="' + mf + '" fill="' + momClr + '" font-weight="bold">' + momTxt + '</text>' : '') +
+      '<line x1="' + cx + '" y1="' + cy + '" x2="' + tip.x + '" y2="' + tip.y + '" stroke="#cc3300" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#4B286D"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="3.5" fill="#fff"/>' +
+      '<text x="' + cx + '" y="' + (cy + 26) + '" text-anchor="middle" font-size="' + sf + '" font-weight="bold" fill="#222">' + (score != null ? score.toFixed(1) : '—') + '</text>' +
+      '</svg>';
+  }
+
   // ── Dashboard ──────────────────────────────────────────────────────────────
 
   function renderEngDashboard(rows) {
     var el = document.getElementById('eng-dashboard-body');
     if (!el) return;
-    if (!rows || !rows.length) {
-      el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>';
-      return;
-    }
+    if (!rows || !rows.length) { el.innerHTML = '<p class="pipe-empty">No engagement data found.</p>'; return; }
 
     var monthly = aggregateByMonth(rows);
     var cur  = monthly[monthly.length - 1];
     var prev = monthly.length > 1 ? monthly[monthly.length - 2] : null;
 
-    var partPct = cur.participation;
+    var partPct     = cur.participation;
+    var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
+    var eNPSVal     = cur.eNPS;
+    var eNPSStr     = eNPSVal != null ? (eNPSVal > 0 ? '+' : '') + eNPSVal.toFixed(0) : '—';
+    var eNPSCls     = eNPSVal == null ? 'pend' : eNPSVal >= 20 ? 'ok' : eNPSVal >= 0 ? 'warn' : 'fail';
+
     var partAlert = '';
     if (partPct !== null && partPct < 70) {
-      var alertCls = partPct < 50 ? 'fail' : 'warn';
       partAlert = '<div class="gnote reveal" style="margin-bottom:1.5rem">' +
         '<span class="dsr-icon" aria-hidden="true">!</span>' +
         '<div><h4 class="gnote-h">Low participation this period</h4>' +
         '<p class="gnote-p">Only ' + fmtPct(partPct) + ' of the team responded — scores may not be fully representative.</p></div></div>';
     }
 
-    var dExpSatis   = delta(cur, prev, 'expSatis');
-    var dOrgCulture = delta(cur, prev, 'orgCulture');
-    var dGrowthWell = delta(cur, prev, 'growthWell');
-    var dEng        = delta(cur, prev, 'engagement');
-
-    var compositeCards = '<div class="gstats reveal" style="margin-bottom:2rem">' +
-      _bigScoreCard('Experience &amp; Satisfaction', cur.expSatis, dExpSatis) +
-      _bigScoreCard('Culture &amp; Relationships',   cur.orgCulture, dOrgCulture) +
-      _bigScoreCard('Growth, Alignment &amp; Wellbeing', cur.growthWell, dGrowthWell) +
-    '</div>';
-
-    var coreMetrics = [
-      { label: 'Engagement',       key: 'engagement' },
-      { label: 'eNPS',             key: 'eNPS',          isENPS: true },
-      { label: 'Recognition',      key: 'recognition' },
-      { label: 'Ambassadorship',   key: 'ambassadorship' },
-      { label: 'Feedback',         key: 'feedback' },
-      { label: 'Rel. with Peers',  key: 'relPeers' },
-      { label: 'Rel. with Mgr',    key: 'relManager' },
-      { label: 'Satisfaction',     key: 'satisfaction' },
-      { label: 'Alignment',        key: 'alignment' },
-      { label: 'Happiness',        key: 'happiness' },
-      { label: 'Wellness',         key: 'wellness' },
-      { label: 'Personal Growth',  key: 'personalGrowth' }
-    ];
-
-    var kpiRows = coreMetrics.map(function (m) {
-      var val = cur[m.key];
-      var d   = delta(cur, prev, m.key);
-      var valStr = m.isENPS ? (val == null ? '—' : (val > 0 ? '+' : '') + val) : fmt(val);
-      var cls = m.isENPS ? (val > 20 ? 'ok' : val > 0 ? 'warn' : 'fail') : scoreClass(val);
-      return '<tr>' +
-        '<td>' + esc(m.label) + '</td>' +
-        '<td><span class="pbadge ' + cls + '">' + valStr + '</span></td>' +
-        '<td>' + trendArrow(d) + (d !== null ? ' ' + (d >= 0 ? '+' : '') + d : '') + '</td>' +
-      '</tr>';
-    }).join('');
-
-    var kpiTable = '<div class="gt-wrap reveal"><table class="gt">' +
-      '<thead><tr><th>Metric</th><th>Score</th><th>vs prev month</th></tr></thead>' +
-      '<tbody>' + kpiRows + '</tbody></table></div>';
-
-    var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
     var header = '<div class="gstats reveal" style="margin-bottom:1.5rem">' +
-      '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Current period</span></div>' +
+      '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Period (' + (cur._count || 1) + '-entry avg)</span></div>' +
       '<div class="gstat"><b><span class="pbadge ' + partBadgeCls + '">' + fmtPct(partPct) + '</span></b><span>Participation</span></div>' +
-      '<div class="gstat"><b>' + fmt(cur.engagement) + ' ' + trendArrow(dEng) + '</b><span>Overall engagement</span></div>' +
+      '<div class="gstat"><b><span class="pbadge ' + eNPSCls + '">' + eNPSStr + '</span></b><span>eNPS</span></div>' +
     '</div>';
 
-    el.innerHTML = header + partAlert + compositeCards + kpiTable;
+    var gauges =
+      '<div class="eng-gauge-layout reveal">' +
+        '<div class="eng-gauge-row">' +
+          '<button class="eng-gauge-btn" data-cat="expSatis">' +
+            makeGaugeSVG(cur.expSatis, prev ? prev.expSatis : null, false) +
+            '<div class="eng-gauge-label">Experience &amp; Satisfaction</div>' +
+            '<div class="eng-gauge-hint">tap for details</div>' +
+          '</button>' +
+          '<div class="eng-gauge-item eng-gauge-large">' +
+            makeGaugeSVG(cur.engagement, prev ? prev.engagement : null, true) +
+            '<div class="eng-gauge-label eng-gauge-label--large">Overall Engagement</div>' +
+          '</div>' +
+          '<button class="eng-gauge-btn" data-cat="growthWell">' +
+            makeGaugeSVG(cur.growthWell, prev ? prev.growthWell : null, false) +
+            '<div class="eng-gauge-label">Growth, Alignment &amp; Wellbeing</div>' +
+            '<div class="eng-gauge-hint">tap for details</div>' +
+          '</button>' +
+        '</div>' +
+        '<div class="eng-gauge-row">' +
+          '<button class="eng-gauge-btn" data-cat="orgCulture">' +
+            makeGaugeSVG(cur.orgCulture, prev ? prev.orgCulture : null, false) +
+            '<div class="eng-gauge-label">Organizational Culture &amp; Relationships</div>' +
+            '<div class="eng-gauge-hint">tap for details</div>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+
+    el.innerHTML = header + partAlert + gauges + _engHighlights(cur, prev);
+
+    el.querySelectorAll('.eng-gauge-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { _openEngModal(btn.getAttribute('data-cat'), cur, prev); });
+    });
   }
 
-  function _bigScoreCard(label, val, d) {
-    var cls = scoreClass(val);
-    var dStr = d !== null ? ' ' + (d >= 0 ? '+' : '') + d : '';
-    return '<div class="gstat">' +
-      '<b>' + fmt(val) + ' <small style="font-size:.55em;font-weight:400">/ 10</small></b>' +
-      '<span>' + label + '</span>' +
-      '<span style="font-size:.8em;opacity:.7">' + trendArrow(d) + dStr + '</span>' +
+  // ── Gauge highlights ───────────────────────────────────────────────────────
+
+  function _engHighlights(cur, prev) {
+    var items = [];
+
+    var dEng = delta(cur, prev, 'engagement');
+    if (dEng != null) {
+      var dir  = dEng >= 0.1 ? 'up' : dEng <= -0.1 ? 'down' : 'steady';
+      var desc = dEng >= 0.3 ? 'Nice step forward! 📈' : dEng <= -0.3 ? 'Worth a closer look. 📉' : 'Holding steady — consistency counts!';
+      items.push(dir === 'steady'
+        ? 'Overall engagement is <strong>' + fmt(cur.engagement) + '</strong> — ' + desc
+        : 'Engagement ' + dir + ' to <strong>' + fmt(cur.engagement) + '</strong> (' + (dEng >= 0 ? '+' : '') + dEng.toFixed(1) + ') — ' + desc);
+    } else {
+      items.push('Overall engagement: <strong>' + fmt(cur.engagement) + '</strong>.');
+    }
+
+    var part = cur.participation, dPart = delta(cur, prev, 'participation');
+    if (part != null) {
+      var pd = dPart != null && Math.abs(dPart) >= 5 ? ' (' + (dPart > 0 ? '+' : '') + dPart.toFixed(0) + '%)' : '';
+      var pdesc = part >= 90 ? 'Full house — every voice counted!' :
+                  part >= 75 ? 'Strong turnout.' :
+                  part >= 60 ? 'Moderate — some voices may be missing.' :
+                  'Low turnout — take scores with some context.';
+      items.push('Participation: <strong>' + fmtPct(part) + '</strong>' + pd + '. ' + pdesc);
+    }
+
+    var ranked = [
+      { label: 'Recognition',     val: cur.recognition },
+      { label: 'Ambassadorship',  val: cur.ambassadorship },
+      { label: 'Feedback',        val: cur.feedback },
+      { label: 'Rel. with Peers', val: cur.relPeers },
+      { label: 'Rel. with Mgr',   val: cur.relManager },
+      { label: 'Satisfaction',    val: cur.satisfaction },
+      { label: 'Alignment',       val: cur.alignment },
+      { label: 'Happiness',       val: cur.happiness },
+      { label: 'Wellness',        val: cur.wellness },
+      { label: 'Personal Growth', val: cur.personalGrowth }
+    ].filter(function (m) { return m.val != null; })
+     .sort(function (a, b) { return b.val - a.val; });
+
+    if (ranked.length) {
+      var top = ranked[0];
+      items.push('<strong>' + esc(top.label) + '</strong> leads at <strong>' + fmt(top.val) + '</strong> — ' + scoreLabel(top.val) + '! 🌟');
+      var low = ranked[ranked.length - 1];
+      if (low !== top && low.val < 7.5)
+        items.push('<strong>' + esc(low.label) + '</strong> at <strong>' + fmt(low.val) + '</strong> — ' + scoreLabel(low.val) + '. Worth keeping an eye on.');
+    }
+
+    var eNPS = cur.eNPS;
+    if (eNPS != null) {
+      var eStr  = (eNPS > 0 ? '+' : '') + eNPS.toFixed(0);
+      var edesc = eNPS >= 50 ? 'excellent — the team are real advocates.' :
+                  eNPS >= 20 ? 'healthy — more promoters than detractors.' :
+                  eNPS >= 0  ? 'neutral — room to build more advocates.' :
+                  'more detractors than promoters. Worth a deeper listen.';
+      items.push('eNPS is <strong>' + eStr + '</strong> — ' + edesc);
+    }
+
+    return '<div class="eng-highlights reveal">' +
+      '<h3 class="eng-highlights-h">Team Pulse &mdash; ' + esc(monthLabel(cur.date)) + ' Highlights</h3>' +
+      '<ul class="eng-highlights-list">' + items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul>' +
     '</div>';
+  }
+
+  // ── Category detail modal ──────────────────────────────────────────────────
+
+  var _ENG_CATS = {
+    expSatis: {
+      title: 'Experience &amp; Satisfaction', key: 'expSatis',
+      metrics: [
+        { label: 'Recognition',    key: 'recognition',    subs: [{l:'Quality', k:'recogQuality'}, {l:'Frequency', k:'recogFrequency'}] },
+        { label: 'Ambassadorship', key: 'ambassadorship', subs: [{l:'Championing', k:'championing'}, {l:'Pride', k:'pride'}] },
+        { label: 'Feedback',       key: 'feedback',       subs: [{l:'Quality', k:'feedbackQuality'}, {l:'Frequency', k:'feedbackFreq'}, {l:'Suggestions', k:'feedbackSuggest'}] },
+        { label: 'Satisfaction',   key: 'satisfaction',   subs: [{l:'Fairness', k:'satisFair'}, {l:'Role', k:'satisRole'}, {l:'Environment', k:'satisEnv'}] }
+      ]
+    },
+    orgCulture: {
+      title: 'Organizational Culture &amp; Relationships', key: 'orgCulture',
+      metrics: [
+        { label: 'Rel. with Peers',   key: 'relPeers',   subs: [{l:'Collaboration', k:'peerCollab'}, {l:'Trust', k:'peerTrust'}, {l:'Communication', k:'peerComm'}] },
+        { label: 'Rel. with Manager', key: 'relManager', subs: [{l:'Collaboration', k:'mgrCollab'}, {l:'Trust', k:'mgrTrust'}, {l:'Communication', k:'mgrComm'}] }
+      ]
+    },
+    growthWell: {
+      title: 'Growth, Alignment &amp; Wellbeing', key: 'growthWell',
+      metrics: [
+        { label: 'Alignment',       key: 'alignment',      subs: [{l:'Values', k:'alignValues'}, {l:'Vision & Mission', k:'alignVision'}, {l:'Ethics', k:'alignEthics'}] },
+        { label: 'Happiness',       key: 'happiness',      subs: [{l:'At Work', k:'happyWork'}, {l:'Work-Life Balance', k:'happyWLB'}] },
+        { label: 'Wellness',        key: 'wellness',       subs: [{l:'Stress', k:'stress'}, {l:'Personal Health', k:'personalHealth'}] },
+        { label: 'Personal Growth', key: 'personalGrowth', subs: [{l:'Autonomy', k:'autonomy'}, {l:'Mastery', k:'mastery'}, {l:'Purpose', k:'purpose'}] }
+      ]
+    }
+  };
+
+  function _ensureEngModal() {
+    if (document.getElementById('eng-detail-modal')) return;
+    var m = document.createElement('div');
+    m.className = 'modal-overlay';
+    m.id = 'eng-detail-modal';
+    m.addEventListener('click', function (e) { if (e.target === m) window._closeEngModal(); });
+    m.innerHTML =
+      '<div class="modal-box" style="max-width:480px;padding:1.5rem;position:relative">' +
+        '<button onclick="window._closeEngModal()" aria-label="Close" ' +
+          'style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>' +
+        '<div id="eng-modal-body"></div>' +
+      '</div>';
+    document.body.appendChild(m);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') window._closeEngModal(); });
+  }
+
+  window._closeEngModal = function () {
+    var m = document.getElementById('eng-detail-modal');
+    if (m) m.classList.remove('open');
+  };
+
+  function _openEngModal(cat, cur, prev) {
+    _ensureEngModal();
+    var cfg = _ENG_CATS[cat];
+    if (!cfg || !cur) return;
+
+    var cs = cur[cfg.key], ps = prev ? prev[cfg.key] : null;
+    var d  = cs != null && ps != null ? Math.round((cs - ps) * 10) / 10 : null;
+    var momClr = d == null ? '#888' : d > 0 ? '#66CC00' : d < 0 ? '#cc3300' : '#888';
+    var momStr = d != null ? (d >= 0 ? '+' : '') + d.toFixed(1) + ' vs prev month' : '';
+
+    var metricsHTML = cfg.metrics.map(function (m) {
+      var ms = cur[m.key], mp = prev ? prev[m.key] : null;
+      var md = ms != null && mp != null ? Math.round((ms - mp) * 10) / 10 : null;
+      var subHTML = m.subs.map(function (s) {
+        var ss = cur.sub ? cur.sub[s.k] : null;
+        var sp = prev && prev.sub ? prev.sub[s.k] : null;
+        var sd = ss != null && sp != null ? Math.round((ss - sp) * 10) / 10 : null;
+        return '<div class="eng-sub-row">' +
+          '<span class="eng-sub-label">' + esc(s.l) + '</span>' +
+          '<span class="eng-sub-score">' + fmt(ss) + '</span>' +
+          '<span class="eng-sub-arrow">' + trendArrow(sd) + '</span>' +
+        '</div>';
+      }).join('');
+      return '<div class="eng-modal-metric">' +
+        '<div class="eng-modal-hd">' +
+          '<span class="eng-modal-mname">' + esc(m.label) + '</span>' +
+          '<span class="pbadge ' + scoreClass(ms) + '">' + fmt(ms) + '</span>' +
+          '<span class="eng-modal-trend">' + trendArrow(md) + (md != null ? ' ' + (md >= 0 ? '+' : '') + md.toFixed(1) : '') + '</span>' +
+        '</div>' +
+        '<div class="eng-sub-rows">' + subHTML + '</div>' +
+      '</div>';
+    }).join('');
+
+    document.getElementById('eng-modal-body').innerHTML =
+      '<h3 style="margin:0 0 .2rem;color:#4B286D;padding-right:2rem">' + cfg.title + '</h3>' +
+      '<p style="margin:0 0 1rem">' +
+        '<span style="font-size:1.6rem;font-weight:bold">' + fmt(cs) + '</span>' +
+        (momStr ? '<span style="margin-left:.6rem;font-size:.85rem;color:' + momClr + '">' + momStr + '</span>' : '') +
+      '</p>' +
+      '<hr style="border:none;border-top:1px solid #e5e0ee;margin-bottom:1rem">' +
+      metricsHTML;
+
+    document.getElementById('eng-detail-modal').classList.add('open');
   }
 
   // ── Trends (Chart.js) ──────────────────────────────────────────────────────
@@ -1272,16 +1471,48 @@
 
   var css = document.createElement('style');
   css.textContent =
+    /* shared arrow helpers */
     '.eng-arrow { font-size:.85em; }' +
     '.eng-arrow--up { color:#66CC00; }' +
     '.eng-arrow--dn { color:#d00; }' +
     '.eng-arrow--flat { color:#888; }' +
+    /* gauge layout */
+    '.eng-gauge-layout { max-width:780px; margin:0 auto 1.5rem; }' +
+    '.eng-gauge-row { display:flex; justify-content:center; align-items:flex-start; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }' +
+    '.eng-gauge-item { display:flex; flex-direction:column; align-items:center; gap:.25rem; }' +
+    '.eng-gauge-large svg { width:200px; height:auto; }' +
+    '.eng-gauge-btn { background:none; border:2px solid transparent; border-radius:12px; padding:.5rem .75rem;' +
+      'cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:.25rem;' +
+      'transition:border-color .15s, box-shadow .15s; }' +
+    '.eng-gauge-btn:hover, .eng-gauge-btn:focus-visible { border-color:#4B286D; box-shadow:0 2px 8px rgba(75,40,109,.18); outline:none; }' +
+    '.eng-gauge-btn svg { width:150px; height:auto; }' +
+    '.eng-gauge-label { font-size:.78rem; font-weight:600; color:#4B286D; text-align:center; max-width:150px; }' +
+    '.eng-gauge-label--large { font-size:.85rem; max-width:200px; }' +
+    '.eng-gauge-hint { font-size:.68rem; color:#888; }' +
+    /* highlights box */
+    '.eng-highlights { background:#f8f5fc; border:1px solid #e0d4f0; border-radius:10px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; }' +
+    '.eng-highlights-h { margin:0 0 .6rem; font-size:1rem; color:#4B286D; }' +
+    '.eng-highlights-list { margin:0; padding-left:1.2rem; line-height:1.8; font-size:.92rem; }' +
+    /* trends charts */
     '.eng-chart-group { margin-bottom:2rem; padding:1.25rem; border:1px solid #e5e0ee; border-radius:10px; background:#fff; }' +
     '.eng-chart-h { margin:0 0 1rem; font-size:1.05rem; color:#4B286D; }' +
+    /* reports */
     '.eng-report-controls { margin-bottom:.5rem; }' +
     '.eng-select { font-size:1rem; padding:.3rem .5rem; border:1px solid #ccc; border-radius:6px; }' +
     '.eng-report-pre { white-space:pre-wrap; font-family:monospace; font-size:.9rem; line-height:1.6;' +
-      'background:#f6f2fa; border:1px solid #d8ceec; border-radius:8px; padding:1.25rem; overflow-x:auto; }';
+      'background:#f6f2fa; border:1px solid #d8ceec; border-radius:8px; padding:1.25rem; overflow-x:auto; }' +
+    /* modal metric rows */
+    '.eng-modal-metric { padding:.6rem 0; border-bottom:1px solid #ede8f5; }' +
+    '.eng-modal-metric:last-child { border-bottom:none; }' +
+    '.eng-modal-hd { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; }' +
+    '.eng-modal-mname { font-weight:600; font-size:.95rem; flex:1; color:#333; }' +
+    '.eng-modal-trend { font-size:.85rem; color:#555; }' +
+    /* sub-metric rows inside modal */
+    '.eng-sub-rows { padding-left:.75rem; border-left:3px solid #e0d4f0; display:flex; flex-direction:column; gap:.15rem; }' +
+    '.eng-sub-row { display:flex; align-items:center; gap:.4rem; font-size:.85rem; }' +
+    '.eng-sub-label { flex:1; color:#555; }' +
+    '.eng-sub-score { font-weight:600; color:#333; min-width:2.5rem; text-align:right; }' +
+    '.eng-sub-arrow { min-width:1.8rem; }';
   document.head.appendChild(css);
 
 })();
