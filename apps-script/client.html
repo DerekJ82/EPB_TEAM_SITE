@@ -712,7 +712,12 @@ var _CANADA_CITIES = {
 function _getCityCoords(turf) {
   if (!turf || turf === '?') return null;
   var key = turf.toLowerCase().trim()
-    .replace(/\s+(bc|ab|sk|mb|on|qc|nb|ns|pe|nl|nt|nu|yt)\s*$/, '').trim();
+    // strip accents (e.g. Montréal → montreal)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    // remove province suffix with or without comma: "Vancouver, BC" or "Vancouver BC"
+    .replace(/[,\s]+(bc|ab|sk|mb|on|qc|nb|ns|pe|nl|nt|nu|yt)\b.*$/, '').trim()
+    // remove trailing "canada"
+    .replace(/[,\s]+canada\s*$/, '').trim();
   return _CANADA_CITIES[key] || null;
 }
 
@@ -746,7 +751,9 @@ function initRosterMap() {
   if (_rosterMapInited || typeof L === 'undefined') return;
   _rosterMapInited = true;
 
-  var map = L.map('roster-map', { center: [56, -96], zoom: 4, minZoom: 3, maxZoom: 14 });
+  var _CANADA_BOUNDS = [[41.7, -141.0], [83.1, -52.6]];
+  var map = L.map('roster-map', { minZoom: 3, maxZoom: 14 });
+  map.fitBounds(_CANADA_BOUNDS);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -754,7 +761,6 @@ function initRosterMap() {
   }).addTo(map);
 
   var resetBtn = document.getElementById('roster-map-reset');
-  var allBounds = [];
   var markerList = [];
 
   document.querySelectorAll('#team-cards-data .team-card').forEach(function (card) {
@@ -788,16 +794,11 @@ function initRosterMap() {
     });
 
     marker.addTo(map);
-    allBounds.push(coords);
     markerList.push({ marker: marker, card: card, teamKey: teamKey });
   });
 
   if (resetBtn) {
     resetBtn.addEventListener('click', function () { _resetRosterMap(markerList, resetBtn); });
-  }
-
-  if (allBounds.length > 0) {
-    map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 7 });
   }
 }
 
