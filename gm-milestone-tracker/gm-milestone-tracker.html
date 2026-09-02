@@ -799,6 +799,7 @@
         if (gmCar) gmCar.position.set(-6, 0, -CamFollowDistance);
         camera.position.z = 0;
         updateGauges(0, 0, 500);
+        stationIndex = 0; updateRadio();
         const hud = document.getElementById('hud-target');
         hud.className = 'hud';
         hud.innerHTML = 'TARGET: 500,000';
@@ -928,6 +929,7 @@
 
       await crossParade();              // parade of figures + animals crosses
       if (!driveSequenceActive) return;
+      nextStation();                    // Life is a Highway
       await sleep(600);
 
       updateGauges(571810, 43780, 2000, 1000000); // August ME added + switch to % of 1M as cars depart
@@ -935,6 +937,7 @@
       if (!driveSequenceActive) return;
       await sleep(2500);               // pause at August banner
       if (!driveSequenceActive) return;
+      nextStation();                    // Back to Your Heart
       await driveConvoy(-920, 5000);   // drive through arch, on to 1M sign
       if (!driveSequenceActive) return;
       fireConfetti();
@@ -961,6 +964,7 @@
     const stations = [
       { title: 'I Want It That Way',  artist: 'Backstreet Boys' },
       { title: 'Life is a Highway',   artist: 'Tom Cochrane'    },
+      { title: 'Back to Your Heart',  artist: 'Backstreet Boys' },
     ];
     let stationIndex = 0;
     function updateRadio() {
