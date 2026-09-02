@@ -912,63 +912,93 @@
   observeTab('view-eng-reports',   function () { _loadEngData(renderEngReports); });
   observeTab('view-eng-archive',   function () { _loadEngData(renderEngArchive); });
 
-  // ── Gauge SVG helpers ──────────────────────────────────────────────────────
-
-  function _gPt(cx, cy, r, deg) {
-    var rad = deg * Math.PI / 180;
-    return { x: +(cx + r * Math.cos(rad)).toFixed(2), y: +(cy - r * Math.sin(rad)).toFixed(2) };
-  }
-
-  // Ring arc segment: from angle `from` to `to` (degrees, math convention).
-  // Outer arc goes CW in SVG (sweep=1), inner goes CCW (sweep=0) to close the ring.
-  function _gArc(cx, cy, R, r, from, to) {
-    var p1 = _gPt(cx, cy, R, from),  p2 = _gPt(cx, cy, R, to);
-    var p3 = _gPt(cx, cy, r, to),    p4 = _gPt(cx, cy, r, from);
-    var lg = (from - to) > 180 ? 1 : 0;
-    return 'M' + p1.x + ',' + p1.y +
-      ' A' + R + ',' + R + ' 0 ' + lg + ',1 ' + p2.x + ',' + p2.y +
-      ' L' + p3.x + ',' + p3.y +
-      ' A' + r + ',' + r + ' 0 ' + lg + ',0 ' + p4.x + ',' + p4.y + 'Z';
-  }
+  // ── Gauge SVG (circle arc / stroke-dashoffset style) ──────────────────────
+  //
+  // 270° speedometer arc using stroke-dasharray on a <circle>.
+  // The group is rotated 135° CW so the gap sits at the bottom-centre.
+  // Fill animates from empty (dashoffset = arcLen) to target via JS + CSS transition.
 
   function makeGaugeSVG(score, prevScore, isLarge) {
-    var cx = 100, cy = 106;
-    var R = isLarge ? 84 : 76, r = R - 22;
+    var r  = 44, cx = 60, cy = 60;
+    var sw = isLarge ? 11 : 9;
+    // 270° of circumference
+    var C   = +(2 * Math.PI * r).toFixed(3);  // ≈ 276.460
+    var arc = +(C * 0.75).toFixed(3);          // ≈ 207.345
+    var gap = +(C - arc).toFixed(3);           // ≈ 69.115
+
     var mom = (score != null && prevScore != null)
       ? Math.round((score - prevScore) * 10) / 10 : null;
-    var momClr = mom == null ? '#888' : mom > 0 ? '#66CC00' : mom < 0 ? '#cc3300' : '#888';
-    var momTxt = mom != null ? (mom > 0 ? '+' : '') + mom.toFixed(1) + ' MoM' : '';
-    var angle  = score != null ? 180 - (Math.max(0, Math.min(10, score)) / 10 * 180) : 90;
-    var tip    = _gPt(cx, cy, R - 8, angle);
-    var sf     = isLarge ? 22 : 18;
-    var mf     = isLarge ? 10 : 9;
-    var vbH    = cy + 33;
+    var momClr = mom == null ? '#888'
+      : mom > 0 ? '#2f9e44' : mom < 0 ? '#c92a2a' : '#888';
+    var momTxt = mom != null
+      ? (mom > 0 ? '▲ +' : mom < 0 ? '▼ ' : '→ ') + Math.abs(mom).toFixed(1) : '';
 
-    // Tick marks at 0, 2, 4, 6, 8, 10
-    var ticks = [0, 2, 4, 6, 8, 10].map(function (v) {
-      var a = 180 - (v / 10) * 180;
-      var t1 = _gPt(cx, cy, R + 1, a), t2 = _gPt(cx, cy, R + 7, a);
-      return '<line x1="' + t1.x + '" y1="' + t1.y + '" x2="' + t2.x + '" y2="' + t2.y + '" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>';
+    var fillClr = score == null ? '#bbb'
+      : score >= 7.5 ? '#2f9e44'
+      : score >= 6.0 ? '#e67700'
+      : '#c92a2a';
+
+    // dashoffset at which the arc fills exactly to `score`
+    // offset=arc → empty; offset=0 → full
+    var fillTarget = score != null
+      ? +(arc * (1 - Math.max(0, Math.min(10, score)) / 10)).toFixed(3)
+      : arc;
+
+    // SVG angle for a score 0-10 in screen-CW degrees (0° = right)
+    // score 0 → 135° (lower-left / 7 o'clock), score 10 → 405°=45° (lower-right / 5 o'clock)
+    function thetaRad(v) { return (135 + (v / 10) * 270) * Math.PI / 180; }
+    function pt(v, rad) {
+      var t = thetaRad(v);
+      return { x: +(cx + rad * Math.cos(t)).toFixed(2), y: +(cy + rad * Math.sin(t)).toFixed(2) };
+    }
+
+    // Tick marks at 0, 2, 4, 5, 6, 8, 10
+    var tickHTML = [0, 2, 4, 5, 6, 8, 10].map(function (v) {
+      var major = (v === 0 || v === 5 || v === 10);
+      var p1 = pt(v, 48), p2 = pt(v, major ? 55 : 52);
+      return '<line x1="' + p1.x + '" y1="' + p1.y +
+             '" x2="' + p2.x + '" y2="' + p2.y +
+             '" stroke="' + (major ? '#b0a0cc' : '#cfc5e4') +
+             '" stroke-width="' + (major ? 2 : 1.2) + '" stroke-linecap="round"/>';
     }).join('');
 
-    // Outer decorative arc (slightly outside R)
-    var rR = R + 5, rP1 = _gPt(cx, cy, rR, 182), rP2 = _gPt(cx, cy, rR, -2);
+    // Scale labels 0 / 5 / 10 (large gauge only — small gauges are too cramped)
+    var lblHTML = '';
+    if (isLarge) {
+      var l0 = pt(0, 62), l5 = pt(5, 64), l10 = pt(10, 62);
+      lblHTML =
+        '<text x="' + l0.x  + '" y="' + l0.y  + '" text-anchor="end"    font-size="7.5" fill="#a090be">0</text>' +
+        '<text x="' + l5.x  + '" y="' + (l5.y + 1) + '" text-anchor="middle" font-size="7.5" fill="#a090be">5</text>' +
+        '<text x="' + l10.x + '" y="' + l10.y + '" text-anchor="start"  font-size="7.5" fill="#a090be">10</text>';
+    }
 
-    return '<svg viewBox="0 0 200 ' + vbH + '" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M' + rP1.x + ',' + rP1.y + ' A' + rR + ',' + rR + ' 0 0,1 ' + rP2.x + ',' + rP2.y + '" stroke="#d0c8e0" stroke-width="3" fill="none"/>' +
-      '<path d="' + _gArc(cx, cy, R, r, 180, 0)  + '" fill="#ddd"/>' +
-      '<path d="' + _gArc(cx, cy, R, r, 180, 90) + '" fill="#d94f3d"/>' +
-      '<path d="' + _gArc(cx, cy, R, r, 90, 54)  + '" fill="#f5a623"/>' +
-      '<path d="' + _gArc(cx, cy, R, r, 54, 0)   + '" fill="#66CC00"/>' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - 3) + '" fill="#f8f6fb"/>' +
-      ticks +
-      '<text x="' + _gPt(cx, cy, R + 14, 180).x + '" y="' + (_gPt(cx, cy, R + 14, 180).y + 4) + '" text-anchor="middle" font-size="8" fill="#aaa">0</text>' +
-      '<text x="' + _gPt(cx, cy, R + 14, 0).x   + '" y="' + (_gPt(cx, cy, R + 14, 0).y + 4)   + '" text-anchor="middle" font-size="8" fill="#aaa">10</text>' +
-      (momTxt ? '<text x="' + cx + '" y="' + (cy - r + 15) + '" text-anchor="middle" font-size="' + mf + '" fill="' + momClr + '" font-weight="bold">' + momTxt + '</text>' : '') +
-      '<line x1="' + cx + '" y1="' + cy + '" x2="' + tip.x + '" y2="' + tip.y + '" stroke="#cc3300" stroke-width="3" stroke-linecap="round"/>' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#4B286D"/>' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="3.5" fill="#fff"/>' +
-      '<text x="' + cx + '" y="' + (cy + 26) + '" text-anchor="middle" font-size="' + sf + '" font-weight="bold" fill="#222">' + (score != null ? score.toFixed(1) : '—') + '</text>' +
+    var fScore = isLarge ? 22 : 17;
+    var yScore = mom != null ? 56 : 62;
+
+    return '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" class="eng-gauge-svg"' +
+      ' data-fill-target="' + fillTarget + '">' +
+      '<g transform="rotate(135 60 60)">' +
+        // Track arc — light purple background ring
+        '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="#ece6f6" stroke-width="' + sw + '"' +
+          ' stroke-dasharray="' + arc + ' ' + gap + '" stroke-linecap="round"/>' +
+        // Fill arc — starts fully offset (empty); JS triggers CSS transition to target
+        '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="' + fillClr + '"' +
+          ' stroke-width="' + sw + '" stroke-dasharray="' + arc + ' ' + gap + '"' +
+          ' stroke-dashoffset="' + arc + '" stroke-linecap="round" class="eng-gauge-fill"' +
+          ' style="filter:drop-shadow(0 0 4px ' + fillClr + 'aa)"/>' +
+      '</g>' +
+      tickHTML + lblHTML +
+      // Score value (centred)
+      '<text x="60" y="' + yScore + '" text-anchor="middle" dominant-baseline="middle"' +
+        ' font-family="Helvetica Neue,Arial,sans-serif" font-size="' + fScore + '"' +
+        ' font-weight="700" fill="' + fillClr + '">' +
+        (score != null ? score.toFixed(1) : '—') + '</text>' +
+      // MoM delta (below score when present)
+      (momTxt
+        ? '<text x="60" y="74" text-anchor="middle" dominant-baseline="middle"' +
+          ' font-family="Helvetica Neue,Arial,sans-serif" font-size="9" font-weight="600"' +
+          ' fill="' + momClr + '">' + momTxt + '</text>'
+        : '') +
       '</svg>';
   }
 
@@ -1011,7 +1041,7 @@
             '<div class="eng-gauge-label">Experience &amp; Satisfaction</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
-          '<div class="eng-gauge-item eng-gauge-large">' +
+          '<div class="eng-gauge-card eng-gauge-large">' +
             makeGaugeSVG(cur.engagement, prev ? prev.engagement : null, true) +
             '<div class="eng-gauge-label eng-gauge-label--large">Overall Engagement</div>' +
           '</div>' +
@@ -1031,6 +1061,14 @@
       '</div>';
 
     el.innerHTML = header + partAlert + gauges + _engHighlights(cur, prev);
+
+    // Trigger fill animations after paint (CSS transition fires when dashoffset changes)
+    requestAnimationFrame(function () {
+      el.querySelectorAll('.eng-gauge-svg').forEach(function (svg) {
+        var fill = svg.querySelector('.eng-gauge-fill');
+        if (fill) fill.style.strokeDashoffset = svg.getAttribute('data-fill-target');
+      });
+    });
 
     el.querySelectorAll('.eng-gauge-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { _openEngModal(btn.getAttribute('data-cat'), cur, prev); });
@@ -1473,26 +1511,36 @@
   css.textContent =
     /* shared arrow helpers */
     '.eng-arrow { font-size:.85em; }' +
-    '.eng-arrow--up { color:#66CC00; }' +
-    '.eng-arrow--dn { color:#d00; }' +
+    '.eng-arrow--up { color:#2f9e44; }' +
+    '.eng-arrow--dn { color:#c92a2a; }' +
     '.eng-arrow--flat { color:#888; }' +
+    /* gauge: animated fill transition */
+    '.eng-gauge-fill { transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1); }' +
+    '.eng-gauge-svg { display:block; }' +
     /* gauge layout */
-    '.eng-gauge-layout { max-width:780px; margin:0 auto 1.5rem; }' +
-    '.eng-gauge-row { display:flex; justify-content:center; align-items:flex-start; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }' +
-    '.eng-gauge-item { display:flex; flex-direction:column; align-items:center; gap:.25rem; }' +
-    '.eng-gauge-large svg { width:200px; height:auto; }' +
-    '.eng-gauge-btn { background:none; border:2px solid transparent; border-radius:12px; padding:.5rem .75rem;' +
-      'cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:.25rem;' +
-      'transition:border-color .15s, box-shadow .15s; }' +
-    '.eng-gauge-btn:hover, .eng-gauge-btn:focus-visible { border-color:#4B286D; box-shadow:0 2px 8px rgba(75,40,109,.18); outline:none; }' +
-    '.eng-gauge-btn svg { width:150px; height:auto; }' +
-    '.eng-gauge-label { font-size:.78rem; font-weight:600; color:#4B286D; text-align:center; max-width:150px; }' +
-    '.eng-gauge-label--large { font-size:.85rem; max-width:200px; }' +
-    '.eng-gauge-hint { font-size:.68rem; color:#888; }' +
+    '.eng-gauge-layout { max-width:800px; margin:0 auto 1.5rem; }' +
+    '.eng-gauge-row { display:flex; justify-content:center; align-items:stretch; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }' +
+    /* card wrapper shared by large + button gauges */
+    '.eng-gauge-card,.eng-gauge-btn {' +
+      'background:#fff; border:1px solid #e4d9f5; border-radius:18px;' +
+      'padding:1rem 1.25rem .85rem; box-shadow:0 2px 10px rgba(75,40,109,.07);' +
+      'display:flex; flex-direction:column; align-items:center; gap:.4rem; }' +
+    '.eng-gauge-btn {' +
+      'cursor:pointer;' +
+      'transition:border-color .15s, box-shadow .18s, transform .12s; }' +
+    '.eng-gauge-btn:hover { border-color:#4B286D; box-shadow:0 6px 20px rgba(75,40,109,.16); transform:translateY(-2px); }' +
+    '.eng-gauge-btn:active { transform:translateY(0); box-shadow:0 2px 8px rgba(75,40,109,.10); }' +
+    '.eng-gauge-btn:focus-visible { outline:2px solid #4B286D; outline-offset:2px; }' +
+    /* SVG sizing */
+    '.eng-gauge-btn .eng-gauge-svg { width:130px; height:130px; }' +
+    '.eng-gauge-large .eng-gauge-svg { width:162px; height:162px; }' +
+    '.eng-gauge-label { font-size:.77rem; font-weight:700; color:#4B286D; text-align:center; max-width:148px; line-height:1.3; }' +
+    '.eng-gauge-label--large { font-size:.83rem; max-width:180px; }' +
+    '.eng-gauge-hint { font-size:.66rem; color:#998bb0; letter-spacing:.02em; }' +
     /* highlights box */
-    '.eng-highlights { background:#f8f5fc; border:1px solid #e0d4f0; border-radius:10px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; }' +
+    '.eng-highlights { background:#f8f5fc; border:1px solid #e0d4f0; border-radius:12px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; }' +
     '.eng-highlights-h { margin:0 0 .6rem; font-size:1rem; color:#4B286D; }' +
-    '.eng-highlights-list { margin:0; padding-left:1.2rem; line-height:1.8; font-size:.92rem; }' +
+    '.eng-highlights-list { margin:0; padding-left:1.2rem; line-height:1.9; font-size:.92rem; }' +
     /* trends charts */
     '.eng-chart-group { margin-bottom:2rem; padding:1.25rem; border:1px solid #e5e0ee; border-radius:10px; background:#fff; }' +
     '.eng-chart-h { margin:0 0 1rem; font-size:1.05rem; color:#4B286D; }' +
