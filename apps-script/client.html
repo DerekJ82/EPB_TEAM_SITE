@@ -747,12 +747,32 @@ function _resetRosterMap(markerList, resetBtn) {
   resetBtn.style.display = 'none';
 }
 
+function _getPinCoords(center, index, total) {
+  if (total === 1) return center;
+  // Arrange in a circle around the city; compensate lng scale at ~55N (cos 55° ≈ 0.57)
+  var r = 2.2;
+  var angle = (2 * Math.PI * index / total) - (Math.PI / 2);
+  return [
+    center[0] + r * Math.cos(angle),
+    center[1] + r * Math.sin(angle) / 0.57
+  ];
+}
+
 function initRosterMap() {
   if (_rosterMapInited || typeof L === 'undefined') return;
   _rosterMapInited = true;
 
   var _CANADA_BOUNDS = [[41.7, -141.0], [83.1, -52.6]];
-  var map = L.map('roster-map', { minZoom: 3, maxZoom: 14 });
+  var map = L.map('roster-map', {
+    zoomControl: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    dragging: false,
+    touchZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    tap: false
+  });
   map.fitBounds(_CANADA_BOUNDS);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -763,34 +783,63 @@ function initRosterMap() {
   var resetBtn = document.getElementById('roster-map-reset');
   var markerList = [];
 
+  // Group cards by city so duplicates can be spread out
+  var cityGroups = {};
   document.querySelectorAll('#team-cards-data .team-card').forEach(function (card) {
     var stats = {};
     try { stats = JSON.parse(card.getAttribute('data-card') || '{}'); } catch (e) {}
-
-    var initials = card.querySelector('.team-init').textContent.trim();
-    var name     = card.querySelector('.team-name').textContent.trim();
     var coords = _getCityCoords(stats.turf);
     if (!coords) return;
 
-    var teamKey = card.getAttribute('data-filter') || card.getAttribute('data-mgr') || 'leadership';
-
-    var marker = L.marker(coords, {
-      icon: L.divIcon({
-        className: 'roster-pin',
-        html: '<div class="pin-dot" title="' + name + '">' + initials + '</div>',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
-      }),
-      title: name
+    var key = coords[0].toFixed(2) + ',' + coords[1].toFixed(2);
+    if (!cityGroups[key]) cityGroups[key] = { center: coords, members: [] };
+    cityGroups[key].members.push({
+      card:    card,
+      initials: card.querySelector('.team-init').textContent.trim(),
+      name:    card.querySelector('.team-name').textContent.trim(),
+      teamKey: card.getAttribute('data-filter') || card.getAttribute('data-mgr') || 'leadership'
     });
+  });
 
-    marker.on('click', function () {
-      _filterRosterMap(markerList, card, resetBtn);
-      window.openRosterModal(card);
+  Object.keys(cityGroups).forEach(function (key) {
+    var group  = cityGroups[key];
+    var total  = group.members.length;
+
+    group.members.forEach(function (member, i) {
+      var pinCoords = _getPinCoords(group.center, i, total);
+
+      // Leader line from offset pin back to the real city dot
+      if (total > 1) {
+        L.polyline([pinCoords, group.center], {
+          color: '#4B286D', weight: 1.5, opacity: 0.4, dashArray: '5 5'
+        }).addTo(map);
+        // Small dot at the true city location
+        if (i === 0) {
+          L.circleMarker(group.center, {
+            radius: 4, color: '#4B286D', fillColor: '#4B286D',
+            fillOpacity: 0.35, weight: 1.5, opacity: 0.5, interactive: false
+          }).addTo(map);
+        }
+      }
+
+      var marker = L.marker(pinCoords, {
+        icon: L.divIcon({
+          className: 'roster-pin',
+          html: '<div class="pin-dot" title="' + member.name + '">' + member.initials + '</div>',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        }),
+        title: member.name
+      });
+
+      marker.on('click', function () {
+        _filterRosterMap(markerList, member.card, resetBtn);
+        window.openRosterModal(member.card);
+      });
+
+      marker.addTo(map);
+      markerList.push({ marker: marker, card: member.card, teamKey: member.teamKey });
     });
-
-    marker.addTo(map);
-    markerList.push({ marker: marker, card: card, teamKey: teamKey });
   });
 
   if (resetBtn) {
