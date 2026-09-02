@@ -769,19 +769,15 @@ function initRosterMap() {
 
     var initials = card.querySelector('.team-init').textContent.trim();
     var name     = card.querySelector('.team-name').textContent.trim();
-    var coords   = _getCityCoords(stats.turf);
-    var unknown  = !coords;
-
-    if (unknown) {
-      coords = [49.2827 + (Math.random() - 0.5) * 0.14, -123.1207 + (Math.random() - 0.5) * 0.22];
-    }
+    var coords = _getCityCoords(stats.turf);
+    if (!coords) return;
 
     var teamKey = card.getAttribute('data-filter') || card.getAttribute('data-mgr') || 'leadership';
 
     var marker = L.marker(coords, {
       icon: L.divIcon({
         className: 'roster-pin',
-        html: '<div class="pin-dot' + (unknown ? ' pin-unknown' : '') + '" title="' + name + '">' + initials + '</div>',
+        html: '<div class="pin-dot" title="' + name + '">' + initials + '</div>',
         iconSize: [36, 36],
         iconAnchor: [18, 18]
       }),
