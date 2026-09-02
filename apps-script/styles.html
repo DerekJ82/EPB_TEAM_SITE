@@ -625,8 +625,8 @@ a{color:var(--purple)}
 
 /* --- Roster map ----------------------------------------------------------- */
 .roster-map-wrap{position:relative;margin-top:4px}
-#roster-map{height:520px;border-radius:12px;overflow:hidden;
-  border:1px solid var(--line)}
+#roster-map{height:calc(100vh - var(--navh) - 140px);min-height:480px;max-height:860px;
+  border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .leaflet-div-icon{background:transparent!important;border:none!important}
 .pin-dot{width:36px;height:36px;border-radius:50%;
   background:var(--purple);color:#fff;
