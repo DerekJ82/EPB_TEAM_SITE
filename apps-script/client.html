@@ -773,7 +773,12 @@ function initRosterMap() {
     keyboard: false,
     tap: false
   });
-  map.fitBounds(_CANADA_BOUNDS);
+  // invalidateSize first so Leaflet measures the real container height
+  // (the tabview was hidden during page load, so initial size is 0)
+  setTimeout(function () {
+    map.invalidateSize();
+    map.fitBounds(_CANADA_BOUNDS);
+  }, 0);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
