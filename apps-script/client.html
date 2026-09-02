@@ -1036,25 +1036,23 @@
     var gauges =
       '<div class="eng-gauge-layout reveal">' +
         '<div class="eng-gauge-row">' +
+          '<div class="eng-gauge-card">' +
+            makeGaugeSVG(cur.engagement, prev ? prev.engagement : null, true) +
+            '<div class="eng-gauge-label">Overall Engagement</div>' +
+          '</div>' +
           '<button class="eng-gauge-btn" data-cat="expSatis">' +
-            makeGaugeSVG(cur.expSatis, prev ? prev.expSatis : null, false) +
+            makeGaugeSVG(cur.expSatis, prev ? prev.expSatis : null, true) +
             '<div class="eng-gauge-label">Experience &amp; Satisfaction</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
-          '<div class="eng-gauge-card eng-gauge-large">' +
-            makeGaugeSVG(cur.engagement, prev ? prev.engagement : null, true) +
-            '<div class="eng-gauge-label eng-gauge-label--large">Overall Engagement</div>' +
-          '</div>' +
-          '<button class="eng-gauge-btn" data-cat="growthWell">' +
-            makeGaugeSVG(cur.growthWell, prev ? prev.growthWell : null, false) +
-            '<div class="eng-gauge-label">Growth, Alignment &amp; Wellbeing</div>' +
+          '<button class="eng-gauge-btn" data-cat="orgCulture">' +
+            makeGaugeSVG(cur.orgCulture, prev ? prev.orgCulture : null, true) +
+            '<div class="eng-gauge-label">Culture &amp; Relationships</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
-        '</div>' +
-        '<div class="eng-gauge-row">' +
-          '<button class="eng-gauge-btn" data-cat="orgCulture">' +
-            makeGaugeSVG(cur.orgCulture, prev ? prev.orgCulture : null, false) +
-            '<div class="eng-gauge-label">Organizational Culture &amp; Relationships</div>' +
+          '<button class="eng-gauge-btn" data-cat="growthWell">' +
+            makeGaugeSVG(cur.growthWell, prev ? prev.growthWell : null, true) +
+            '<div class="eng-gauge-label">Growth, Alignment &amp; Wellbeing</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
         '</div>' +
@@ -1517,26 +1515,24 @@
     /* gauge: animated fill transition */
     '.eng-gauge-fill { transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1); }' +
     '.eng-gauge-svg { display:block; }' +
-    /* gauge layout */
-    '.eng-gauge-layout { max-width:800px; margin:0 auto 1.5rem; }' +
-    '.eng-gauge-row { display:flex; justify-content:center; align-items:stretch; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }' +
-    /* card wrapper shared by large + button gauges */
+    /* gauge layout — single scrollable row */
+    '.eng-gauge-layout { margin:0 0 1.5rem; overflow-x:auto; padding-bottom:.5rem; }' +
+    '.eng-gauge-row { display:flex; justify-content:flex-start; align-items:stretch; gap:1.25rem; min-width:max-content; }' +
+    /* card wrapper — shared by static card and clickable button */
     '.eng-gauge-card,.eng-gauge-btn {' +
-      'background:#fff; border:1px solid #e4d9f5; border-radius:18px;' +
-      'padding:1rem 1.25rem .85rem; box-shadow:0 2px 10px rgba(75,40,109,.07);' +
-      'display:flex; flex-direction:column; align-items:center; gap:.4rem; }' +
+      'background:#fff; border:1px solid #e4d9f5; border-radius:20px;' +
+      'padding:1.25rem 1.4rem 1rem; box-shadow:0 2px 12px rgba(75,40,109,.08);' +
+      'display:flex; flex-direction:column; align-items:center; gap:.5rem; }' +
     '.eng-gauge-btn {' +
       'cursor:pointer;' +
-      'transition:border-color .15s, box-shadow .18s, transform .12s; }' +
-    '.eng-gauge-btn:hover { border-color:#4B286D; box-shadow:0 6px 20px rgba(75,40,109,.16); transform:translateY(-2px); }' +
+      'transition:border-color .15s, box-shadow .18s, transform .13s; }' +
+    '.eng-gauge-btn:hover { border-color:#4B286D; box-shadow:0 8px 24px rgba(75,40,109,.18); transform:translateY(-3px); }' +
     '.eng-gauge-btn:active { transform:translateY(0); box-shadow:0 2px 8px rgba(75,40,109,.10); }' +
     '.eng-gauge-btn:focus-visible { outline:2px solid #4B286D; outline-offset:2px; }' +
-    /* SVG sizing */
-    '.eng-gauge-btn .eng-gauge-svg { width:130px; height:130px; }' +
-    '.eng-gauge-large .eng-gauge-svg { width:162px; height:162px; }' +
-    '.eng-gauge-label { font-size:.77rem; font-weight:700; color:#4B286D; text-align:center; max-width:148px; line-height:1.3; }' +
-    '.eng-gauge-label--large { font-size:.83rem; max-width:180px; }' +
-    '.eng-gauge-hint { font-size:.66rem; color:#998bb0; letter-spacing:.02em; }' +
+    /* all gauges same size */
+    '.eng-gauge-svg { display:block; width:220px; height:220px; }' +
+    '.eng-gauge-label { font-size:.82rem; font-weight:700; color:#4B286D; text-align:center; max-width:200px; line-height:1.3; }' +
+    '.eng-gauge-hint { font-size:.7rem; color:#998bb0; letter-spacing:.02em; }' +
     /* highlights box */
     '.eng-highlights { background:#f8f5fc; border:1px solid #e0d4f0; border-radius:12px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; }' +
     '.eng-highlights-h { margin:0 0 .6rem; font-size:1rem; color:#4B286D; }' +

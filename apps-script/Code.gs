@@ -433,6 +433,14 @@ function getTasksData() {
 var ENGAGEMENT_SHEET_ID = '1SScKVG1Zo-UdPWupq-vb4kE_WTu1P_8lMIu7WFYPsXU';
 
 function getEngagementData() {
+  // Serve from script cache when available (6-hour TTL) to avoid repeated
+  // cross-spreadsheet API calls, which are the main source of load latency.
+  var cache = CacheService.getScriptCache();
+  try {
+    var hit = cache.get('eng_ytd2026');
+    if (hit) return JSON.parse(hit);
+  } catch (e) {}
+
   try {
     var ss    = SpreadsheetApp.openById(ENGAGEMENT_SHEET_ID);
     var sheet = ss.getSheetByName('YTD 2026');
@@ -512,6 +520,7 @@ function getEngagementData() {
         }
       });
     }
+    try { cache.put('eng_ytd2026', JSON.stringify(results), 21600); } catch (e) {}
     return results;
   } catch (ex) {
     Logger.log('getEngagementData error: ' + ex);
