@@ -764,6 +764,8 @@ function initRosterMap() {
 
   var _CANADA_BOUNDS = [[41.7, -141.0], [83.1, -52.6]];
   var map = L.map('roster-map', {
+    center: [62, -96],
+    zoom: 3,
     zoomControl: false,
     scrollWheelZoom: false,
     doubleClickZoom: false,
@@ -773,12 +775,14 @@ function initRosterMap() {
     keyboard: false,
     tap: false
   });
-  // invalidateSize first so Leaflet measures the real container height
-  // (the tabview was hidden during page load, so initial size is 0)
-  setTimeout(function () {
-    map.invalidateSize();
-    map.fitBounds(_CANADA_BOUNDS);
-  }, 0);
+  // Re-fit after two animation frames so Leaflet measures the real
+  // container height (the tabview was display:none during page load)
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      map.invalidateSize();
+      map.fitBounds(_CANADA_BOUNDS);
+    });
+  });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
