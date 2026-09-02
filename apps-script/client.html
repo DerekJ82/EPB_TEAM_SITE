@@ -762,10 +762,10 @@ function initRosterMap() {
   if (_rosterMapInited || typeof L === 'undefined') return;
   _rosterMapInited = true;
 
-  var _CANADA_BOUNDS = [[41.7, -141.0], [83.1, -52.6]];
+  var _CANADA_BOUNDS = [[41.5, -142], [62, -50]];
   var map = L.map('roster-map', {
-    center: [62, -96],
-    zoom: 3,
+    center: [54, -96],
+    zoom: 4,
     zoomControl: false,
     scrollWheelZoom: false,
     doubleClickZoom: false,
