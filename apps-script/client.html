@@ -1070,13 +1070,16 @@
         '<p class="gnote-p">Only ' + fmtPct(partPct) + ' of the team responded — scores may not be fully representative.</p></div></div>';
     }
 
-    var header = '<div class="gstats reveal" style="margin-bottom:1rem">' +
+    var eNPSStr = eNPSVal != null ? (eNPSVal > 0 ? '+' : '') + eNPSVal.toFixed(0) : '—';
+
+    var header = '<div class="gstats reveal" style="margin-bottom:1.25rem">' +
       '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Period (' + (cur._count || 1) + '-entry avg)</span></div>' +
+      '<div class="gstat"><b>' + fmtPct(partPct) + '</b><span>Participation</span></div>' +
+      '<div class="gstat"><b>' + eNPSStr + '</b><span>eNPS</span></div>' +
     '</div>';
 
     var gauges =
       '<div class="eng-gauge-layout reveal">' +
-        // Row 1: four core composite gauges — flex:1, fill full width
         '<div class="eng-gauge-row">' +
           '<div class="eng-gauge-card">' +
             makeGaugeSVG(cur.engagement, prev ? prev.engagement : null) +
@@ -1097,17 +1100,6 @@
             '<div class="eng-gauge-label">Growth, Alignment &amp; Wellbeing</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
-        '</div>' +
-        // Row 2: participation + eNPS gauges — same card style, centred
-        '<div class="eng-gauge-row eng-gauge-row--secondary">' +
-          '<div class="eng-gauge-card">' +
-            makeParticipationGaugeSVG(partPct, prev ? prev.participation : null, partCount) +
-            '<div class="eng-gauge-label">Participation</div>' +
-          '</div>' +
-          '<div class="eng-gauge-card">' +
-            makeENPSGaugeSVG(eNPSVal, prev ? prev.eNPS : null) +
-            '<div class="eng-gauge-label">eNPS</div>' +
-          '</div>' +
         '</div>' +
       '</div>';
 
@@ -1571,7 +1563,6 @@
     /* gauge layout */
     '.eng-gauge-layout { margin:0 0 1.5rem; }' +
     '.eng-gauge-row { display:flex; align-items:stretch; gap:1rem; margin-bottom:1rem; }' +
-    '.eng-gauge-row--secondary { justify-content:center; max-width:680px; margin-left:auto; margin-right:auto; margin-bottom:0; }' +
     /* card wrapper — shared by static card and clickable button; flex:1 fills the row */
     '.eng-gauge-card,.eng-gauge-btn {' +
       'flex:1; min-width:0; background:#fff; border:1px solid #e4d9f5; border-radius:20px;' +
