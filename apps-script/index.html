@@ -6,6 +6,8 @@
 <title>EPB Team Site</title>
 <?!= include('styles') ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9/dist/leaflet.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9/dist/leaflet.min.js"></script>
 </head>
 <body>
 
@@ -147,102 +149,92 @@
       <div class="hero-in">
         <span class="eyebrow">Team &middot; Roster</span>
         <h1 class="hero-t">The EPB S&amp;P team.</h1>
-        <p class="hero-l">Everyone working in EPB Strategy &amp; Planning.</p>
+        <p class="hero-l">Everyone working in EPB Strategy &amp; Planning. Click a pin to meet the team.</p>
       </div>
     </header>
 
     <section class="sect">
       <div class="pad">
-        <div class="sect-head reveal">
-          <h3 class="h3">Leadership</h3>
-          <p class="sect-sub">Click a manager to filter the team below.</p>
-        </div>
-        <div class="team-grid reveal" id="mgr-grid">
-          <div class="team-card" data-card='{"song":"Minuet in G","gateway":"Laos","report":"1993 Mosquito Provincial Champion","meal":"Pizza","turf":"Vancouver BC","rookie":"2012"}'>
-            <div class="team-init">DJ</div>
-            <p class="team-name">Derek Johnson</p>
-            <p class="team-role">Director</p>
-          </div>
-          <div class="team-card team-card-mgr" data-filter="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">WW</div>
-            <p class="team-name">Windy Wijaya</p>
-            <p class="team-role">Manager, IoT Planning</p>
-          </div>
-          <div class="team-card team-card-mgr" data-filter="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">MP</div>
-            <p class="team-name">Malcolm Pilgrim</p>
-            <p class="team-role">Manager, WLS Planning</p>
-          </div>
-          <div class="team-card team-card-mgr" data-filter="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">TM</div>
-            <p class="team-name">Tyler Makhuza</p>
-            <p class="team-role">Manager, WLN Planning</p>
-          </div>
-        </div>
-
-        <div class="sect-head reveal">
-          <h3 class="h3">Team</h3>
-        </div>
-        <div id="roster-filter-bar" class="roster-filter-bar" hidden>
-          Showing: <strong id="roster-filter-label"></strong>
-          <button class="roster-filter-reset" id="roster-filter-reset" aria-label="Show all team members">
-            &times; Show all
-          </button>
-        </div>
-        <div class="team-grid reveal" id="team-grid">
-          <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">SS</div>
-            <p class="team-name">Simrit Singh</p>
-            <p class="team-role">Sr. Product Manager</p>
-          </div>
-          <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">CM</div>
-            <p class="team-name">Cindy Ma</p>
-            <p class="team-role">Sr. Market Intelligence Manager</p>
-          </div>
-          <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">AP</div>
-            <p class="team-name">Angie Panah</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">KM</div>
-            <p class="team-name">Kaitlyne MacPherson</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">AF</div>
-            <p class="team-name">Arleen Kyle Fernandez</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">SD</div>
-            <p class="team-name">Sapna Datta</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="direct" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">KS</div>
-            <p class="team-name">Kyle Sakaguchi</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">JH</div>
-            <p class="team-name">Jonathan Hu</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">KM</div>
-            <p class="team-name">Kevin Mao</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
-          <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
-            <div class="team-init">JL</div>
-            <p class="team-name">Jonathan Lum</p>
-            <p class="team-role">Sr. Strategy Manager</p>
-          </div>
+        <div class="roster-map-wrap">
+          <div id="roster-map"></div>
+          <button id="roster-map-reset" aria-label="Show all team members">&#x2715; Show all</button>
         </div>
       </div>
     </section>
+
+    <!-- Hidden data source for map pins — do not remove -->
+    <div id="team-cards-data" hidden>
+      <div class="team-card" data-card='{"song":"Minuet in G","gateway":"Laos","report":"1993 Mosquito Provincial Champion","meal":"Pizza","turf":"Vancouver BC","rookie":"2012"}'>
+        <div class="team-init">DJ</div>
+        <p class="team-name">Derek Johnson</p>
+        <p class="team-role">Director</p>
+      </div>
+      <div class="team-card team-card-mgr" data-filter="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">WW</div>
+        <p class="team-name">Windy Wijaya</p>
+        <p class="team-role">Manager, IoT Planning</p>
+      </div>
+      <div class="team-card team-card-mgr" data-filter="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">MP</div>
+        <p class="team-name">Malcolm Pilgrim</p>
+        <p class="team-role">Manager, WLS Planning</p>
+      </div>
+      <div class="team-card team-card-mgr" data-filter="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">TM</div>
+        <p class="team-name">Tyler Makhuza</p>
+        <p class="team-role">Manager, WLN Planning</p>
+      </div>
+      <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">SS</div>
+        <p class="team-name">Simrit Singh</p>
+        <p class="team-role">Sr. Product Manager</p>
+      </div>
+      <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">CM</div>
+        <p class="team-name">Cindy Ma</p>
+        <p class="team-role">Sr. Market Intelligence Manager</p>
+      </div>
+      <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">AP</div>
+        <p class="team-name">Angie Panah</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="tyler" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">KM</div>
+        <p class="team-name">Kaitlyne MacPherson</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">AF</div>
+        <p class="team-name">Arleen Kyle Fernandez</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">SD</div>
+        <p class="team-name">Sapna Datta</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="direct" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">KS</div>
+        <p class="team-name">Kyle Sakaguchi</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">JH</div>
+        <p class="team-name">Jonathan Hu</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="malcolm" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">KM</div>
+        <p class="team-name">Kevin Mao</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+      <div class="team-card" data-mgr="windy" data-card='{"song":"?","gateway":"?","report":"?","meal":"?","turf":"?","rookie":"?"}'>
+        <div class="team-init">JL</div>
+        <p class="team-name">Jonathan Lum</p>
+        <p class="team-role">Sr. Strategy Manager</p>
+      </div>
+    </div>
   </div>
 
 

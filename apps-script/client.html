@@ -61,6 +61,7 @@
       view.hidden = false;
       initReveal(view);
     }
+    if (tab === 'roster') initRosterMap();
 
     $('.nav').classList.remove('open');
     window.scrollTo(0, 0);
@@ -186,7 +187,7 @@
   function applySyncedCardData() {
     var cardData = window.TEAM_CARD_DATA;
     if (cardData && typeof cardData === 'object') {
-      $$('#view-roster .team-card').forEach(function (card) {
+      $$('#team-cards-data .team-card').forEach(function (card) {
         var nameEl = card.querySelector('.team-name');
         if (!nameEl) return;
 
@@ -660,6 +661,8 @@
     document.getElementById('rosterModal').classList.add('open');
   }
 
+  window.openRosterModal = openRosterModal;
+
   window._closeRosterModal = function () {
     document.getElementById('rosterModal').classList.remove('open');
   };
@@ -683,6 +686,121 @@
     initRosterModal();
   }
 })();
+
+
+/* --- Roster map ---------------------------------------------------------- */
+var _rosterMapInited = false;
+
+var _CANADA_CITIES = {
+  'vancouver': [49.2827, -123.1207], 'vancouver bc': [49.2827, -123.1207],
+  'burnaby': [49.2488, -122.9805], 'surrey': [49.1913, -122.849],
+  'richmond': [49.1666, -123.1336], 'north vancouver': [49.32, -123.0724],
+  'west vancouver': [49.36, -123.165], 'coquitlam': [49.2838, -122.7932],
+  'new westminster': [49.2057, -122.911], 'langley': [49.1044, -122.6605],
+  'abbotsford': [49.0504, -122.3045], 'victoria': [48.4284, -123.3656],
+  'kelowna': [49.888, -119.496], 'kamloops': [50.6745, -120.3273],
+  'calgary': [51.0447, -114.0719], 'edmonton': [53.5461, -113.4938],
+  'saskatoon': [52.1332, -106.67], 'regina': [50.4452, -104.6189],
+  'winnipeg': [49.8951, -97.1384],
+  'toronto': [43.6532, -79.3832], 'ottawa': [45.4215, -75.6972],
+  'mississauga': [43.589, -79.6441], 'hamilton': [43.2557, -79.8711],
+  'montreal': [45.5017, -73.5673], 'quebec city': [46.8139, -71.208],
+  'halifax': [44.6488, -63.5752], "st. john's": [47.5615, -52.7126],
+  "st john's": [47.5615, -52.7126]
+};
+
+function _getCityCoords(turf) {
+  if (!turf || turf === '?') return null;
+  var key = turf.toLowerCase().trim()
+    .replace(/\s+(bc|ab|sk|mb|on|qc|nb|ns|pe|nl|nt|nu|yt)\s*$/, '').trim();
+  return _CANADA_CITIES[key] || null;
+}
+
+function _getTeamKeys(card) {
+  var filter = card.getAttribute('data-filter');
+  var mgr    = card.getAttribute('data-mgr');
+  if (filter) return [filter];
+  if (mgr)    return [mgr];
+  return ['leadership', 'direct'];
+}
+
+function _filterRosterMap(markerList, clickedCard, resetBtn) {
+  var teamKeys = _getTeamKeys(clickedCard);
+  markerList.forEach(function (item) {
+    var inTeam = teamKeys.indexOf(item.teamKey) !== -1 || item.card === clickedCard;
+    var el = item.marker.getElement();
+    if (el) el.classList.toggle('roster-marker-dim', !inTeam);
+  });
+  resetBtn.style.display = 'block';
+}
+
+function _resetRosterMap(markerList, resetBtn) {
+  markerList.forEach(function (item) {
+    var el = item.marker.getElement();
+    if (el) el.classList.remove('roster-marker-dim');
+  });
+  resetBtn.style.display = 'none';
+}
+
+function initRosterMap() {
+  if (_rosterMapInited || typeof L === 'undefined') return;
+  _rosterMapInited = true;
+
+  var map = L.map('roster-map', { center: [56, -96], zoom: 4, minZoom: 3, maxZoom: 14 });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  var resetBtn = document.getElementById('roster-map-reset');
+  var allBounds = [];
+  var markerList = [];
+
+  document.querySelectorAll('#team-cards-data .team-card').forEach(function (card) {
+    var stats = {};
+    try { stats = JSON.parse(card.getAttribute('data-card') || '{}'); } catch (e) {}
+
+    var initials = card.querySelector('.team-init').textContent.trim();
+    var name     = card.querySelector('.team-name').textContent.trim();
+    var coords   = _getCityCoords(stats.turf);
+    var unknown  = !coords;
+
+    if (unknown) {
+      coords = [49.2827 + (Math.random() - 0.5) * 0.14, -123.1207 + (Math.random() - 0.5) * 0.22];
+    }
+
+    var teamKey = card.getAttribute('data-filter') || card.getAttribute('data-mgr') || 'leadership';
+
+    var marker = L.marker(coords, {
+      icon: L.divIcon({
+        className: 'roster-pin',
+        html: '<div class="pin-dot' + (unknown ? ' pin-unknown' : '') + '" title="' + name + '">' + initials + '</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      }),
+      title: name
+    });
+
+    marker.on('click', function () {
+      _filterRosterMap(markerList, card, resetBtn);
+      window.openRosterModal(card);
+    });
+
+    marker.addTo(map);
+    allBounds.push(coords);
+    markerList.push({ marker: marker, card: card, teamKey: teamKey });
+  });
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function () { _resetRosterMap(markerList, resetBtn); });
+  }
+
+  if (allBounds.length > 0) {
+    map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 7 });
+  }
+}
 
 
 /* --- Pet profile modal ------------------------------------------- */
