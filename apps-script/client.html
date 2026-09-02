@@ -832,9 +832,10 @@
       return {
         date:           monthRows[monthRows.length - 1].date,
         _count:         monthRows.length,
-        engagement:     mean(monthRows, 'engagement'),
-        participation:  mean(monthRows, 'participation'),
-        eNPS:           mean(monthRows, 'eNPS'),
+        engagement:       mean(monthRows, 'engagement'),
+        participation:    mean(monthRows, 'participation'),
+        participantCount: mean(monthRows, 'participantCount'),
+        eNPS:             mean(monthRows, 'eNPS'),
         recognition:    mean(monthRows, 'recognition'),
         ambassadorship: mean(monthRows, 'ambassadorship'),
         feedback:       mean(monthRows, 'feedback'),
@@ -912,94 +913,138 @@
   observeTab('view-eng-reports',   function () { _loadEngData(renderEngReports); });
   observeTab('view-eng-archive',   function () { _loadEngData(renderEngArchive); });
 
-  // ── Gauge SVG (circle arc / stroke-dashoffset style) ──────────────────────
+  // ── Arc gauge core (270° speedometer, circle stroke-dashoffset) ──────────────
   //
-  // 270° speedometer arc using stroke-dasharray on a <circle>.
-  // The group is rotated 135° CW so the gap sits at the bottom-centre.
-  // Fill animates from empty (dashoffset = arcLen) to target via JS + CSS transition.
+  // opts: { min, max, unit, decimals, showPlus, good, ok, subtext, lblLeft, lblRight }
+  //   min/max   – scale bounds  (default 0/10)
+  //   unit      – suffix on displayed value  (default '')
+  //   decimals  – decimal places for value   (default 1)
+  //   showPlus  – prepend '+' for positive values  (default false)
+  //   good/ok   – colour thresholds: ≥good=green, ≥ok=amber, else red
+  //   subtext   – optional second line inside the dial (e.g. respondent count)
+  //   lblLeft   – scale label at the min (lower-left) end
+  //   lblRight  – scale label at the max (lower-right) end
 
-  function makeGaugeSVG(score, prevScore, isLarge) {
-    var r  = 44, cx = 60, cy = 60;
-    var sw = isLarge ? 11 : 9;
-    // 270° of circumference
+  function _arcGauge(value, prevValue, opts) {
+    var min      = opts.min      != null ? opts.min      : 0;
+    var max      = opts.max      != null ? opts.max      : 10;
+    var unit     = opts.unit     != null ? opts.unit     : '';
+    var decimals = opts.decimals != null ? opts.decimals : 1;
+    var showPlus = !!opts.showPlus;
+    var good     = opts.good     != null ? opts.good     : 7.5;
+    var ok       = opts.ok       != null ? opts.ok       : 6.0;
+    var subtext  = opts.subtext  || null;
+    var lblLeft  = opts.lblLeft  != null ? String(opts.lblLeft)  : String(min);
+    var lblRight = opts.lblRight != null ? String(opts.lblRight) : String(max);
+
+    var r = 44, cx = 60, cy = 60, sw = 11;
     var C   = +(2 * Math.PI * r).toFixed(3);  // ≈ 276.460
-    var arc = +(C * 0.75).toFixed(3);          // ≈ 207.345
-    var gap = +(C - arc).toFixed(3);           // ≈ 69.115
+    var arc = +(C * 0.75).toFixed(3);          // 270° arc ≈ 207.345
+    var gap = +(C - arc).toFixed(3);
 
-    var mom = (score != null && prevScore != null)
-      ? Math.round((score - prevScore) * 10) / 10 : null;
-    var momClr = mom == null ? '#888'
-      : mom > 0 ? '#2f9e44' : mom < 0 ? '#c92a2a' : '#888';
+    var mom = (value != null && prevValue != null)
+      ? Math.round((value - prevValue) * 10) / 10 : null;
+    var momClr = mom == null ? '#888' : mom > 0 ? '#2f9e44' : mom < 0 ? '#c92a2a' : '#888';
     var momTxt = mom != null
-      ? (mom > 0 ? '▲ +' : mom < 0 ? '▼ ' : '→ ') + Math.abs(mom).toFixed(1) : '';
+      ? (mom > 0 ? '▲ +' : mom < 0 ? '▼ ' : '→ ') + Math.abs(mom).toFixed(decimals) : '';
 
-    var fillClr = score == null ? '#bbb'
-      : score >= 7.5 ? '#2f9e44'
-      : score >= 6.0 ? '#e67700'
+    var fillClr = value == null ? '#bbb'
+      : value >= good ? '#2f9e44'
+      : value >= ok   ? '#e67700'
       : '#c92a2a';
 
-    // dashoffset at which the arc fills exactly to `score`
-    // offset=arc → empty; offset=0 → full
-    var fillTarget = score != null
-      ? +(arc * (1 - Math.max(0, Math.min(10, score)) / 10)).toFixed(3)
-      : arc;
+    var frac = value != null
+      ? Math.max(0, Math.min(1, (value - min) / (max - min))) : 0;
+    var fillTarget = value != null ? +(arc * (1 - frac)).toFixed(3) : arc;
 
-    // SVG angle for a score 0-10 in screen-CW degrees (0° = right)
-    // score 0 → 135° (lower-left / 7 o'clock), score 10 → 405°=45° (lower-right / 5 o'clock)
-    function thetaRad(v) { return (135 + (v / 10) * 270) * Math.PI / 180; }
+    // SVG-CW angle for a value on [min,max] — 0° at min (7 o'clock), 270° at max (5 o'clock)
+    function thetaRad(v) {
+      return (135 + ((v - min) / (max - min)) * 270) * Math.PI / 180;
+    }
     function pt(v, rad) {
       var t = thetaRad(v);
       return { x: +(cx + rad * Math.cos(t)).toFixed(2), y: +(cy + rad * Math.sin(t)).toFixed(2) };
     }
 
-    // Tick marks at 0, 2, 4, 5, 6, 8, 10
-    var tickHTML = [0, 2, 4, 5, 6, 8, 10].map(function (v) {
-      var major = (v === 0 || v === 5 || v === 10);
-      var p1 = pt(v, 48), p2 = pt(v, major ? 55 : 52);
+    // 5 evenly-spaced tick marks; major at 0%, 50%, 100% of scale
+    var tickHTML = [0, 0.25, 0.5, 0.75, 1].map(function (f, i) {
+      var v = min + f * (max - min);
+      var major = (i === 0 || i === 2 || i === 4);
+      var p1 = pt(v, 48), p2 = pt(v, major ? 56 : 52);
       return '<line x1="' + p1.x + '" y1="' + p1.y +
              '" x2="' + p2.x + '" y2="' + p2.y +
              '" stroke="' + (major ? '#b0a0cc' : '#cfc5e4') +
              '" stroke-width="' + (major ? 2 : 1.2) + '" stroke-linecap="round"/>';
     }).join('');
 
-    // Scale labels 0 / 5 / 10 (large gauge only — small gauges are too cramped)
-    var lblHTML = '';
-    if (isLarge) {
-      var l0 = pt(0, 62), l5 = pt(5, 64), l10 = pt(10, 62);
-      lblHTML =
-        '<text x="' + l0.x  + '" y="' + l0.y  + '" text-anchor="end"    font-size="7.5" fill="#a090be">0</text>' +
-        '<text x="' + l5.x  + '" y="' + (l5.y + 1) + '" text-anchor="middle" font-size="7.5" fill="#a090be">5</text>' +
-        '<text x="' + l10.x + '" y="' + l10.y + '" text-anchor="start"  font-size="7.5" fill="#a090be">10</text>';
-    }
+    // Labels only at min (lower-left) and max (lower-right) — skip midpoint to avoid SVG clipping
+    var pL = pt(min, 64), pR = pt(max, 64);
+    var lblHTML =
+      '<text x="' + pL.x + '" y="' + pL.y + '" text-anchor="end"   font-size="7.5" fill="#a090be">' + lblLeft  + '</text>' +
+      '<text x="' + pR.x + '" y="' + pR.y + '" text-anchor="start" font-size="7.5" fill="#a090be">' + lblRight + '</text>';
 
-    var fScore = isLarge ? 22 : 17;
-    var yScore = mom != null ? 56 : 62;
+    // Centre lines: value, optional subtext, optional MoM
+    var hasSubtext = !!(subtext && value != null);
+    var hasMoM     = !!momTxt;
+    var lineCount  = 1 + (hasSubtext ? 1 : 0) + (hasMoM ? 1 : 0);
+    var lineSpacing = 14;
+    var yTop = 60 - ((lineCount - 1) / 2) * lineSpacing;
+
+    var valStr = value != null
+      ? (showPlus && value > 0 ? '+' : '') + value.toFixed(decimals) + unit : '—';
 
     return '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" class="eng-gauge-svg"' +
       ' data-fill-target="' + fillTarget + '">' +
       '<g transform="rotate(135 60 60)">' +
-        // Track arc — light purple background ring
         '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="#ece6f6" stroke-width="' + sw + '"' +
           ' stroke-dasharray="' + arc + ' ' + gap + '" stroke-linecap="round"/>' +
-        // Fill arc — starts fully offset (empty); JS triggers CSS transition to target
         '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="' + fillClr + '"' +
           ' stroke-width="' + sw + '" stroke-dasharray="' + arc + ' ' + gap + '"' +
           ' stroke-dashoffset="' + arc + '" stroke-linecap="round" class="eng-gauge-fill"' +
           ' style="filter:drop-shadow(0 0 4px ' + fillClr + 'aa)"/>' +
       '</g>' +
       tickHTML + lblHTML +
-      // Score value (centred)
-      '<text x="60" y="' + yScore + '" text-anchor="middle" dominant-baseline="middle"' +
-        ' font-family="Helvetica Neue,Arial,sans-serif" font-size="' + fScore + '"' +
-        ' font-weight="700" fill="' + fillClr + '">' +
-        (score != null ? score.toFixed(1) : '—') + '</text>' +
-      // MoM delta (below score when present)
-      (momTxt
-        ? '<text x="60" y="74" text-anchor="middle" dominant-baseline="middle"' +
+      // Score
+      '<text x="60" y="' + yTop + '" text-anchor="middle" dominant-baseline="middle"' +
+        ' font-family="Helvetica Neue,Arial,sans-serif" font-size="20" font-weight="700"' +
+        ' fill="' + fillClr + '">' + valStr + '</text>' +
+      // Subtext
+      (hasSubtext
+        ? '<text x="60" y="' + (yTop + lineSpacing) + '" text-anchor="middle" dominant-baseline="middle"' +
+          ' font-family="Helvetica Neue,Arial,sans-serif" font-size="8.5" fill="#777">' + subtext + '</text>'
+        : '') +
+      // MoM trend
+      (hasMoM
+        ? '<text x="60" y="' + (yTop + lineSpacing * (hasSubtext ? 2 : 1)) + '"' +
+          ' text-anchor="middle" dominant-baseline="middle"' +
           ' font-family="Helvetica Neue,Arial,sans-serif" font-size="9" font-weight="600"' +
           ' fill="' + momClr + '">' + momTxt + '</text>'
         : '') +
       '</svg>';
+  }
+
+  // Wrappers for the three gauge types
+
+  function makeGaugeSVG(score, prevScore) {
+    return _arcGauge(score, prevScore, {
+      min: 0, max: 10, unit: '', decimals: 1, good: 7.5, ok: 6.0,
+      lblLeft: '0', lblRight: '10'
+    });
+  }
+
+  function makeParticipationGaugeSVG(pct, prevPct, count) {
+    return _arcGauge(pct, prevPct, {
+      min: 0, max: 100, unit: '%', decimals: 0, good: 80, ok: 60,
+      lblLeft: '0%', lblRight: '100%',
+      subtext: count != null ? Math.round(count) + ' respondents' : null
+    });
+  }
+
+  function makeENPSGaugeSVG(enps, prevEnps) {
+    return _arcGauge(enps, prevEnps, {
+      min: -100, max: 100, unit: '', decimals: 0, showPlus: true, good: 30, ok: 0,
+      lblLeft: '-100', lblRight: '+100'
+    });
   }
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -1013,52 +1058,60 @@
     var cur  = monthly[monthly.length - 1];
     var prev = monthly.length > 1 ? monthly[monthly.length - 2] : null;
 
-    var partPct     = cur.participation;
-    var partBadgeCls = partPct >= 80 ? 'ok' : partPct >= 60 ? 'warn' : 'fail';
-    var eNPSVal     = cur.eNPS;
-    var eNPSStr     = eNPSVal != null ? (eNPSVal > 0 ? '+' : '') + eNPSVal.toFixed(0) : '—';
-    var eNPSCls     = eNPSVal == null ? 'pend' : eNPSVal >= 20 ? 'ok' : eNPSVal >= 0 ? 'warn' : 'fail';
+    var partPct   = cur.participation;
+    var partCount = cur.participantCount;
+    var eNPSVal   = cur.eNPS;
 
     var partAlert = '';
     if (partPct !== null && partPct < 70) {
-      partAlert = '<div class="gnote reveal" style="margin-bottom:1.5rem">' +
+      partAlert = '<div class="gnote reveal" style="margin-top:1rem">' +
         '<span class="dsr-icon" aria-hidden="true">!</span>' +
         '<div><h4 class="gnote-h">Low participation this period</h4>' +
         '<p class="gnote-p">Only ' + fmtPct(partPct) + ' of the team responded — scores may not be fully representative.</p></div></div>';
     }
 
-    var header = '<div class="gstats reveal" style="margin-bottom:1.5rem">' +
+    var header = '<div class="gstats reveal" style="margin-bottom:1rem">' +
       '<div class="gstat"><b>' + esc(monthLabel(cur.date)) + '</b><span>Period (' + (cur._count || 1) + '-entry avg)</span></div>' +
-      '<div class="gstat"><b><span class="pbadge ' + partBadgeCls + '">' + fmtPct(partPct) + '</span></b><span>Participation</span></div>' +
-      '<div class="gstat"><b><span class="pbadge ' + eNPSCls + '">' + eNPSStr + '</span></b><span>eNPS</span></div>' +
     '</div>';
 
     var gauges =
       '<div class="eng-gauge-layout reveal">' +
+        // Row 1: four core composite gauges — flex:1, fill full width
         '<div class="eng-gauge-row">' +
           '<div class="eng-gauge-card">' +
-            makeGaugeSVG(cur.engagement, prev ? prev.engagement : null, true) +
+            makeGaugeSVG(cur.engagement, prev ? prev.engagement : null) +
             '<div class="eng-gauge-label">Overall Engagement</div>' +
           '</div>' +
           '<button class="eng-gauge-btn" data-cat="expSatis">' +
-            makeGaugeSVG(cur.expSatis, prev ? prev.expSatis : null, true) +
+            makeGaugeSVG(cur.expSatis, prev ? prev.expSatis : null) +
             '<div class="eng-gauge-label">Experience &amp; Satisfaction</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
           '<button class="eng-gauge-btn" data-cat="orgCulture">' +
-            makeGaugeSVG(cur.orgCulture, prev ? prev.orgCulture : null, true) +
+            makeGaugeSVG(cur.orgCulture, prev ? prev.orgCulture : null) +
             '<div class="eng-gauge-label">Culture &amp; Relationships</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
           '<button class="eng-gauge-btn" data-cat="growthWell">' +
-            makeGaugeSVG(cur.growthWell, prev ? prev.growthWell : null, true) +
+            makeGaugeSVG(cur.growthWell, prev ? prev.growthWell : null) +
             '<div class="eng-gauge-label">Growth, Alignment &amp; Wellbeing</div>' +
             '<div class="eng-gauge-hint">tap for details</div>' +
           '</button>' +
         '</div>' +
+        // Row 2: participation + eNPS gauges — same card style, centred
+        '<div class="eng-gauge-row eng-gauge-row--secondary">' +
+          '<div class="eng-gauge-card">' +
+            makeParticipationGaugeSVG(partPct, prev ? prev.participation : null, partCount) +
+            '<div class="eng-gauge-label">Participation</div>' +
+          '</div>' +
+          '<div class="eng-gauge-card">' +
+            makeENPSGaugeSVG(eNPSVal, prev ? prev.eNPS : null) +
+            '<div class="eng-gauge-label">eNPS</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
 
-    el.innerHTML = header + partAlert + gauges + _engHighlights(cur, prev);
+    el.innerHTML = header + gauges + partAlert + _engHighlights(cur, prev);
 
     // Trigger fill animations after paint (CSS transition fires when dashoffset changes)
     requestAnimationFrame(function () {
@@ -1515,13 +1568,14 @@
     /* gauge: animated fill transition */
     '.eng-gauge-fill { transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1); }' +
     '.eng-gauge-svg { display:block; }' +
-    /* gauge layout — single scrollable row */
-    '.eng-gauge-layout { margin:0 0 1.5rem; overflow-x:auto; padding-bottom:.5rem; }' +
-    '.eng-gauge-row { display:flex; justify-content:flex-start; align-items:stretch; gap:1.25rem; min-width:max-content; }' +
-    /* card wrapper — shared by static card and clickable button */
+    /* gauge layout */
+    '.eng-gauge-layout { margin:0 0 1.5rem; }' +
+    '.eng-gauge-row { display:flex; align-items:stretch; gap:1rem; margin-bottom:1rem; }' +
+    '.eng-gauge-row--secondary { justify-content:center; max-width:680px; margin-left:auto; margin-right:auto; margin-bottom:0; }' +
+    /* card wrapper — shared by static card and clickable button; flex:1 fills the row */
     '.eng-gauge-card,.eng-gauge-btn {' +
-      'background:#fff; border:1px solid #e4d9f5; border-radius:20px;' +
-      'padding:1.25rem 1.4rem 1rem; box-shadow:0 2px 12px rgba(75,40,109,.08);' +
+      'flex:1; min-width:0; background:#fff; border:1px solid #e4d9f5; border-radius:20px;' +
+      'padding:1.25rem 1.25rem 1rem; box-shadow:0 2px 12px rgba(75,40,109,.08);' +
       'display:flex; flex-direction:column; align-items:center; gap:.5rem; }' +
     '.eng-gauge-btn {' +
       'cursor:pointer;' +
@@ -1529,8 +1583,8 @@
     '.eng-gauge-btn:hover { border-color:#4B286D; box-shadow:0 8px 24px rgba(75,40,109,.18); transform:translateY(-3px); }' +
     '.eng-gauge-btn:active { transform:translateY(0); box-shadow:0 2px 8px rgba(75,40,109,.10); }' +
     '.eng-gauge-btn:focus-visible { outline:2px solid #4B286D; outline-offset:2px; }' +
-    /* all gauges same size */
-    '.eng-gauge-svg { display:block; width:220px; height:220px; }' +
+    /* SVG scales to fill card, capped so it doesn't become enormous on wide screens */
+    '.eng-gauge-svg { display:block; width:100%; height:auto; max-width:260px; margin:0 auto; }' +
     '.eng-gauge-label { font-size:.82rem; font-weight:700; color:#4B286D; text-align:center; max-width:200px; line-height:1.3; }' +
     '.eng-gauge-hint { font-size:.7rem; color:#998bb0; letter-spacing:.02em; }' +
     /* highlights box */

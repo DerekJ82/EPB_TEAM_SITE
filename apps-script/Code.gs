@@ -437,7 +437,7 @@ function getEngagementData() {
   // cross-spreadsheet API calls, which are the main source of load latency.
   var cache = CacheService.getScriptCache();
   try {
-    var hit = cache.get('eng_ytd2026');
+    var hit = cache.get('eng_ytd2026_v2');
     if (hit) return JSON.parse(hit);
   } catch (e) {}
 
@@ -471,10 +471,11 @@ function getEngagementData() {
       // r[14] is the ----- separator column
 
       results.push({
-        date:         _formatEngDate(rawDate),
-        engagement:   eng,
-        participation: part,
-        eNPS:         eNPS,
+        date:             _formatEngDate(rawDate),
+        engagement:       eng,
+        participation:    part,
+        participantCount: _engNum(r[41]),  // optional count column (col AP); null if not present
+        eNPS:             eNPS,
         recognition:  recog,
         ambassadorship: ambass,
         feedback:     feedback,
@@ -520,7 +521,7 @@ function getEngagementData() {
         }
       });
     }
-    try { cache.put('eng_ytd2026', JSON.stringify(results), 21600); } catch (e) {}
+    try { cache.put('eng_ytd2026_v2', JSON.stringify(results), 21600); } catch (e) {}
     return results;
   } catch (ex) {
     Logger.log('getEngagementData error: ' + ex);
