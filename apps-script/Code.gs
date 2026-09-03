@@ -600,7 +600,8 @@ var ACCESS_COLUMN_MAP = {
   'GOQ WLS DASHBOARD':              'GOQ',
   'WLS/WLN CMRG PIPELINE':          'CMRG',
   'CMRG PIPELINE':                  'CMRG',
-  'CROSS-SELL PERFORMANCE':         'CROSS SELL'
+  'CROSS-SELL PERFORMANCE':         'CROSS SELL',
+  'BUDGET':                         'BUDGET'
 };
 
 function getPendingAccessRequests() {
