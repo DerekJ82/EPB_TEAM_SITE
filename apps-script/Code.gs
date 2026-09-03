@@ -549,6 +549,71 @@ function _formatEngDate(raw) {
 }
 
 
+// ─── Pipeline Dashboard Data ──────────────────────────────────────────────────
+
+var BR_QUERIES_SHEET_ID = '19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw';
+
+function getDashboardData() {
+  return {
+    pso:     null,
+    cbr:     null,
+    queries: _getQueriesStatus(),
+    isAdmin: _isAdminUser()
+  };
+}
+
+function _getQueriesStatus() {
+  try {
+    var ss     = SpreadsheetApp.openById(BR_QUERIES_SHEET_ID);
+    var sheet  = ss.getSheetByName('CONFIG');
+    if (!sheet) return { error: 'CONFIG tab not found in BR Queries sheet' };
+
+    var config          = _brQueriesConfig(sheet);
+    var currentPeriod   = config['Current Period']        || '';
+    var pipelineStatus  = config['Pipeline Status']       || 'PENDING';
+    var preRunSent      = config['Pre-Run Reminder Sent'] || '';
+    var queriesComplete = config['Queries Complete']      || '';
+    var postRunChecked  = config['Post-Run Checked']      || '';
+    var gocoMonth       = config['GoCo 2026 Max Month']   || '';
+    var pwnMonth        = config['PWN Max Month']         || '';
+    var wlnMonth        = config['WLN Max Month']         || '';
+    var masterMonth     = config['Master Table Max Month']|| '';
+
+    var stage = 0;
+    if (preRunSent)      stage = 1;
+    if (queriesComplete) stage = 2;
+    if (postRunChecked)  stage = 3;
+
+    var exp = currentPeriod;
+    return {
+      currentPeriod:  currentPeriod,
+      pipelineStatus: pipelineStatus,
+      stage:          stage,
+      totalStages:    4,
+      tables: [
+        { name: 'GoCo 2026',   maxMonth: gocoMonth,   pass: !!gocoMonth   && gocoMonth   === exp },
+        { name: 'PWN',          maxMonth: pwnMonth,    pass: !!pwnMonth    && pwnMonth    === exp },
+        { name: 'WLN',          maxMonth: wlnMonth,    pass: !!wlnMonth    && wlnMonth    === exp },
+        { name: 'Master Table', maxMonth: masterMonth, pass: !!masterMonth && masterMonth === exp }
+      ],
+      trackerUrl: 'https://docs.google.com/spreadsheets/d/' + BR_QUERIES_SHEET_ID + '/edit'
+    };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
+function _brQueriesConfig(sheet) {
+  var config = {};
+  var rows   = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    var key = String(rows[i][0]).trim();
+    if (key) config[key] = String(rows[i][1]).trim();
+  }
+  return config;
+}
+
+
 // ─── Admin: Access Control ────────────────────────────────────────────────────
 // Checks whether the current user is in the EPB Hub admin list.
 // Used by doGet to gate the admin panel in the Team Site UI.
