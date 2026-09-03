@@ -555,10 +555,23 @@ var BR_QUERIES_SHEET_ID  = '19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw';
 var BR_QUERIES_TRACKER_URL = 'https://docs.google.com/spreadsheets/d/19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw/edit';
 
 function getDashboardData() {
+  // Cache queries data for 5 minutes — isAdmin is always computed fresh (user-specific).
+  var cache      = CacheService.getScriptCache();
+  var queriesData = null;
+  try {
+    var hit = cache.get('br_queries_v1');
+    if (hit) queriesData = JSON.parse(hit);
+  } catch (e) {}
+
+  if (!queriesData) {
+    queriesData = _getQueriesStatus();
+    try { cache.put('br_queries_v1', JSON.stringify(queriesData), 300); } catch (e) {}
+  }
+
   return {
     pso:     null,
     cbr:     null,
-    queries: _getQueriesStatus(),
+    queries: queriesData,
     isAdmin: _isAdminUser()
   };
 }
