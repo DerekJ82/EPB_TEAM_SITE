@@ -696,17 +696,25 @@ function approveAccessRequest(rowIndex, email, accessColumn) {
     // Fire Google Chat webhook
     var webhookUrl = PropertiesService.getScriptProperties().getProperty('Dashboard_Bot');
     if (webhookUrl) {
-      UrlFetchApp.fetch(webhookUrl, {
-        method: 'post',
-        contentType: 'application/json',
-        payload: JSON.stringify({
-          text: '✅ *EPB Hub Access Granted!*\n\n*User:* ' + email +
-                '\n*Dashboard:* ' + displayName +
-                '\n*Approved By:* ' + approverEmail +
-                '\n*Time:* ' + now.toLocaleString() +
-                '\n\n' + email + ' — please refresh EPB Hub to access your new dashboard.'
-        })
-      });
+      try {
+        var approveResp = UrlFetchApp.fetch(webhookUrl, {
+          method: 'post',
+          contentType: 'application/json',
+          muteHttpExceptions: true,
+          payload: JSON.stringify({
+            text: '✅ *EPB Hub Access Granted!*\n\n*User:* ' + email +
+                  '\n*Dashboard:* ' + displayName +
+                  '\n*Approved By:* ' + approverEmail +
+                  '\n*Time:* ' + now.toLocaleString() +
+                  '\n\n' + email + ' — please refresh EPB Hub to access your new dashboard.'
+          })
+        });
+        Logger.log('Approve webhook: %s %s', approveResp.getResponseCode(), approveResp.getContentText());
+      } catch (hookErr) {
+        Logger.log('Approve webhook error: ' + hookErr);
+      }
+    } else {
+      Logger.log('approveAccessRequest: Dashboard_Bot property not set — webhook skipped');
     }
 
     // Email requester
@@ -748,16 +756,24 @@ function denyAccessRequest(rowIndex) {
     // Fire Google Chat webhook
     var webhookUrl = PropertiesService.getScriptProperties().getProperty('Dashboard_Bot');
     if (webhookUrl) {
-      UrlFetchApp.fetch(webhookUrl, {
-        method: 'post',
-        contentType: 'application/json',
-        payload: JSON.stringify({
-          text: '❌ *EPB Hub Access Request Declined*\n\n*User:* ' + email +
-                '\n*Dashboard:* ' + displayName +
-                '\n*Declined By:* ' + decliner +
-                '\n*Time:* ' + now.toLocaleString()
-        })
-      });
+      try {
+        var denyResp = UrlFetchApp.fetch(webhookUrl, {
+          method: 'post',
+          contentType: 'application/json',
+          muteHttpExceptions: true,
+          payload: JSON.stringify({
+            text: '❌ *EPB Hub Access Request Declined*\n\n*User:* ' + email +
+                  '\n*Dashboard:* ' + displayName +
+                  '\n*Declined By:* ' + decliner +
+                  '\n*Time:* ' + now.toLocaleString()
+          })
+        });
+        Logger.log('Deny webhook: %s %s', denyResp.getResponseCode(), denyResp.getContentText());
+      } catch (hookErr) {
+        Logger.log('Deny webhook error: ' + hookErr);
+      }
+    } else {
+      Logger.log('denyAccessRequest: Dashboard_Bot property not set — webhook skipped');
     }
 
     // Email requester
