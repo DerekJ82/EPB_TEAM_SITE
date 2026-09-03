@@ -316,10 +316,12 @@
   }
 
   function _badge(status) {
-    var cls = { COMPLETE:'ok', PASS:'ok', IN_PROGRESS:'warn', WAITING:'warn',
-                PENDING:'pend', NOT_STARTED:'pend', FAILED:'fail', DENIED:'fail' };
+    var cls = { COMPLETE:'ok', PASS:'ok', SUCCESS:'ok',
+                IN_PROGRESS:'warn', WAITING:'warn', ACTIVE:'warn',
+                PENDING:'todo', NOT_STARTED:'todo',
+                FAILED:'bad', DENIED:'bad', FAIL:'bad' };
     var key = String(status).toUpperCase();
-    return '<span class="pbadge ' + (cls[key] || 'pend') + '">' + _esc(status) + '</span>';
+    return '<span class="pbadge ' + (cls[key] || 'todo') + '">' + _esc(status) + '</span>';
   }
 
   function _err(id, msg) {
@@ -435,19 +437,149 @@
     var d = data.queries;
     if (!d || d.error) { el.innerHTML = '<p class="pipe-error">' + _esc(d ? d.error : 'No queries data') + '</p>'; return; }
 
-    var tables = (d.tables || []).map(function (t) {
-      return '<tr><td>' + _esc(t.name) + '</td><td>' + _badge(t.pass ? 'PASS' : 'PENDING') + '</td></tr>';
+    // CONFIG sheet not yet initialized
+    if (!d.currentPeriod) {
+      el.innerHTML =
+        '<div class="gnote reveal">' +
+          '<span class="dsr-icon" aria-hidden="true">!</span>' +
+          '<div><h4 class="gnote-h">Config not initialized</h4>' +
+          '<p class="gnote-p">Run <code>initBRConfigSheet()</code> from the Apps Script editor, ' +
+          'then <code>scheduleMonthlyBRNotification()</code> to set the current period.</p></div>' +
+        '</div>' +
+        '<p class="pipe-link"><a href="' + _esc(d.trackerUrl || '#') + '" target="_blank" rel="noopener">Open tracker sheet &rarr;</a></p>';
+      return;
+    }
+
+    // Step badge/note helpers
+    function stepBadge(i) {
+      if (d.stage === 3 && d.pipelineStatus === 'SUCCESS') return _badge('COMPLETE');
+      if (d.stage === 3 && d.pipelineStatus !== 'SUCCESS' && i === 2) return _badge('FAILED');
+      if (i < d.stage)  return _badge('COMPLETE');
+      if (i === d.stage) return _badge('IN_PROGRESS');
+      return _badge('NOT_STARTED');
+    }
+    function stepNote(i) {
+      var ts = '';
+      if (i === 0 && d.preRunSent)      ts = _fmtTs(d.preRunSent);
+      if (i === 1)                       ts = d.queriesComplete ? '4th at 09:00 ET' : 'Scheduled for the 4th';
+      if (i === 2 && d.queriesComplete)  ts = _fmtTs(d.queriesComplete);
+      if (i === 3 && d.postRunChecked)   ts = _fmtTs(d.postRunChecked);
+      return ts ? '<p>' + _esc(ts) + '</p>' : '';
+    }
+
+    var stepLabels = ['Reminder Sent', 'Queries &amp; Workflow', 'Results Checked', 'Pipeline Complete'];
+    var steps = stepLabels.map(function(label, i) {
+      return '<li class="step">' +
+        '<span class="step-n">' + (i + 1) + '</span>' +
+        '<div><h4>' + label + ' &nbsp;' + stepBadge(i) + '</h4>' + stepNote(i) + '</div>' +
+      '</li>';
     }).join('');
+
+    var tableRows = (d.tables || []).map(function(t) {
+      var status = !t.maxMonth ? 'NOT_STARTED' : t.pass ? 'PASS' : 'FAILED';
+      return '<tr>' +
+        '<td>' + _esc(t.name) + '</td>' +
+        '<td class="gt-prose" style="font-size:12px;color:var(--grey-l);font-style:italic">' + _esc(t.bqId || '') + '</td>' +
+        '<td class="num">' + _esc(t.maxMonth || '—') + '</td>' +
+        '<td>' + _badge(status) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var failNote = (d.stage === 3 && d.pipelineStatus !== 'SUCCESS')
+      ? '<div class="gnote reveal"><span class="dsr-icon" aria-hidden="true">!</span>' +
+        '<div><h4 class="gnote-h">Pipeline issue detected</h4>' +
+        '<p class="gnote-p">Post-run check found one or more BQ tables did not update to ' +
+        _esc(_fmtPeriod(d.currentPeriod)) + '. Review table status below and check the GCP workflow.</p></div></div>'
+      : '';
+
+    var controls =
+      '<div class="reveal" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">' +
+        '<button class="action-btn approve" onclick="window._brMarkReminder(this)">Mark Reminder Sent</button>' +
+        '<button class="action-btn approve" onclick="window._brMarkQueries(this)">Mark Queries Done</button>' +
+        '<button class="action-btn" style="background:var(--purple);color:#fff;border:0" ' +
+          'onclick="window._brRunCheck(this)">Run Post-Run Check Now</button>' +
+      '</div>';
+
+    var pct = Math.round((d.stage / (d.totalStages || 4)) * 100);
 
     el.innerHTML =
       '<div class="gstats reveal">' +
-        '<div class="gstat"><b>' + _esc(d.currentPeriod || '—') + '</b><span>Current period</span></div>' +
-        '<div class="gstat"><b>Stage ' + (d.stage || 0) + '&thinsp;/&thinsp;' + (d.totalStages || 4) + '</b><span>Pipeline stage</span></div>' +
+        '<div class="gstat"><b>' + _esc(_fmtPeriod(d.currentPeriod)) + '</b><span>Current period</span></div>' +
+        '<div class="gstat"><b>Stage ' + d.stage + '&thinsp;/&thinsp;' + (d.totalStages || 4) +
+          '</b><span>Pipeline stage</span></div>' +
         '<div class="gstat">' + _badge(d.pipelineStatus || 'PENDING') + '<span>Status</span></div>' +
       '</div>' +
-      (tables ? '<div class="gt-wrap reveal"><table class="gt"><thead><tr><th>Table</th><th>Status</th></tr></thead><tbody>' + tables + '</tbody></table></div>' : '<p class="pipe-empty">No table data found.</p>') +
-      '<p class="pipe-link"><a href="' + _esc(d.trackerUrl || '#') + '" target="_blank" rel="noopener">Open config sheet &rarr;</a></p>';
+      '<div class="pipe-progress reveal"><div class="pipe-bar" style="width:' + pct + '%"></div></div>' +
+      failNote +
+      '<ul class="steps reveal">' + steps + '</ul>' +
+      '<div class="gt-wrap reveal"><table class="gt gt-wide">' +
+        '<thead><tr><th>BQ Table</th><th>Table ID</th><th>Max Month</th><th>Status</th></tr></thead>' +
+        '<tbody>' + tableRows + '</tbody>' +
+      '</table></div>' +
+      controls +
+      '<p class="pipe-link"><a href="' + _esc(d.trackerUrl || '#') + '" target="_blank" rel="noopener">Open tracker sheet &rarr;</a></p>';
   }
+
+  function _fmtPeriod(yyyyMm) {
+    if (!yyyyMm) return '—';
+    var p = String(yyyyMm).split('-');
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return (months[parseInt(p[1], 10) - 1] || p[1]) + ' ' + p[0];
+  }
+
+  function _fmtTs(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('en-CA', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    } catch (e) { return iso; }
+  }
+
+  /* --- BR Queries pipeline controls -------------------------------------- */
+  window._brMarkReminder = function(btn) {
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        btn.disabled = false; btn.textContent = 'Mark Reminder Sent';
+        _pipeData = null; _loadPipeData(renderQueries);
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = 'Mark Reminder Sent';
+        _epbToast('Error: ' + e.message);
+      })
+      .markReminderSent();
+  };
+
+  window._brMarkQueries = function(btn) {
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        btn.disabled = false; btn.textContent = 'Mark Queries Done';
+        _pipeData = null; _loadPipeData(renderQueries);
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = 'Mark Queries Done';
+        _epbToast('Error: ' + e.message);
+      })
+      .markQueriesWorkflowDone();
+  };
+
+  window._brRunCheck = function(btn) {
+    btn.disabled = true; btn.textContent = 'Running…';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false; btn.textContent = 'Run Post-Run Check Now';
+        if (res && res.error) { _epbToast('Check error: ' + res.error); return; }
+        _epbToast('Post-run check complete — results updated.');
+        _pipeData = null; _loadPipeData(renderQueries);
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = 'Run Post-Run Check Now';
+        _epbToast('Error: ' + e.message);
+      })
+      .runPostRunCheckNow();
+  };
 
   /* --- Admin tab ---------------------------------------------------------- */
   if (window.IS_ADMIN) {

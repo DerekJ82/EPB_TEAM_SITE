@@ -549,9 +549,10 @@ function _formatEngDate(raw) {
 }
 
 
-// ─── Pipeline Dashboard Data ──────────────────────────────────────────────────
+// ─── BR Queries Pipeline ──────────────────────────────────────────────────────
 
-var BR_QUERIES_SHEET_ID = '19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw';
+var BR_QUERIES_SHEET_ID  = '19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw';
+var BR_QUERIES_TRACKER_URL = 'https://docs.google.com/spreadsheets/d/19ioEbx2qjS74CIuvg95aS0_BzeLokXWkCL8bgEeBSzw/edit';
 
 function getDashboardData() {
   return {
@@ -564,20 +565,21 @@ function getDashboardData() {
 
 function _getQueriesStatus() {
   try {
-    var ss     = SpreadsheetApp.openById(BR_QUERIES_SHEET_ID);
-    var sheet  = ss.getSheetByName('CONFIG');
+    var ss    = SpreadsheetApp.openById(BR_QUERIES_SHEET_ID);
+    var sheet = ss.getSheetByName('CONFIG');
     if (!sheet) return { error: 'CONFIG tab not found in BR Queries sheet' };
 
-    var config          = _brQueriesConfig(sheet);
-    var currentPeriod   = config['Current Period']        || '';
-    var pipelineStatus  = config['Pipeline Status']       || 'PENDING';
-    var preRunSent      = config['Pre-Run Reminder Sent'] || '';
-    var queriesComplete = config['Queries Complete']      || '';
-    var postRunChecked  = config['Post-Run Checked']      || '';
-    var gocoMonth       = config['GoCo 2026 Max Month']   || '';
-    var pwnMonth        = config['PWN Max Month']         || '';
-    var wlnMonth        = config['WLN Max Month']         || '';
-    var masterMonth     = config['Master Table Max Month']|| '';
+    var cfg             = _brQueriesConfig(sheet);
+    var currentPeriod   = cfg['Current Period']        || '';
+    var pipelineStatus  = cfg['Pipeline Status']       || 'PENDING';
+    var preRunSent      = cfg['Pre-Run Reminder Sent'] || '';
+    var queriesComplete = cfg['Queries Complete']      || '';
+    var postRunChecked  = cfg['Post-Run Checked']      || '';
+    var gocoMonth       = cfg['GoCo BQ Max Month']     || '';
+    var cbsMonth        = cfg['CBS Max Month']         || '';
+    var pwnMonth        = cfg['PWN Max Month']         || '';
+    var wlnMonth        = cfg['WLN Max Month']         || '';
+    var masterMonth     = cfg['Master Table Max Month']|| '';
 
     var stage = 0;
     if (preRunSent)      stage = 1;
@@ -586,17 +588,21 @@ function _getQueriesStatus() {
 
     var exp = currentPeriod;
     return {
-      currentPeriod:  currentPeriod,
-      pipelineStatus: pipelineStatus,
-      stage:          stage,
-      totalStages:    4,
+      currentPeriod:   currentPeriod,
+      pipelineStatus:  pipelineStatus,
+      stage:           stage,
+      totalStages:     4,
+      preRunSent:      preRunSent,
+      queriesComplete: queriesComplete,
+      postRunChecked:  postRunChecked,
       tables: [
-        { name: 'GoCo 2026',   maxMonth: gocoMonth,   pass: !!gocoMonth   && gocoMonth   === exp },
-        { name: 'PWN',          maxMonth: pwnMonth,    pass: !!pwnMonth    && pwnMonth    === exp },
-        { name: 'WLN',          maxMonth: wlnMonth,    pass: !!wlnMonth    && wlnMonth    === exp },
-        { name: 'Master Table', maxMonth: masterMonth, pass: !!masterMonth && masterMonth === exp }
+        { name: 'GoCo BQ',     bqId: 'bq_goco_customer_rgu_rev',               maxMonth: gocoMonth,   pass: !!gocoMonth   && gocoMonth   === exp },
+        { name: 'CBS',          bqId: 'adt_cbs_active_billed_customer_rgu_hist', maxMonth: cbsMonth,    pass: !!cbsMonth    && cbsMonth    === exp },
+        { name: 'PWN',          bqId: 'gs_bq_pwn_br',                           maxMonth: pwnMonth,    pass: !!pwnMonth    && pwnMonth    === exp },
+        { name: 'WLN',          bqId: 'op_14239_br_master_tbs',                 maxMonth: wlnMonth,    pass: !!wlnMonth    && wlnMonth    === exp },
+        { name: 'Master Table', bqId: 'master_commercial_public_revenue',        maxMonth: masterMonth, pass: !!masterMonth && masterMonth === exp }
       ],
-      trackerUrl: 'https://docs.google.com/spreadsheets/d/' + BR_QUERIES_SHEET_ID + '/edit'
+      trackerUrl: BR_QUERIES_TRACKER_URL
     };
   } catch (e) {
     return { error: String(e) };
@@ -605,12 +611,309 @@ function _getQueriesStatus() {
 
 function _brQueriesConfig(sheet) {
   var config = {};
-  var rows   = sheet.getDataRange().getValues();
-  for (var i = 1; i < rows.length; i++) {
-    var key = String(rows[i][0]).trim();
-    if (key) config[key] = String(rows[i][1]).trim();
+  var data   = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var key = String(data[i][0]).trim();
+    if (!key) continue;
+    var val = data[i][1];
+    config[key] = val instanceof Date ? val.toISOString() : String(val).trim();
   }
   return config;
+}
+
+function _brQueriesUpdateConfig(updates) {
+  var ss    = SpreadsheetApp.openById(BR_QUERIES_SHEET_ID);
+  var sheet = ss.getSheetByName('CONFIG');
+  if (!sheet) return;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var key = String(data[i][0]).trim();
+    if (key in updates) sheet.getRange(i + 1, 2).setValue(updates[key]);
+  }
+}
+
+// Run once from the Apps Script editor when the CONFIG sheet has no rows.
+function initBRConfigSheet() {
+  var ss    = SpreadsheetApp.openById(BR_QUERIES_SHEET_ID);
+  var sheet = ss.getSheetByName('CONFIG');
+  if (!sheet) { Logger.log('ERROR: CONFIG tab not found'); return; }
+
+  var keys = [
+    'Current Period', 'Pipeline Status',
+    'Pre-Run Reminder Sent', 'Queries Complete', 'Post-Run Checked',
+    'GoCo BQ Max Month', 'CBS Max Month', 'PWN Max Month',
+    'WLN Max Month', 'Master Table Max Month'
+  ];
+
+  var data     = sheet.getDataRange().getValues();
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var k = String(data[i][0]).trim();
+    if (k) existing[k] = true;
+  }
+
+  if (!data.length || !String(data[0][0]).trim()) {
+    sheet.getRange(1, 1).setValue('Key');
+    sheet.getRange(1, 2).setValue('Value');
+    sheet.getRange(1, 1, 1, 2).setFontWeight('bold');
+  }
+
+  var lastRow = sheet.getLastRow() || 1;
+  keys.forEach(function(k) {
+    if (!existing[k]) {
+      lastRow++;
+      sheet.getRange(lastRow, 1).setValue(k);
+      if (k === 'Pipeline Status') sheet.getRange(lastRow, 2).setValue('PENDING');
+    }
+  });
+  Logger.log('initBRConfigSheet done. Next: run scheduleMonthlyBRNotification() to set the current period.');
+}
+
+
+// ─── Manual controls (called from EPB Team Site frontend) ─────────────────────
+
+function markReminderSent() {
+  _brQueriesUpdateConfig({ 'Pre-Run Reminder Sent': new Date().toISOString() });
+  return { success: true };
+}
+
+function markQueriesWorkflowDone() {
+  _brQueriesUpdateConfig({ 'Queries Complete': new Date().toISOString() });
+  return { success: true };
+}
+
+function runPostRunCheckNow() {
+  try { _brQueriesPostRunCheck(); return { success: true }; }
+  catch (e) { return { error: String(e) }; }
+}
+
+
+// ─── Monthly automation ────────────────────────────────────────────────────────
+
+// Run once to install the 1st-of-month recurring trigger.
+function setupBRQueriesTriggers() {
+  _brQueriesDeleteTriggersFor('scheduleMonthlyBRNotification');
+  ScriptApp.newTrigger('scheduleMonthlyBRNotification').timeBased().onMonthDay(1).atHour(6).create();
+  Logger.log('Trigger created: scheduleMonthlyBRNotification fires on the 1st of each month at 6am.');
+}
+
+// Fires 1st of each month — sets Current Period, resets flags, schedules downstream triggers.
+function scheduleMonthlyBRNotification() {
+  var now     = new Date();
+  var year    = now.getFullYear();
+  var month   = now.getMonth() + 1;
+  var cpMonth = month === 1 ? 12 : month - 1;
+  var cpYear  = month === 1 ? year - 1 : year;
+  var pad     = function(n) { return n < 10 ? '0' + n : String(n); };
+  var currentPeriod = cpYear + '-' + pad(cpMonth);
+
+  _brQueriesUpdateConfig({
+    'Current Period':         currentPeriod,
+    'Pipeline Status':        'PENDING',
+    'Pre-Run Reminder Sent':  '',
+    'Queries Complete':       '',
+    'Post-Run Checked':       '',
+    'GoCo BQ Max Month':      '',
+    'CBS Max Month':          '',
+    'PWN Max Month':          '',
+    'WLN Max Month':          '',
+    'Master Table Max Month': ''
+  });
+
+  var fourth       = new Date(year, month - 1, 4);
+  var reminderDate = _brQueriesNBDsBefore(fourth, 2);
+  reminderDate.setHours(8, 0, 0, 0);
+  _brQueriesDeleteTriggersFor('preRunBRReminder');
+  ScriptApp.newTrigger('preRunBRReminder').timeBased().at(reminderDate).create();
+
+  var checkDate = new Date(year, month - 1, 13, 9, 0, 0, 0);
+  _brQueriesDeleteTriggersFor('_brQueriesPostRunCheck');
+  ScriptApp.newTrigger('_brQueriesPostRunCheck').timeBased().at(checkDate).create();
+
+  Logger.log('BR period=' + currentPeriod +
+    ' reminder=' + reminderDate.toDateString() +
+    ' check='    + checkDate.toDateString());
+}
+
+function preRunBRReminder() {
+  var cfg    = _brQueriesConfig(SpreadsheetApp.openById(BR_QUERIES_SHEET_ID).getSheetByName('CONFIG'));
+  var month  = _brQueriesFormatPeriod(cfg['Current Period']);
+  var pwnUrl = PropertiesService.getScriptProperties().getProperty('PWN_SHEET_URL') ||
+               'https://docs.google.com/spreadsheets/d/1Xy8iifq42EvKKNpRZ2KyQsoRuBChHtcuRHZPUmNZyTg';
+  _brQueriesSendToChat(
+    '📋 *Consolidated BR — ' + month + ' Data Reminder*\n\n' +
+    'Scheduled queries run on the *4th at 09:00 ET*. ' +
+    'Consolidation workflow runs on the *12th at 12:00 ET*.\n\n' +
+    'Update before the 4th:\n' +
+    '• *PWN* — ' + pwnUrl + '\n' +
+    '• *GoCo* — automated from BQ, no update needed.\n' +
+    '• *CBS* — automated from BQ, no update needed.\n' +
+    '• *WLN* — `op_14239_br_master_tbs` must load by the *7th business day*.\n\n' +
+    '_Post-run check fires automatically on the 13th._'
+  );
+  _brQueriesUpdateConfig({ 'Pre-Run Reminder Sent': new Date().toISOString() });
+}
+
+function _brQueriesPostRunCheck() {
+  var cfg    = _brQueriesConfig(SpreadsheetApp.openById(BR_QUERIES_SHEET_ID).getSheetByName('CONFIG'));
+  var exp    = cfg['Current Period'];
+  var month  = _brQueriesFormatPeriod(exp);
+  var r      = _brQueriesCheckBQTables(exp);
+
+  _brQueriesUpdateConfig({
+    'GoCo BQ Max Month':      r.goco   || 'ERROR',
+    'CBS Max Month':          r.cbs    || 'ERROR',
+    'PWN Max Month':          r.pwn    || 'ERROR',
+    'WLN Max Month':          r.wln    || 'ERROR',
+    'Master Table Max Month': r.master || 'ERROR',
+    'Post-Run Checked':       new Date().toISOString()
+  });
+
+  var allPass = r.goco === exp && r.cbs === exp &&
+                r.pwn  === exp && r.wln === exp && r.master === exp;
+  _brQueriesUpdateConfig({ 'Pipeline Status': allPass ? 'SUCCESS' : 'FAILED' });
+
+  var icon = function(v) { return v === exp ? '✅' : '❌'; };
+  var msg = allPass
+    ? '✅ *Consolidated BR — ' + month + ' Pipeline Complete*\n\n' +
+      'All tables updated to *' + _brQueriesFormatPeriod(exp) + '*:\n' +
+      '• bq_goco_customer_rgu_rev: '               + r.goco   + ' ✅\n' +
+      '• adt_cbs_active_billed_customer_rgu_hist: ' + r.cbs    + ' ✅\n' +
+      '• gs_bq_pwn_br: '                           + r.pwn    + ' ✅\n' +
+      '• op_14239_br_master_tbs (WLN): '           + r.wln    + ' ✅\n' +
+      '• master_commercial_public_revenue: '        + r.master + ' ✅'
+    : '🔴 *Consolidated BR — ' + month + ' Pipeline Issue*\n\n' +
+      'Expected *' + _brQueriesFormatPeriod(exp) + '*. One or more tables stale:\n' +
+      '• bq_goco_customer_rgu_rev: '               + (r.goco   || 'ERROR') + ' ' + icon(r.goco)   + '\n' +
+      '• adt_cbs_active_billed_customer_rgu_hist: ' + (r.cbs    || 'ERROR') + ' ' + icon(r.cbs)    + '\n' +
+      '• gs_bq_pwn_br: '                           + (r.pwn    || 'ERROR') + ' ' + icon(r.pwn)    + '\n' +
+      '• op_14239_br_master_tbs (WLN): '           + (r.wln    || 'ERROR') + ' ' + icon(r.wln)    + '\n' +
+      '• master_commercial_public_revenue: '        + (r.master || 'ERROR') + ' ' + icon(r.master);
+  _brQueriesSendToChat(msg);
+}
+
+function _brQueriesCheckBQTables(expectedMonth) {
+  var proj = PropertiesService.getScriptProperties().getProperty('BQ_PROJECT_ID') || 'bi-stg-tbs-cmrcl-pr-3233c3';
+  var sql  = [
+    "SELECT 'goco' AS tbl,",
+    "  FORMAT_DATE('%Y-%m', PARSE_DATE('%Y%m', CAST(MAX(year * 100 + month) AS STRING))) AS max_month",
+    "FROM `bi-srv-tbs-tbmbi-pr-fc0a62.bus_customer_profile.bq_goco_customer_rgu_rev`",
+    "UNION ALL",
+    "SELECT 'cbs',",
+    "  FORMAT_DATE('%Y-%m', DATE_SUB(MAX(bi_update_dt), INTERVAL 1 DAY))",
+    "FROM `bi-srv-tbs-tbmbi-pr-fc0a62.bus_customer_profile.adt_cbs_active_billed_customer_rgu_hist`",
+    "WHERE EXTRACT(DAY FROM bi_update_dt) = 1",
+    "UNION ALL",
+    "SELECT 'pwn', FORMAT_DATE('%Y-%m', MAX(Month_ID))",
+    "FROM `" + proj + ".mi_temp_landing.gs_bq_pwn_br`",
+    "UNION ALL",
+    "SELECT 'wln',",
+    "  FORMAT_DATE('%Y-%m', PARSE_DATE('%Y%m', CAST(MAX(CAST(CCYYMM AS INT64)) AS STRING)))",
+    "FROM `bi-srv-tbs-tbmbi-pr-fc0a62.bi_temp_landing.op_14239_br_master_tbs`",
+    "UNION ALL",
+    "SELECT 'master', FORMAT_DATE('%Y-%m', MAX(Billing_Date))",
+    "FROM `" + proj + ".mi_temp_landing.master_commercial_public_revenue`"
+  ].join(' ');
+
+  try {
+    var resp = BigQuery.Jobs.query({ query: sql, useLegacySql: false, timeoutMs: 30000 }, proj);
+    var out  = { goco: null, cbs: null, pwn: null, wln: null, master: null };
+    if (resp.rows) {
+      resp.rows.forEach(function(row) {
+        var k = row.f[0].v;
+        if (k in out) out[k] = row.f[1].v;
+      });
+    }
+    return out;
+  } catch (e) {
+    Logger.log('_brQueriesCheckBQTables error: ' + e);
+    return { goco: null, cbs: null, pwn: null, wln: null, master: null };
+  }
+}
+
+function _brQueriesSendToChat(text) {
+  var url = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL_AUTHY') ||
+            PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL');
+  if (!url) { Logger.log('No Chat webhook configured — BR notification skipped.'); return; }
+  try {
+    UrlFetchApp.fetch(url, {
+      method: 'post', contentType: 'application/json',
+      muteHttpExceptions: true,
+      payload: JSON.stringify({ text: text })
+    });
+  } catch (e) { Logger.log('Chat webhook error: ' + e); }
+}
+
+function _brQueriesFormatPeriod(yyyyMm) {
+  if (!yyyyMm) return '—';
+  var p = String(yyyyMm).split('-');
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return (months[parseInt(p[1], 10) - 1] || p[1]) + ' ' + p[0];
+}
+
+function _brQueriesNBDsBefore(targetDate, n) {
+  var year     = targetDate.getFullYear();
+  var prevYear = targetDate.getMonth() === 0 ? year - 1 : year;
+  var holidays = _brQueriesCanadianHolidays(year);
+  if (prevYear !== year) holidays = holidays.concat(_brQueriesCanadianHolidays(prevYear));
+  var count = 0, d = new Date(targetDate);
+  d.setDate(d.getDate() - 1);
+  while (count < n) {
+    var dow = d.getDay();
+    if (dow !== 0 && dow !== 6 && holidays.indexOf(_brQueriesDateStr(d)) === -1) {
+      if (++count === n) return new Date(d);
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return new Date(d);
+}
+
+function _brQueriesCanadianHolidays(year) {
+  var h = [];
+  [[1,1],[7,1],[11,11],[12,25],[12,26]].forEach(function(md) {
+    var dt = new Date(year, md[0] - 1, md[1]);
+    h.push(_brQueriesDateStr(dt));
+    var dow = dt.getDay();
+    if (dow === 6)      h.push(_brQueriesDateStr(new Date(year, md[0] - 1, md[1] + 2)));
+    else if (dow === 0) h.push(_brQueriesDateStr(new Date(year, md[0] - 1, md[1] + 1)));
+  });
+  var easter = _brQueriesEasterDate(year);
+  var gf = new Date(easter); gf.setDate(gf.getDate() - 2); h.push(_brQueriesDateStr(gf));
+  var em = new Date(easter); em.setDate(em.getDate() + 1); h.push(_brQueriesDateStr(em));
+  var vic = new Date(year, 4, 24);
+  while (vic.getDay() !== 1) vic.setDate(vic.getDate() - 1);
+  h.push(_brQueriesDateStr(vic));
+  h.push(_brQueriesDateStr(_brQueriesFirstWeekday(year, 9, 1)));
+  var oct1 = _brQueriesFirstWeekday(year, 10, 1);
+  var thx  = new Date(oct1); thx.setDate(thx.getDate() + 7); h.push(_brQueriesDateStr(thx));
+  return h;
+}
+
+function _brQueriesEasterDate(year) {
+  var a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  var d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  var g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  var i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  var m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return new Date(year, Math.floor((h + l - 7 * m + 114) / 31) - 1,
+                  ((h + l - 7 * m + 114) % 31) + 1);
+}
+
+function _brQueriesFirstWeekday(year, month, targetDow) {
+  var d = new Date(year, month - 1, 1);
+  while (d.getDay() !== targetDow) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function _brQueriesDateStr(date) {
+  var m = date.getMonth() + 1, dy = date.getDate();
+  return date.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (dy < 10 ? '0' + dy : dy);
+}
+
+function _brQueriesDeleteTriggersFor(funcName) {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === funcName) ScriptApp.deleteTrigger(t);
+  });
 }
 
 
