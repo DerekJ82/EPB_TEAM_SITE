@@ -605,6 +605,27 @@
       flagR.rotation.z = Math.PI; flagR.position.set(22, 14, fz); scene.add(flagR);
     }
 
+    // 500K spray paint on road surface
+    {
+      const rpC = document.createElement('canvas'); rpC.width = 512; rpC.height = 256;
+      const rpX = rpC.getContext('2d');
+      rpX.clearRect(0, 0, 512, 256);
+      rpX.save();
+      rpX.shadowColor = '#fbcc04'; rpX.shadowBlur = 18;
+      rpX.fillStyle = '#fbcc04';
+      rpX.font = 'bold 190px Arial'; rpX.textAlign = 'center'; rpX.textBaseline = 'middle';
+      rpX.fillText('500K', 256, 128);
+      rpX.restore();
+      const rpTex = new THREE.CanvasTexture(rpC);
+      const roadPaint = new THREE.Mesh(
+        new THREE.PlaneGeometry(24, 12),
+        new THREE.MeshLambertMaterial({ map: rpTex, transparent: true, opacity: 0.85 })
+      );
+      roadPaint.rotation.x = -Math.PI / 2;
+      roadPaint.position.set(0, 0.25, partyZ + 15);
+      scene.add(roadPaint);
+    }
+
     // confetti cannons flanking the July arch
     function addConfettiCannon(x, z, barrelRotZ) {
       const cg = new THREE.Group();
@@ -693,7 +714,7 @@
 
     addWarehouse('CHERY', '#b026ff', -120, -1200, Math.PI / 4, 5);
     addWarehouse('TESLA', '#cc0000', 120, -1200, -Math.PI / 4, 5);
-    addWarehouse('BYD',   '#0b5fb5', 210, -1200, -Math.PI / 4, 5);
+    addWarehouse('BYD',   '#0b5fb5', 300, -1200, -Math.PI / 4, 5);
 
     const camTarget = new THREE.Vector3();
 
@@ -910,9 +931,6 @@
       nextStation();                    // Back to Your Heart
       await driveConvoy(-920, 5000);   // drive through arch, on to 1M sign
       if (!driveSequenceActive) return;
-      fireConfetti();
-      await sleep(800);
-      fireConfetti();
       hud.classList.add('upgraded');
       hud.innerHTML = 'TARGET UPGRADED: 1,000,000!';
       consoleTarget.innerHTML = '1,000,000';
