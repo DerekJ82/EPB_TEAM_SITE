@@ -972,7 +972,6 @@ var ACCESS_COLUMN_MAP = {
   'WLS P&L SUMMARY':                'WLS DETAILS',
   'PORTING PERFORMANCE':            'EPB ON A PAGE',
   'WLS EQUIPMENT MARGIN':           'WLS DETAILS',
-  'EPB PSO ONE PAGER':              'EPB ON A PAGE',
   'WLS/WLN ACQUISITION & RENEWALS': 'WLS DETAILS',
   'EPB PIPELINE':                   'WLS DETAILS',
   'FLASH WEEKLY REPORT':            'FLASH',
