@@ -623,13 +623,16 @@
       el.innerHTML = '<p class="pipe-empty">No pending access requests.</p>';
       return;
     }
-    var rows = result.requests.map(function (r) {
+    // Store request data on elements directly to avoid HTML-entity round-trip issues
+    var reqData = [];
+    var rows = result.requests.map(function (r, idx) {
       var safe = JSON.stringify(r)
         .replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
         .replace(/&/g, '\\u0026').replace(/'/g, '\\u0027')
         .replace(/"/g, '&quot;');
+      reqData.push(r);
       return '<tr>' +
-        '<td><input type="checkbox" class="req-cb" data-req="' + safe + '"></td>' +
+        '<td><input type="checkbox" class="req-cb" data-idx="' + idx + '"></td>' +
         '<td>' + _esc(r.email) + '</td>' +
         '<td>' + _esc(r.dashboard) + '</td>' +
         '<td>' + _esc(r.requestedAt || '') + '</td>' +
@@ -642,8 +645,8 @@
     el.innerHTML =
       '<div id="bulk-bar" style="display:none; margin-bottom:8px;">' +
         '<span id="bulk-count"></span>&nbsp;' +
-        '<button class="action-btn" onclick="window._epbBulkApprove()">Approve Selected</button>&nbsp;' +
-        '<button class="action-btn deny" onclick="window._epbBulkDeny()">Deny Selected</button>' +
+        '<button class="action-btn" id="bulk-approve-btn">Approve Selected</button>&nbsp;' +
+        '<button class="action-btn deny" id="bulk-deny-btn">Deny Selected</button>' +
       '</div>' +
       '<div class="gt-wrap">' +
         '<table class="gt"><thead><tr>' +
@@ -658,6 +661,12 @@
     });
     document.querySelectorAll('.req-cb').forEach(function (cb) {
       cb.addEventListener('change', _updateBulkBar);
+    });
+    document.getElementById('bulk-approve-btn').addEventListener('click', function () {
+      window._epbBulkApprove(reqData);
+    });
+    document.getElementById('bulk-deny-btn').addEventListener('click', function () {
+      window._epbBulkDeny(reqData);
     });
   }
 
@@ -675,21 +684,30 @@
     document.getElementById('approveModal').classList.add('open');
   };
 
-  window._epbBulkApprove = function () {
+  window._epbBulkApprove = function (allReqData) {
     var checked = document.querySelectorAll('.req-cb:checked');
     if (!checked.length) return;
     var reqs = [];
     checked.forEach(function (cb) {
-      reqs.push(JSON.parse(cb.getAttribute('data-req').replace(/&quot;/g, '"')));
+      var idx = parseInt(cb.getAttribute('data-idx'), 10);
+      if (allReqData[idx]) reqs.push(allReqData[idx]);
     });
+    if (!reqs.length) return;
     _pending = reqs;
     var items = reqs.map(function (r) {
       return '<li>' + _esc(r.email) + ' &rarr; ' + _esc(r.dashboard) + '</li>';
     }).join('');
-    document.getElementById('am-body').innerHTML =
+    var body = document.getElementById('am-body');
+    var html =
       '<p>Approve the following <strong>' + reqs.length + '</strong> request' + (reqs.length > 1 ? 's' : '') + '?</p>' +
       '<ul style="margin:8px 0 8px 16px; padding:0; font-size:0.9em;">' + items + '</ul>' +
       '<p class="modal-note">Each user will receive an email confirmation.</p>';
+    if (body) {
+      body.innerHTML = html;
+    } else {
+      document.getElementById('am-email').textContent = reqs.length + ' request' + (reqs.length > 1 ? 's' : '');
+      document.getElementById('am-dash').textContent = reqs.map(function(r) { return r.dashboard; }).join(', ');
+    }
     var btn = document.getElementById('am-submit');
     btn.disabled = false;
     btn.textContent = 'Approve';
@@ -771,15 +789,15 @@
       .denyAccessRequest(rowIndex);
   };
 
-  window._epbBulkDeny = function () {
+  window._epbBulkDeny = function (allReqData) {
     var checked = document.querySelectorAll('.req-cb:checked');
     if (!checked.length) return;
     var items = [];
     checked.forEach(function (cb) {
-      var r = JSON.parse(cb.getAttribute('data-req').replace(/&quot;/g, '"'));
-      items.push({ rowIndex: r.rowIndex, email: r.email });
-      cb.disabled = true;
+      var idx = parseInt(cb.getAttribute('data-idx'), 10);
+      if (allReqData[idx]) { items.push(allReqData[idx]); cb.disabled = true; }
     });
+    if (!items.length) return;
     var rowIndices = items.map(function (i) { return i.rowIndex; });
     google.script.run
       .withSuccessHandler(function (res) {
