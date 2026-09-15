@@ -899,9 +899,11 @@
 <div class="modal-overlay" id="approveModal" onclick="window._epbOverlayClick(event)">
   <div class="modal-box">
     <div class="modal-title">Approve Access Request</div>
-    <p>Grant <strong id="am-email"></strong> access to <strong id="am-dash"></strong>?</p>
-    <p class="modal-note">They will receive an email confirmation and can
-    refresh EPB Hub immediately to access their dashboard.</p>
+    <div id="am-body">
+      <p>Grant <strong id="am-email"></strong> access to <strong id="am-dash"></strong>?</p>
+      <p class="modal-note">They will receive an email confirmation and can
+      refresh EPB Hub immediately to access their dashboard.</p>
+    </div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="window._epbCloseModal()">Cancel</button>
       <button class="btn-primary" id="am-submit" onclick="window._epbSubmitApprove()">Approve</button>

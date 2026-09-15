@@ -1174,3 +1174,153 @@ function denyAccessRequest(rowIndex) {
     return { error: String(e) };
   }
 }
+
+function approveBulkAccessRequests(requestsJson) {
+  if (!_isAdminUser()) return { error: 'NOT_ADMIN' };
+  var requests;
+  try { requests = JSON.parse(requestsJson); } catch (e) { return { error: 'INVALID_JSON' }; }
+  if (!Array.isArray(requests) || requests.length === 0) return { error: 'EMPTY_LIST' };
+
+  var validColumns = Object.keys(ACCESS_COLUMN_MAP).map(function (k) { return ACCESS_COLUMN_MAP[k]; });
+  var ss           = SpreadsheetApp.openById(EPB_HUB_SHEET_ID);
+  var accessSheet  = ss.getSheetByName('Admin - Access');
+  var reqSheet     = ss.getSheetByName('Access Requests');
+  if (!accessSheet) return { error: 'Admin - Access tab not found' };
+  if (!reqSheet)    return { error: 'Access Requests tab not found' };
+
+  var approverEmail = Session.getActiveUser().getEmail();
+  var now           = new Date();
+  var lastCol       = accessSheet.getLastColumn();
+  var headers       = accessSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var lastRow       = accessSheet.getLastRow();
+  var allEmails     = lastRow > 1 ? accessSheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
+
+  var results      = [];
+  var summaryParts = [];
+
+  requests.forEach(function (req) {
+    var rowIndex     = req.rowIndex;
+    var email        = req.email;
+    var accessColumn = req.accessColumn;
+    try {
+      if (validColumns.indexOf(accessColumn) === -1) {
+        results.push({ email: email, success: false, error: 'INVALID_COLUMN: ' + accessColumn });
+        return;
+      }
+      var colIdx = -1;
+      for (var h = 0; h < headers.length; h++) {
+        if (String(headers[h]).trim().toUpperCase() === accessColumn.toUpperCase()) { colIdx = h; break; }
+      }
+      if (colIdx === -1) { results.push({ email: email, success: false, error: 'COLUMN_NOT_FOUND: ' + accessColumn }); return; }
+
+      var targetRow = -1;
+      for (var e = 0; e < allEmails.length; e++) {
+        if (String(allEmails[e][0]).toLowerCase().trim() === email.toLowerCase()) { targetRow = e + 2; break; }
+      }
+      if (targetRow === -1) {
+        lastRow++;
+        targetRow = lastRow;
+        allEmails.push([email]);
+      }
+
+      var displayName = String(reqSheet.getRange(rowIndex, 2).getValue()).trim() || accessColumn;
+      accessSheet.getRange(targetRow, 1).setValue(email);
+      accessSheet.getRange(targetRow, colIdx + 1).setValue(email);
+      reqSheet.getRange(rowIndex, 5).setValue('Approved');
+      reqSheet.getRange(rowIndex, 6).setValue(approverEmail);
+      reqSheet.getRange(rowIndex, 7).setValue(now);
+
+      try {
+        GmailApp.sendEmail(
+          email,
+          'EPB Hub — Access Granted: ' + displayName,
+          'Hi,\n\nYour access request for the ' + displayName + ' dashboard in EPB Hub has been approved.\n\n' +
+          'You can now refresh EPB Hub and the dashboard will be available to you.\n\n' +
+          'Approved by: ' + approverEmail + '\n\nEPB Hub Team'
+        );
+      } catch (mailErr) { Logger.log('sendEmail error: ' + mailErr.message); }
+
+      summaryParts.push('• ' + email + ' → ' + displayName);
+      results.push({ email: email, success: true });
+    } catch (err) {
+      results.push({ email: email, success: false, error: String(err) });
+    }
+  });
+
+  if (summaryParts.length > 0) {
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL_AUTHY');
+    if (webhookUrl) {
+      try {
+        UrlFetchApp.fetch(webhookUrl, {
+          method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+          payload: JSON.stringify({
+            text: '✅ *EPB Hub Bulk Access Granted (' + summaryParts.length + ')*\n\n' +
+                  summaryParts.join('\n') +
+                  '\n\n*Approved By:* ' + approverEmail + '\n*Time:* ' + now.toLocaleString()
+          })
+        });
+      } catch (hookErr) { Logger.log('Bulk approve webhook error: ' + hookErr); }
+    }
+  }
+
+  return { results: results };
+}
+
+function denyBulkAccessRequests(rowIndicesJson) {
+  if (!_isAdminUser()) return { error: 'NOT_ADMIN' };
+  var rowIndices;
+  try { rowIndices = JSON.parse(rowIndicesJson); } catch (e) { return { error: 'INVALID_JSON' }; }
+  if (!Array.isArray(rowIndices) || rowIndices.length === 0) return { error: 'EMPTY_LIST' };
+
+  var ss       = SpreadsheetApp.openById(EPB_HUB_SHEET_ID);
+  var reqSheet = ss.getSheetByName('Access Requests');
+  if (!reqSheet) return { error: 'Access Requests tab not found' };
+
+  var decliner     = Session.getActiveUser().getEmail();
+  var now          = new Date();
+  var results      = [];
+  var summaryParts = [];
+
+  rowIndices.forEach(function (rowIndex) {
+    try {
+      var rowData     = reqSheet.getRange(rowIndex, 1, 1, 3).getValues()[0];
+      var email       = String(rowData[0]).trim();
+      var displayName = String(rowData[1]).trim();
+      reqSheet.getRange(rowIndex, 5).setValue('Denied');
+      reqSheet.getRange(rowIndex, 6).setValue(decliner);
+      reqSheet.getRange(rowIndex, 7).setValue(now);
+
+      try {
+        GmailApp.sendEmail(
+          email,
+          'EPB Hub — Access Request Declined: ' + displayName,
+          'Hi,\n\nYour access request for the ' + displayName + ' dashboard in EPB Hub has been declined.\n\n' +
+          'If you believe this is an error, please reach out to your manager.\n\nEPB Hub Team'
+        );
+      } catch (mailErr) { Logger.log('sendEmail error: ' + mailErr.message); }
+
+      summaryParts.push('• ' + email + ' → ' + displayName);
+      results.push({ rowIndex: rowIndex, email: email, success: true });
+    } catch (err) {
+      results.push({ rowIndex: rowIndex, success: false, error: String(err) });
+    }
+  });
+
+  if (summaryParts.length > 0) {
+    var webhookUrl = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL_AUTHY');
+    if (webhookUrl) {
+      try {
+        UrlFetchApp.fetch(webhookUrl, {
+          method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+          payload: JSON.stringify({
+            text: '❌ *EPB Hub Bulk Access Declined (' + summaryParts.length + ')*\n\n' +
+                  summaryParts.join('\n') +
+                  '\n\n*Declined By:* ' + decliner + '\n*Time:* ' + now.toLocaleString()
+          })
+        });
+      } catch (hookErr) { Logger.log('Bulk deny webhook error: ' + hookErr); }
+    }
+  }
+
+  return { results: results };
+}

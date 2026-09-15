@@ -597,6 +597,24 @@
       .getPendingAccessRequests();
   }
 
+  function _updateBulkBar() {
+    var checked = document.querySelectorAll('.req-cb:checked');
+    var bar = document.getElementById('bulk-bar');
+    if (!bar) return;
+    if (checked.length > 0) {
+      document.getElementById('bulk-count').textContent = checked.length + ' selected';
+      bar.style.display = '';
+    } else {
+      bar.style.display = 'none';
+    }
+    var selAll = document.getElementById('sel-all');
+    if (selAll) {
+      var all = document.querySelectorAll('.req-cb');
+      selAll.checked = all.length > 0 && checked.length === all.length;
+      selAll.indeterminate = checked.length > 0 && checked.length < all.length;
+    }
+  }
+
   function renderAdmin(result) {
     var el = document.getElementById('admin-body');
     if (!el) return;
@@ -611,6 +629,7 @@
         .replace(/&/g, '\\u0026').replace(/'/g, '\\u0027')
         .replace(/"/g, '&quot;');
       return '<tr>' +
+        '<td><input type="checkbox" class="req-cb" data-req="' + safe + '"></td>' +
         '<td>' + _esc(r.email) + '</td>' +
         '<td>' + _esc(r.dashboard) + '</td>' +
         '<td>' + _esc(r.requestedAt || '') + '</td>' +
@@ -621,20 +640,56 @@
       '</tr>';
     }).join('');
     el.innerHTML =
+      '<div id="bulk-bar" style="display:none; margin-bottom:8px;">' +
+        '<span id="bulk-count"></span>&nbsp;' +
+        '<button class="action-btn" onclick="window._epbBulkApprove()">Approve Selected</button>&nbsp;' +
+        '<button class="action-btn deny" onclick="window._epbBulkDeny()">Deny Selected</button>' +
+      '</div>' +
       '<div class="gt-wrap">' +
         '<table class="gt"><thead><tr>' +
+          '<th><input type="checkbox" id="sel-all"></th>' +
           '<th>Email</th><th>Dashboard</th><th>Requested</th><th>Action</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '</div>';
+
+    document.getElementById('sel-all').addEventListener('change', function () {
+      document.querySelectorAll('.req-cb').forEach(function (cb) { cb.checked = this.checked; }, this);
+      _updateBulkBar();
+    });
+    document.querySelectorAll('.req-cb').forEach(function (cb) {
+      cb.addEventListener('change', _updateBulkBar);
+    });
   }
 
   /* --- Approve modal ------------------------------------------------------ */
-  var _pending = null;
+  var _pending = null; // null | single-request object | array of request objects
 
   window._epbApprove = function (req) {
     _pending = req;
-    document.getElementById('am-email').textContent = req.email;
-    document.getElementById('am-dash').textContent  = req.dashboard;
+    document.getElementById('am-body').innerHTML =
+      '<p>Grant <strong>' + _esc(req.email) + '</strong> access to <strong>' + _esc(req.dashboard) + '</strong>?</p>' +
+      '<p class="modal-note">They will receive an email confirmation and can refresh EPB Hub immediately to access their dashboard.</p>';
+    var btn = document.getElementById('am-submit');
+    btn.disabled = false;
+    btn.textContent = 'Approve';
+    document.getElementById('approveModal').classList.add('open');
+  };
+
+  window._epbBulkApprove = function () {
+    var checked = document.querySelectorAll('.req-cb:checked');
+    if (!checked.length) return;
+    var reqs = [];
+    checked.forEach(function (cb) {
+      reqs.push(JSON.parse(cb.getAttribute('data-req').replace(/&quot;/g, '"')));
+    });
+    _pending = reqs;
+    var items = reqs.map(function (r) {
+      return '<li>' + _esc(r.email) + ' &rarr; ' + _esc(r.dashboard) + '</li>';
+    }).join('');
+    document.getElementById('am-body').innerHTML =
+      '<p>Approve the following <strong>' + reqs.length + '</strong> request' + (reqs.length > 1 ? 's' : '') + '?</p>' +
+      '<ul style="margin:8px 0 8px 16px; padding:0; font-size:0.9em;">' + items + '</ul>' +
+      '<p class="modal-note">Each user will receive an email confirmation.</p>';
     var btn = document.getElementById('am-submit');
     btn.disabled = false;
     btn.textContent = 'Approve';
@@ -651,12 +706,28 @@
     var btn = document.getElementById('am-submit');
     btn.disabled = true;
     btn.textContent = 'Approving…';
+
+    if (Array.isArray(_pending)) {
+      var reqs = _pending;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          window._epbCloseModal();
+          var failed = (res.results || []).filter(function (r) { return !r.success; });
+          var ok     = (res.results || []).filter(function (r) { return r.success; });
+          if (ok.length) _epbToast(ok.length + ' request' + (ok.length > 1 ? 's' : '') + ' approved.');
+          if (failed.length) alert('Some approvals failed:\n' + failed.map(function (r) { return r.email + ': ' + r.error; }).join('\n'));
+          loadAdmin();
+        })
+        .withFailureHandler(function (err) {
+          window._epbCloseModal();
+          alert('Bulk approval failed: ' + (err && err.message ? err.message : 'Check Apps Script logs.'));
+        })
+        .approveBulkAccessRequests(JSON.stringify(reqs));
+      return;
+    }
+
     var req = _pending;
-    console.log('[Approve] sending to server:', {
-      rowIndex:    req.rowIndex,
-      email:       req.email,
-      accessColumn: req.accessColumn
-    });
+    console.log('[Approve] sending to server:', { rowIndex: req.rowIndex, email: req.email, accessColumn: req.accessColumn });
     google.script.run
       .withSuccessHandler(function (res) {
         console.log('[Approve] server response:', JSON.stringify(res));
@@ -698,6 +769,31 @@
         _epbToast('Denial failed — check Apps Script logs.');
       })
       .denyAccessRequest(rowIndex);
+  };
+
+  window._epbBulkDeny = function () {
+    var checked = document.querySelectorAll('.req-cb:checked');
+    if (!checked.length) return;
+    var items = [];
+    checked.forEach(function (cb) {
+      var r = JSON.parse(cb.getAttribute('data-req').replace(/&quot;/g, '"'));
+      items.push({ rowIndex: r.rowIndex, email: r.email });
+      cb.disabled = true;
+    });
+    var rowIndices = items.map(function (i) { return i.rowIndex; });
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var failed = (res.results || []).filter(function (r) { return !r.success; });
+        var ok     = (res.results || []).filter(function (r) { return r.success; });
+        if (ok.length) _epbToast(ok.length + ' request' + (ok.length > 1 ? 's' : '') + ' denied.');
+        if (failed.length) _epbToast('Some denials failed — check Apps Script logs.');
+        loadAdmin();
+      })
+      .withFailureHandler(function () {
+        _epbToast('Bulk denial failed — check Apps Script logs.');
+        loadAdmin();
+      })
+      .denyBulkAccessRequests(JSON.stringify(rowIndices));
   };
 
   window._epbOverlayClick = function (e) {
